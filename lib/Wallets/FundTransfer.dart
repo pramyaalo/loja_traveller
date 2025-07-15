@@ -255,7 +255,7 @@ class _MyRechargePageState extends State<FundTransfer> {
                   Padding(
                       padding: const EdgeInsets.only(left: 10),
                       child: Text(
-                        'Ewallet Balance (KES):',
+                        'Ewallet Balance (KES): ',
                         style: TextStyle(
                             fontSize: 16, fontWeight: FontWeight.w500),
                       )),
