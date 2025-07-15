@@ -1,0 +1,9 @@
+Background Colour: #FFC65B  
+Primary Colour: #211E3B  
+Secondary Colour: #1DA1F2 
+
+GOREHLA BRANDING
+ORANGE - #EF9559 
+BLUE - #54A5C3  
+PURPLE - #4F3981 
+WHITE - #F0F0F2 

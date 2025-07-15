@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="10px" height="9px" viewBox="0 0 10 9" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>Rectangle 9</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <path d="M5.32386405,0.189631086 L6.6734112,2.76732822 L9.69068774,3.18087397 C9.98659721,3.22158573 10.1047792,3.56442159 9.890688,3.76112367 L7.70704887,5.76757055 L8.22250407,8.60110894 C8.27295868,8.87923453 7.96341283,9.09093568 7.69886705,8.95980096 L5.00022727,7.62231256 L2.30113295,8.96022951 C2.03658717,9.09136422 1.72704132,8.87923453 1.77749593,8.60110894 L2.29295113,5.76757055 L0.109312005,3.76112367 C-0.104779175,3.56442159 0.0134027925,3.22115719 0.309312257,3.18087397 L3.3265888,2.76732822 L4.67613595,0.189631086 C4.80886339,-0.0632103619 5.19159115,-0.0632103619 5.32386405,0.189631086" id="path-1"></path>
+    </defs>
+    <g id="Hotel-Booking-Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Hotels-Search-Result-fullpage" transform="translate(-510.000000, -893.000000)">
+            <g id="Group-35" transform="translate(429.000000, 449.000000)">
+                <g id="Group" transform="translate(1.000000, 246.000000)">
+                    <g id="Group-15" transform="translate(12.000000, 195.000000)">
+                        <g id="Group-12">
+                            <g id="Group-14" transform="translate(20.000000, 3.000000)">
+                                <g id="Rectangle-9" transform="translate(48.000000, 0.000000)">
+                                    <mask id="mask-2" fill="white">
+                                        <use xlink:href="#path-1"></use>
+                                    </mask>
+                                    <use id="Mask" fill="#EBB83F" xlink:href="#path-1"></use>
+                                    <rect fill="#E0E0E0" mask="url(#mask-2)" x="5" y="-2.45454545" width="7.5" height="13.9090909"></rect>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>

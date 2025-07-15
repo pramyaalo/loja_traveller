@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="40px" height="41px" viewBox="0 0 40 41" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
+    <title>Group 3</title>
+    <desc>Created with Sketch.</desc>
+    <defs>
+        <rect id="path-1" x="0" y="0" width="40" height="40" rx="20"></rect>
+    </defs>
+    <g id="Hotel-Booking-Flow" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Hotels-Search-Result-fullpage" transform="translate(-246.000000, -352.000000)">
+            <g id="Group-34" transform="translate(0.000000, 297.000000)">
+                <g id="Group-18" transform="translate(230.000000, 32.000000)">
+                    <g id="Group-3" transform="translate(16.000000, 23.625000)">
+                        <g id="Group-30">
+                            <mask id="mask-2" fill="white">
+                                <use xlink:href="#path-1"></use>
+                            </mask>
+                            <use id="Rectangle-8" fill="#71BA80" xlink:href="#path-1"></use>
+                            <polygon id="Rectangle-20" fill="#61AA70" opacity="0.5" mask="url(#mask-2)" transform="translate(28.422967, 24.876464) rotate(-330.000000) translate(-28.422967, -24.876464) " points="16.9258141 3.94418264 39.7634371 3.96710623 39.9201203 45.6910805 16.9258141 45.8087448"></polygon>
+                            <g id="Group-17" mask="url(#mask-2)" fill="#FFFFFF">
+                                <g transform="translate(11.000000, 11.000000)">
+                                    <path d="M16.5,18 L17.25,18 C17.66475,18 18,17.664 18,17.25 L18,10.5 C18,10.086 17.66475,9.75 17.25,9.75 L16.5,9.75 L16.5,17.25 L16.5,18 Z" id="Fill-44"></path>
+                                    <path d="M1.5,17.25 L1.5,9.75 L0.75,9.75 C0.33525,9.75 0,10.086 0,10.5 L0,17.25 C0,17.664 0.33525,18 0.75,18 L1.5,18 L1.5,17.25 Z" id="Fill-45"></path>
+                                    <path d="M12.75,3.75 L10.5,3.75 L10.5,2.25 L12.75,2.25 L12.75,3.75 Z M12.75,6.75 L10.5,6.75 L10.5,5.25 L12.75,5.25 L12.75,6.75 Z M12.75,9.75 L10.5,9.75 L10.5,8.25 L12.75,8.25 L12.75,9.75 Z M12.75,12.75 L10.5,12.75 L10.5,11.25 L12.75,11.25 L12.75,12.75 Z M7.5,3.75 L5.25,3.75 L5.25,2.25 L7.5,2.25 L7.5,3.75 Z M7.5,6.75 L5.25,6.75 L5.25,5.25 L7.5,5.25 L7.5,6.75 Z M7.5,9.75 L5.25,9.75 L5.25,8.25 L7.5,8.25 L7.5,9.75 Z M7.5,12.75 L5.25,12.75 L5.25,11.25 L7.5,11.25 L7.5,12.75 Z M14.25,0 L3.75,0 C3.33525,0 3,0.336 3,0.75 L3,17.25 C3,17.664 3.33525,18 3.75,18 L8.25,18 L8.25,15 L9.75,15 L9.75,18 L14.25,18 C14.66475,18 15,17.664 15,17.25 L15,0.75 C15,0.336 14.66475,0 14.25,0 L14.25,0 Z" id="Fill-46"></path>
+                                </g>
+                            </g>
+                        </g>
+                    </g>
+                </g>
+            </g>
+        </g>
+    </g>
+</svg>
