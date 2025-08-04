@@ -883,34 +883,40 @@ Divider(),
         appBar: AppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 1,
-          backgroundColor:Color(0xFF00ADEE), // Custom dark color
           title: Row(
             children: [
               IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Colors.black,
+                  size: 27,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
               ),
-              SizedBox(width: 1),
+
+              SizedBox(width: 1), // Set the desired width
               Text(
                 "Holiday List",
                 style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: "Montserrat",
-                  fontSize: 19,
-                ),
+                    color: Colors.black,
+                    fontFamily: "Montserrat",
+                    fontSize: 19),
               ),
             ],
           ),
           actions: [
             Image.asset(
               'assets/images/lojologo.png',
-              width: 100,
+              width: 150,
               height: 50,
             ),
-
+            SizedBox(
+              width: 10,
+            )
           ],
+          backgroundColor: Colors.white,
         ),
         body: isLoading
             ? ListView.builder(

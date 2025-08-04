@@ -210,34 +210,40 @@ class _MyPageState extends State<AddGuestes_Hotel> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Rooms",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.black,
+                  fontFamily: "Montserrat",
+                  fontSize: 19),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-            width: 100,
+            width: 150,
             height: 50,
           ),
-
+          SizedBox(
+            width: 10,
+          )
         ],
+        backgroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -375,7 +381,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -441,7 +447,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                           child: Container(
                                             decoration: BoxDecoration(
                                               shape: BoxShape.circle,
-                                              color: Color(0xFF00ADEE),
+                                              color: Color(0xFF152238),
                                             ),
                                             child: Icon(
                                               Icons.add,
@@ -538,7 +544,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -596,7 +602,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -682,7 +688,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -745,7 +751,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                     child: Container(
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Color(0xFF00ADEE),
+                                        color: Color(0xFF152238),
                                       ),
                                       child: Icon(
                                         Icons.add,
@@ -841,7 +847,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -901,7 +907,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -987,7 +993,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1047,7 +1053,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1133,7 +1139,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1196,7 +1202,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                     child: Container(
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Color(0xFF00ADEE),
+                                        color: Color(0xFF152238),
                                       ),
                                       child: Icon(
                                         Icons.add,
@@ -1293,7 +1299,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1353,7 +1359,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1439,7 +1445,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1499,7 +1505,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1585,7 +1591,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1645,7 +1651,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1731,7 +1737,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Color(0xFF00ADEE),
+                                      color: Color(0xFF152238),
                                     ),
                                     child: Icon(
                                       Icons.add,
@@ -1794,7 +1800,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                                     child: Container(
                                       decoration: BoxDecoration(
                                         shape: BoxShape.circle,
-                                        color: Color(0xFF00ADEE),
+                                        color: Color(0xFF152238),
                                       ),
                                       child: Icon(
                                         Icons.add,
@@ -1843,7 +1849,7 @@ class _MyPageState extends State<AddGuestes_Hotel> {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:Color(0xFF00ADEE), // Background color of the button
+                  backgroundColor: Color(0xFF152238), // Background color of the button
                   shape: RoundedRectangleBorder(
                     borderRadius:
                         BorderRadius.circular(20), // Circular radius of 20

@@ -118,11 +118,11 @@ class _HotelsScreenState extends State<Holidays> {
       lastDate: DateTime(2101), builder: (BuildContext context, Widget? child) {
       return Theme(data: ThemeData.light().copyWith(
 
-        colorScheme: const ColorScheme.light(primary: Color(0xFF00ADEE)),
+        colorScheme: const ColorScheme.light(primary: Color(0xFF152238)),
         datePickerTheme: const DatePickerThemeData(
-          backgroundColor:Color(0xFF00ADEE),
-          dividerColor: Color(0xFF00ADEE),
-          headerBackgroundColor:Color(0xFF00ADEE),
+          backgroundColor: Colors.white,
+          dividerColor: Color(0xFF152238),
+          headerBackgroundColor: Color(0xFF152238),
           headerForegroundColor: Colors.white, // Custom primary color
         ),), child: child!,
 
@@ -149,34 +149,40 @@ class _HotelsScreenState extends State<Holidays> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Holiday Booking",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.black,
+                  fontFamily: "Montserrat",
+                  fontSize: 19),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-            width: 100,
+            width: 150,
             height: 50,
           ),
-
+          SizedBox(
+            width: 10,
+          )
         ],
+        backgroundColor: Colors.white,
       ),
       body: Container(
         child: Column(
@@ -191,7 +197,7 @@ class _HotelsScreenState extends State<Holidays> {
                         Container(
                           width: double.infinity,
                           height: 150,
-                          color: Color(0xFF00ADEE),
+                          color: Color(0xFF152238),
                         ),
                         Container(
                           margin: const EdgeInsets.fromLTRB(20, 30, 20, 20),
@@ -671,7 +677,7 @@ class _HotelsScreenState extends State<Holidays> {
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
-                                                    Color(0xFF00ADEE),
+                                                    Color(0xFF152238),
 
                                                 // Background color of the button
                                                 shape: RoundedRectangleBorder(
@@ -803,15 +809,15 @@ class _HotelsScreenState extends State<Holidays> {
                         child: CarouselSlider(
                           items: [
                             Image.asset(
-                              "assets/images/kenyaimage.jpg",
+                              "assets/images/toursmorarir.jpg",
                               fit: BoxFit.cover,
                             ),
                             Image.asset(
-                              "assets/images/mida.jpg",
+                              "assets/images/holiii.jpg",
                               fit: BoxFit.cover,
                             ),
                             Image.asset(
-                              "assets/images/experience.jpg",
+                              "assets/images/tourspascal.jpg",
                               fit: BoxFit.cover,
                             ),
                           ],

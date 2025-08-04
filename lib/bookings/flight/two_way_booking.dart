@@ -333,14 +333,14 @@ class _TwoWayBookingState extends State<TwoWayBooking> {
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-           width: 100,
-              height: 50,
+            width: 150,
+            height: 50,
           ),
           SizedBox(
             width: 10,
           )
         ],
-        backgroundColor:Color(0xFF00ADEE),
+        backgroundColor: Colors.white,
       ),
       body: isLoading
           ? Center(

@@ -175,7 +175,7 @@ class _BookingCardGeneralDetailsState extends State<CancelledBooking> {
                                                 decoration: BoxDecoration(
                                                   color: Colors.redAccent,
                                                   borderRadius: BorderRadius.circular(5),
-                                                  border: Border.all(width: 0.1, color: Colors.blue),
+                                                  border: Border.all(width: 0.1, color: Color(0xFF00ADEE)),
                                                 ),
                                                 child: Text(
                                                   snapshot.data![index].bookingStatus,

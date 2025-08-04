@@ -308,7 +308,7 @@ class _MyRechargePageState extends State<EditMarkupHoteldestination> {
                             Row(
                               children: [
                                 Radio<String>(
-                                  activeColor: Colors.blue,
+                                  activeColor: Color(0xFF00ADEE),
                                   value: "1",
                                   groupValue: apiValue,
                                   onChanged: (value) {
@@ -320,7 +320,7 @@ class _MyRechargePageState extends State<EditMarkupHoteldestination> {
                                 Text(
                                   'Active',
                                   style: TextStyle(
-                                    color: apiValue == "1" ? Colors.blue : Colors.grey,
+                                    color: apiValue == "1" ? Color(0xFF00ADEE) : Colors.grey,
                                   ),
                                 ),
                               ],
@@ -328,7 +328,7 @@ class _MyRechargePageState extends State<EditMarkupHoteldestination> {
                             Row(
                               children: [
                                 Radio<String>(
-                                  activeColor: Colors.blue,
+                                  activeColor: Color(0xFF00ADEE),
                                   value: "0",
                                   groupValue: apiValue,
                                   onChanged: (value) {
@@ -340,7 +340,7 @@ class _MyRechargePageState extends State<EditMarkupHoteldestination> {
                                 Text(
                                   'Inactive',
                                   style: TextStyle(
-                                    color: apiValue == "0" ? Colors.blue : Colors.grey,
+                                    color: apiValue == "0" ? Color(0xFF00ADEE) : Colors.grey,
                                   ),
                                 ),
                               ],

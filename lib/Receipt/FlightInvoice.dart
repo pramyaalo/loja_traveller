@@ -1043,11 +1043,11 @@ class _BookingCardGeneralDetailsState extends State<FlightInvoice> {
                                     2: IntrinsicColumnWidth(), // Value Column
                                   },
                                   children: [
-                                    _buildTableRow('Total Net Amount', m16.Currency,
+                                    _buildTableRow('Total Net Amount', m16.currency,
                                         m16.totalFare),
                                     _buildTableRow(
                                       '	Service Charge and Tax',
-                                      m16.Currency,
+                                      m16.currency,
                                       (double.tryParse(m16.serviceTaxAmount
                                           .toString()) ??
                                           0) +
@@ -1055,10 +1055,10 @@ class _BookingCardGeneralDetailsState extends State<FlightInvoice> {
                                               m16.gstAmount.toString()) ??
                                               0),
                                     ),
-                                    _buildTableRow('Total Discount', m16.Currency,
+                                    _buildTableRow('Total Discount', m16.currency,
                                         m16.discountAmount),
                                     _buildTableRow(
-                                        'Total Price', m16.Currency, m16.grandTotal,
+                                        'Total Price', m16.currency, m16.grandTotal,
                                         isBold: true),
                                   ],
                                 ),

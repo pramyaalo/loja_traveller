@@ -627,7 +627,7 @@ class _BookedItemDetailState extends State<BookedItemDetail> {
                                                           const Image(
                                                             image: AssetImage(
                                                                 'assets/images/tickiconpng.png'),
-                                                            color: Colors.blue,
+                                                            color: Color(0xFF00ADEE),
                                                             width: 16,
                                                             height: 16,
                                                           ),
@@ -641,7 +641,7 @@ class _BookedItemDetailState extends State<BookedItemDetail> {
                                                                 fontWeight:
                                                                 FontWeight.w500,
                                                                 fontSize: 15,
-                                                                color: Colors.blue),
+                                                                color: Color(0xFF00ADEE)),
                                                           ),
                                                         ],
                                                       ),

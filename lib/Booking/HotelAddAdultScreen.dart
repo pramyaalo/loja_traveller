@@ -7,17 +7,16 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../utils/commonutils.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
 import 'package:xml/xml.dart' as xml;
-import '../../utils/response_handler.dart';
-import '../../utils/shared_preferences.dart';
+
 
 import 'package:get/get.dart';
 
 import '../DatabseHelper.dart';
 import '../bookings/flight/TravellerDetailsModel.dart';
+import '../utils/shared_preferences.dart';
 import 'HoteldatabaseHelper.dart';
 
 class HotelAddAdultScreen extends StatefulWidget {
@@ -104,7 +103,7 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
 
   TextEditingController adultFname_controller = new TextEditingController();
   TextEditingController adultLname_controller = new TextEditingController();
-
+  TextEditingController adultMname_controller=new TextEditingController();
   TextEditingController adult1_Fname_controller = new TextEditingController();
   TextEditingController adult1_Lname_controller = new TextEditingController();
 
@@ -125,13 +124,28 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
 
   var selectedDate = DateTime.now().obs;
   TextEditingController ExpiryDateController = TextEditingController();
+  TextEditingController IssueDateController=new TextEditingController();
   TextEditingController dateControllerAdult1 = TextEditingController();
   TextEditingController dateControllerAdult2 = TextEditingController();
   TextEditingController dateControllerAdult3 = TextEditingController();
   TextEditingController dateControllerAdult4 = TextEditingController();
   TextEditingController dateControllerAdult5 = TextEditingController();
   TextEditingController passengerNameController = new TextEditingController();
-
+  String? selectedGender = 'Male';
+  String? selectedDocumentType = 'Passport No';
+  Future<void> _selectIssueDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null) {
+      setState(() {
+        IssueDateController.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
   TextEditingController dateControllerChildren1 = TextEditingController();
   TextEditingController dateControllerChildren2 = TextEditingController();
   TextEditingController dateControllerChildren3 = TextEditingController();
@@ -185,120 +199,83 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
     adultFname_controller = TextEditingController();
     adultLname_controller = TextEditingController();
     dateControllerAdult1 = TextEditingController();
-    Documentype_controller = TextEditingController();
-    Documentnumber_controller = TextEditingController();
-    ExpiryDateController = TextEditingController();
 
-    if (widget.adultIndex >= 0 &&
-        widget.adultIndex < widget.adultsList.length) {
+    if (widget.adultIndex >= 0 && widget.adultIndex < widget.adultsList.length) {
       var adult = widget.adultsList[widget.adultIndex];
 
-      adultFname_controller.text = adult['firstName'];
-      print('object' + adultFname_controller.text);
-      adultLname_controller.text = adult['surname'];
-      dateControllerAdult1.text = adult['dob']; // Keep DOB as is
-
-      contactMobileController.text = adult['mobileNumber'] ?? '';
-      _CountryController.text = adult['country'] ?? '';
+      adultFname_controller.text = adult['firstName'] ?? '';
+      adultLname_controller.text = adult['surname'] ?? '';
+      dateControllerAdult1.text = adult['dob'] ?? '';
       selectedTitleAdult1 = adult['title'] ?? '';
     }
   }
 
   void _saveAdult() async {
     try {
-      String title = selectedTitleAdult1.toString();
+      String title = selectedTitleAdult1?.toString() ?? '';
       String firstName = adultFname_controller.text.trim();
       String surname = adultLname_controller.text.trim();
       String dob = dateControllerAdult1.text.trim();
-      String mobilenumber = contactMobileController.text.trim();
-      String country = _CountryController.text.trim(); // Fixed casing to match the column
 
-      // Create the map to insert or update
+      // Insert only the required fields
       Map<String, dynamic> adultData = {
         'title': title,
         'firstName': firstName,
         'surname': surname,
         'dob': dob,
-        'mobileNumber': mobilenumber, // Fixed key here
-        'country': country, // Ensure this matches the column name too
       };
 
       final dbHelper = HoteldatabaseHelper.instance;
 
-      // Check if the name already exists in the list
       bool nameExists = mutableAdultsList.any((adult) {
-        return adult['firstName'] == firstName && adult['surname'] == surname &&
+        return adult['firstName'] == firstName &&
+            adult['surname'] == surname &&
             (widget.isEdit == 'Add' || (adult['id'] != mutableAdultsList[widget.adultIndex]['id']));
       });
 
       if (nameExists) {
-        // Show a snackbar to inform the user
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Name Already Exists. Please Select another Name"),
-            duration: Duration(seconds: 2), // Duration the snackbar is shown
-          ),
+          SnackBar(content: Text("Name Already Exists. Please Select another Name"), duration: Duration(seconds: 2)),
         );
-        return; // Exit the function early
+        return;
       }
 
-      // Check if we are editing an existing entry
       if (widget.isEdit == 'Edit' && widget.adultIndex >= 0 && widget.adultIndex < mutableAdultsList.length) {
-        // Retrieve the ID of the adult we are updating
         int? adultId = mutableAdultsList[widget.adultIndex]['id'];
         if (adultId != null) {
-          // Update existing adult using the correct ID
           await dbHelper.updatehotelAdults(adultId, adultData);
-          print("Updated adult data for ID: $adultId");
-
-          // Fetch updated data after the update
           Map<String, dynamic>? updatedAdult = await dbHelper.fetchhotelAdultData(adultId);
-          print("Updated adult: $updatedAdult");
 
           if (updatedAdult != null) {
             setState(() {
-              // Update the specific child in the mutable list
               mutableAdultsList[widget.adultIndex] = updatedAdult;
             });
-            // Show a success message
-            Fluttertoast.showToast(
-              msg: "Child data updated successfully",
-              toastLength: Toast.LENGTH_SHORT,
-              gravity: ToastGravity.BOTTOM,
-              backgroundColor: Colors.green,
-              textColor:  Color(0xFF152238),
-            );
-            print("Updated data: $updatedAdult");
           }
         }
       } else if (widget.isEdit == 'Add') {
-        // Handle the case for adding new children
         await dbHelper.inserthotelAdults(adultData);
-        Fluttertoast.showToast(
-          msg: "Child added successfully",
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.BOTTOM,
-          backgroundColor: Colors.green,
-          textColor:  Color(0xFF152238),
-        );
       }
 
-      // Navigate back and pass the updated list back to the previous page
-      Navigator.pop(context, mutableAdultsList); // Pass the updated list back
-    } catch (e) {
-      // Log or display the error for debugging
-      print("Error saving child data: $e");
-      // Optionally show an error message
       Fluttertoast.showToast(
-        msg: "Error saving child data: $e",
+        msg: widget.isEdit == 'Edit' ? "Adult updated successfully" : "Adult added successfully",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+
+      Navigator.pop(context, mutableAdultsList);
+    } catch (e) {
+      print("Error saving adult data: $e");
+      Fluttertoast.showToast(
+        msg: "Error: $e",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
-        textColor:  Color(0xFF152238),
+        textColor: Colors.white,
       );
     }
   }
-
 
 
   Future<void> _retrieveSavedValues() async {
@@ -312,9 +289,10 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
   }
 
   Future<List<TravellerDetailsModel>> fetchAutocompleteData(
-      String empName) async {
+      String empName) async
+  {
     final url =
-        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellers?UserId=2611&UserTypeId=8&SearchFilter=$empName&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
+        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellers?UserId=2112&UserTypeId=2&SearchFilter=$empName&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
     print('userID' + widget.userid);
     print('userTypeID' + widget.usertypeid);
     print('empName' + empName);
@@ -349,7 +327,7 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
 
   Future<void> callSecondApi(String id) async {
     final url =
-        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
+        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
     print('object' + id);
 
     final response = await http.get(Uri.parse(url));
@@ -377,39 +355,32 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
           table1Data.isNotEmpty) {
         final traveller = tableData[0];
         final passportInfo =
-            table1Data[0]; // Assuming there's only one entry in Table1
+        table1Data[0]; // Assuming there's only one entry in Table1
+
+
 
         setState(() {
-          String _firstNameController = traveller['UDFirstName'];
+          adultFname_controller.text = traveller['UDFirstName'];
           adultLname_controller.text = traveller['UDLastName'];
           dateControllerAdult1.text = traveller['UDDOB'];
-          String inputDate = dateControllerAdult1.text;
-          formattedDate = convertDate(inputDate);
-          print("formattedDate" + formattedDate);
 
-          print('finDate' + dateControllerAdult1.text.toString());
-          if (traveller['GenderId'] == 0) {
-            selectedGendarContactDetail = "Male";
-            Gendar = '0';
-          } else if (traveller['GenderId'] == 1) {
-            selectedGendarContactDetail = "Female";
-            Gendar = "1";
-          }
-          print("Gendar" + Gendar);
-          // Get data from Table1
-          Documentnumber_controller.text = passportInfo['PDPassportNo'];
+          String inputDate = dateControllerAdult1.text; // "16 April 1997 at 7"
+          String cleanedDate = inputDate.split("at").first.trim(); // "16 April 1997"
 
-          String dateOfBirth = passportInfo['PDDateofBirth'];
-          Documentype_controller.text = passportInfo['PDDocument'];
-          String issuingCountry = passportInfo['PDIssuingCountry'];
-          ExpiryDateController.text = passportInfo['PDDateofExpiry'];
-          DateTime checkinDateTime = DateTime.parse(ExpiryDateController.text);
-          String finDate = DateFormat('yyyy/MM/dd').format(checkinDateTime);
+          // Parse cleaned date
+          DateTime parsedDate = DateFormat('dd MMMM yyyy').parse(cleanedDate);
 
-          ExpiryDateController.text = finDate;
-          print('finDate' + ExpiryDateController.text.toString());
-          // Update other text controllers with relevant fields
+          // Format as needed
+          String formattedDate = DateFormat('yyyy-MM-dd').format(parsedDate);
+          print('formattedDate: $formattedDate');
+
+
+
+
+
+
         });
+
       } else {
         throw Exception('Failed to load traveller details');
       }
@@ -439,24 +410,24 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
+        backgroundColor: Color(0xFF00ADEE),
+        // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(
-                Icons.arrow_back,
-                color: Colors.white,
-                size: 27,
-              ),
+              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-
-            SizedBox(width: 1), // Set the desired width
+            SizedBox(width: 1),
             Text(
               "Add Adult",
               style: TextStyle(
-                  color: Colors.white, fontFamily: "Montserrat", fontSize: 19),
+                color: Colors.white,
+                fontFamily: "Montserrat",
+                fontSize: 19,
+              ),
             ),
           ],
         ),
@@ -466,374 +437,312 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
             width: 100,
             height: 50,
           ),
-
         ],
-        backgroundColor: Color(0xFF152238),
       ),
       resizeToAvoidBottomInset: true,
       body: isLoading
           ? Center(
-              child: CircularProgressIndicator(),
-            )
-          : Column(
+        child: CircularProgressIndicator(),
+      )
+          : Column(children: [
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
               children: [
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: Column(
+                Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
                       children: [
-                        Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Radio(
-                                  value: 'Mr',
-                                  groupValue: selectedTitleAdult1,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      selectedTitleAdult1 = value.toString();
-                                    });
-                                  },
-                                ),
-                                Text('Mr.',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Radio(
-                                  value: 'Mrs',
-                                  groupValue: selectedTitleAdult1,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      selectedTitleAdult1 = value.toString();
-                                    });
-                                  },
-                                ),
-                                Text('Mrs.',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                                Radio(
-                                  value: 'Ms',
-                                  groupValue: selectedTitleAdult1,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      selectedTitleAdult1 = value.toString();
-                                    });
-                                  },
-                                ),
-                                Text('Ms.',
-                                    style:
-                                        TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.only(top: 7),
-                              child: Container(
-                                width: 340,
-                                height: 50,
-                                child: Autocomplete<TravellerDetailsModel>(
-                                  optionsBuilder: (TextEditingValue textEditingValue) async {
-                                    // Prevent suggestions from displaying in edit mode
-                                    if (widget.isEdit == 'Edit') {
-                                      return const Iterable<TravellerDetailsModel>.empty();
-                                    }
-                                    // Show suggestions only if there is input
-                                    if (textEditingValue.text.isEmpty || textEditingValue.text.length < 1) {
-                                      return const Iterable<TravellerDetailsModel>.empty();
-                                    }
-                                    return await fetchAutocompleteData(textEditingValue.text); // Fetch autocomplete data
-                                  },
-                                  displayStringForOption: (TravellerDetailsModel option) => option.name,
-                                  onSelected: (TravellerDetailsModel? selectedOption) {
-                                    if (selectedOption != null) {
-                                      setState(() {
-                                        adultFname_controller.text = selectedOption.name;
-                                        AdultName1 = selectedOption.name;
-                                        AdultTravellerId1 = selectedOption.id.toString();
-                                        print('Selected name: ' + AdultName1);
-                                        callSecondApi(selectedOption.id.toString());
-                                      });
-                                    }
-                                  },
-                                  fieldViewBuilder: (BuildContext context,
-                                      TextEditingController textEditingController,
-                                      FocusNode focusNode,
-                                      VoidCallback onFieldSubmitted) {
-
-                                    // If in edit mode, set the initial value
-                                    if (widget.adultIndex >= 0 && widget.adultIndex < widget.adultsList.length) {
-                                      // Prepopulate the first name if it exists
-                                      textEditingController.text = widget.adultsList[widget.adultIndex]['firstName'] ?? '';
-                                    }
-
-                                    // Assign the controller for consistent use
-                                    adultFname_controller = textEditingController;
-
-                                    return TextFormField(
-                                      controller: adultFname_controller,
-                                      focusNode: focusNode,
-                                      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
-                                      onFieldSubmitted: (value) {
-                                        onFieldSubmitted();
-                                      },
-                                      readOnly: widget.isEdit == 'Edit',
-                                      decoration: InputDecoration(
-                                        label: const Text('First & Middle Name'),
-                                        hintText: 'Enter First Name',
-                                        enabledBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.grey),
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.black, width: 1.5),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                        labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-                                        errorBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.red, width: 2),
-                                          borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 20),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(right: 10, left: 10),
-                              child: Container(
-                                width: 350,
-                                height: 50,
-                                child: TextFormField(
-                                  controller: adultLname_controller,
-                                  decoration: InputDecoration(
-                                    label: const Text('SurName'),
-                                    hintText: 'SurName',
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide:
-                                          const BorderSide(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(
-                                          color: Colors.black, width: 1.5),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    labelStyle:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(
-                                          color: Colors.red, width: 2),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 20),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.only(right: 10, left: 10),
-                              child: Container(
-                                height: 50,
-                                child: TextField(
-                                  onTap: () {
-                                    _selectDateAdult1(context);
-                                  },
-                                  controller: dateControllerAdult1,
-                                  readOnly: true,
-                                  decoration: InputDecoration(
-                                    label: const Text('DOB'),
-                                    hintText: 'DOB',
-                                    prefixIcon: GestureDetector(
-                                      onTap: () {
-                                        _selectDateAdult1(context);
-                                      },
-                                      child: Image.asset(
-                                        'assets/images/calendar.png',
-                                        cacheWidth: 25,
-                                        cacheHeight: 25,
-                                      ),
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide:
-                                          const BorderSide(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(
-                                          color: Colors.black, width: 1.5),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    labelStyle:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(
-                                          color: Colors.red, width: 2),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.start,
-                              children: [
-                                Container(
-                                  margin: EdgeInsets.only(left: 10),
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 5, vertical: .1),
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Colors.grey,
-                                      width: 1.0,
-                                    ),
-                                    borderRadius: BorderRadius.circular(5.0),
-                                  ),
-                                  child: DropdownButton(
-                                    dropdownColor:  Color(0xFF152238),
-                                    underline: SizedBox(),
-                                    value: selectedCountryCode,
-                                    iconSize: 0.0,
-                                    items:
-                                        ['+91', '+1', '+44'].map((String code) {
-                                      return DropdownMenuItem<String>(
-                                        value: code,
-                                        child: Text(code),
-                                      );
-                                    }).toList(),
-                                    onChanged: (value) {
-                                      setState(() {
-                                        selectedCountryCode = value.toString();
-                                      });
-                                    },
-                                  ),
-                                ),
-                                Padding(
-                                  padding: EdgeInsets.only(right: 10, left: 10),
-                                  child: Container(
-                                    height: 50,
-                                    width: 290,
-                                    child: TextFormField(
-                                      keyboardType: TextInputType.number,
-                                      controller: contactMobileController,
-                                      decoration: InputDecoration(
-                                        label: const Text('Mobile Number'),
-                                        hintText: 'Mobile Number',
-                                        enabledBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(
-                                              color: Colors.grey),
-                                          borderRadius:
-                                              BorderRadius.circular(5),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(
-                                              color: Colors.black, width: 1.5),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        labelStyle: TextStyle(
-                                            fontWeight: FontWeight.bold),
-                                        errorBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(
-                                              color: Colors.red, width: 2),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 20),
-                            Padding(
-                              padding: EdgeInsets.only(right: 10, left: 10),
-                              child: Container(
-                                height: 50,
-                                child: TextFormField(
-                                  controller: _CountryController,
-                                  textCapitalization: TextCapitalization.words,
-                                  decoration: InputDecoration(
-                                    label: const Text('Nationality'),
-                                    hintText: 'Nationality',
-                                    enabledBorder: OutlineInputBorder(
-                                      borderSide:
-                                          const BorderSide(color: Colors.grey),
-                                      borderRadius: BorderRadius.circular(5),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(
-                                          color: Colors.black, width: 1.5),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    labelStyle:
-                                        TextStyle(fontWeight: FontWeight.bold),
-                                    errorBorder: OutlineInputBorder(
-                                      borderSide: const BorderSide(
-                                          color: Colors.red, width: 2),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 80),
-                          ],
+                        Radio(
+                          value: 'Mr',
+                          groupValue: selectedTitleAdult1,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedTitleAdult1 = value.toString();
+                            });
+                          },
                         ),
+                        Text('Mr.',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Radio(
+                          value: 'Mrs',
+                          groupValue: selectedTitleAdult1,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedTitleAdult1 = value.toString();
+                            });
+                          },
+                        ),
+                        Text('Mrs.',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        Radio(
+                          value: 'Ms',
+                          groupValue: selectedTitleAdult1,
+                          onChanged: (value) {
+                            setState(() {
+                              selectedTitleAdult1 = value.toString();
+                            });
+                          },
+                        ),
+                        Text('Ms.',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
                       ],
                     ),
-                  ),
-                ),
-                Positioned(
-                  child: Container(
-                    decoration: BoxDecoration(
+                    Padding(
+                      padding: const EdgeInsets.only(top: 7,right: 10,left: 10),
+                      child: Container(
+                        width: double.infinity,
+                        height: 50,
+                        child: Autocomplete<TravellerDetailsModel>(
+                          optionsBuilder:
+                              (TextEditingValue textEditingValue) async {
+                            // Prevent suggestions from displaying in edit mode
+                            if (widget.isEdit == 'Edit') {
+                              return const Iterable<
+                                  TravellerDetailsModel>.empty();
+                            }
+                            // Show suggestions only if there is input
+                            if (textEditingValue.text.isEmpty ||
+                                textEditingValue.text.length < 1) {
+                              return const Iterable<
+                                  TravellerDetailsModel>.empty();
+                            }
+                            return await fetchAutocompleteData(textEditingValue
+                                .text); // Fetch autocomplete data
+                          },
+                          displayStringForOption:
+                              (TravellerDetailsModel option) => option.name,
+                          onSelected: (TravellerDetailsModel? selectedOption) {
+                            if (selectedOption != null) {
+                              setState(() {
+                                adultFname_controller.text =
+                                    selectedOption.name;
+                                AdultName1 = selectedOption.name;
+                                AdultTravellerId1 = selectedOption.id.toString();
 
-                      border: Border(
-                        top: BorderSide(
-                          color: Colors.grey.shade200, // Light grey color for the starting horizontal line
-                          width: 2, // Thickness of the line
+                                print('Selected name: ' + AdultName1);
+                                callSecondApi(selectedOption.id.toString());
+                              });
+                            }
+                          },
+                          fieldViewBuilder: (BuildContext context,
+                              TextEditingController textEditingController,
+                              FocusNode focusNode,
+                              VoidCallback onFieldSubmitted) {
+                            // If in edit mode, set the initial value
+                            if (widget.adultIndex >= 0 &&
+                                widget.adultIndex < widget.adultsList.length) {
+                              // Prepopulate the first name if it exists
+                              textEditingController.text =
+                                  widget.adultsList[widget.adultIndex]
+                                  ['firstName'] ??
+                                      '';
+                            }
+
+                            // Assign the controller for consistent use
+                            adultFname_controller = textEditingController;
+
+                            return TextFormField(
+                              controller: adultFname_controller,
+                              focusNode: focusNode,
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.w500, fontSize: 14),
+                              onFieldSubmitted: (value) {
+                                onFieldSubmitted();
+                              },
+                              readOnly: widget.isEdit == 'Edit',
+                              decoration: InputDecoration(
+                                label: const Text('First Name'),
+                                hintText: 'Enter First Name',
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide:
+                                  const BorderSide(color: Colors.grey),
+                                  borderRadius: BorderRadius.circular(5),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
+                                      color: Colors.black, width: 1.5),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                labelStyle: const TextStyle(
+                                    fontWeight: FontWeight.bold),
+                                errorBorder: OutlineInputBorder(
+                                  borderSide: const BorderSide(
+                                      color: Colors.red, width: 2),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: SizedBox(
-                              width: double.infinity, // Makes the button take full width
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor:  Color(0xFF152238), // Button background color
-                                  fixedSize: const Size.fromHeight(47), // Set button height to 45
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10), // Rounded corners
-                                  ),
-                                ),
-                                onPressed: () {
-                                  _saveAdult(); // Action when button is pressed
-                                },
-                                child: const Text(
-                                  'Save',
-                                  style: TextStyle(fontSize: 18), // Button text with font size
-                                ),
+                    SizedBox(
+                      height: 20,
+                    ),
+
+
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10, left: 10),
+                      child: Container(
+                        width:   double.infinity,
+                        height: 50,                              child: TextFormField(
+                        style: TextStyle(fontWeight: FontWeight.w500),
+                        controller: adultLname_controller,
+                        readOnly: widget.isEdit == 'Edit',
+                        decoration: InputDecoration(
+                          label: const Text('Last Name'),
+                          hintText: 'Last Name',
+                          enabledBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: const BorderSide(
+                                color: Colors.black, width: 1.5),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          labelStyle: TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                          errorBorder: OutlineInputBorder(
+                            borderSide:
+                            const BorderSide(color: Colors.red, width: 2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10, left: 10),
+                      child: Container(
+                        height: 50,
+                        child: TextField(
+                          onTap: () {
+                            _selectDateAdult1(context);
+                          },
+                          controller: dateControllerAdult1,
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                          readOnly: true,
+                          decoration: InputDecoration(
+                            label: const Text('DOB'),
+                            hintText: 'DOB',
+                            prefixIcon: GestureDetector(
+                              onTap: () {
+                                _selectDateAdult1(context);
+                              },
+                              child: Image.asset(
+                                'assets/images/calendar.png',
+                                cacheWidth: 25,
+                                cacheHeight: 25,
                               ),
                             ),
+                            enabledBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderSide: const BorderSide(
+                                  color: Colors.black, width: 1.5),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            labelStyle: TextStyle(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            errorBorder: OutlineInputBorder(
+                              borderSide:
+                              const BorderSide(color: Colors.red, width: 2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
-                        ],
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      height: 20,
+                    ),
+
+
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        Positioned(
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: Colors.grey.shade200,
+                  // Light grey color for the starting horizontal line
+                  width: 2, // Thickness of the line
+                ),
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 10, vertical: 10),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      width: double.infinity,
+                      // Makes the button take full width
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF00ADEE),
+                          // Button background color
+                          fixedSize: const Size.fromHeight(47),
+                          // Set button height to 45
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(
+                                10), // Rounded corners
+                          ),
+                        ),
+                        onPressed: () {
+                          _saveAdult(); // Action when button is pressed
+                        },
+                        child: const Text(
+                          'Save',
+                          style: TextStyle(
+                              fontSize: 18), // Button text with font size
+                        ),
                       ),
                     ),
                   ),
-                ),
-
-
-
-
-
-              ],
+                ],
+              ),
             ),
+          ),
+        ),
+      ]),
     );
   }
+  InputDecoration inputDecoration(String label, String hint) {
+    return InputDecoration(
+      label: Text(label),
+      hintText: hint,
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.grey),
+        borderRadius: BorderRadius.circular(5),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.black, width: 1.5),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      labelStyle: TextStyle(fontWeight: FontWeight.bold),
+      errorBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.red, width: 2),
+        borderRadius: BorderRadius.circular(10),
+      ),
+    );
+  }
+
 }

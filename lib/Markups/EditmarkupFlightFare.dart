@@ -233,7 +233,7 @@ class _MyRechargePageState extends State<EditmarkupFlightFare> {
         ),
         actions: [
           Image.asset(
-            'assets/images/logo.png',
+            'assets/images/lojologo.png',
             width: 150,
             height: 50,
           ),
@@ -356,7 +356,7 @@ class _MyRechargePageState extends State<EditmarkupFlightFare> {
                       Row(
                         children: [
                           Radio<String>(
-                            activeColor: Colors.blue,
+                            activeColor: Color(0xFF00ADEE),
                             value: "1",
                             groupValue: apiValue,
                             onChanged: (value) {
@@ -368,7 +368,7 @@ class _MyRechargePageState extends State<EditmarkupFlightFare> {
                           Text(
                             'Active',
                             style: TextStyle(
-                              color: apiValue == "1" ? Colors.blue : Colors.grey,
+                              color: apiValue == "1" ? Color(0xFF00ADEE) : Colors.grey,
                             ),
                           ),
                         ],
@@ -376,7 +376,7 @@ class _MyRechargePageState extends State<EditmarkupFlightFare> {
                       Row(
                         children: [
                           Radio<String>(
-                            activeColor: Colors.blue,
+                            activeColor: Color(0xFF00ADEE),
                             value: "0",
                             groupValue: apiValue,
                             onChanged: (value) {
@@ -388,7 +388,7 @@ class _MyRechargePageState extends State<EditmarkupFlightFare> {
                           Text(
                             'Inactive',
                             style: TextStyle(
-                              color: apiValue == "0" ? Colors.blue : Colors.grey,
+                              color: apiValue == "0" ? Color(0xFF00ADEE) : Colors.grey,
                             ),
                           ),
                         ],
@@ -490,7 +490,7 @@ class _MyRechargePageState extends State<EditmarkupFlightFare> {
                         });
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: Color(0xFF00ADEE),
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),

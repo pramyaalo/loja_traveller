@@ -121,14 +121,14 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-           width: 100,
-              height: 50,
+            width: 150,
+            height: 50,
           ),
           SizedBox(
             width: 10,
           )
         ],
-        backgroundColor:Color(0xFF00ADEE),
+        backgroundColor: Colors.white,
       ),
       body: isLoading
           ? Center(
@@ -445,9 +445,9 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                               ),
                             ),
                             onTap: () {
-                             /* navigate(TwoWayBooking(stopCount:'',refundable:'',TPToken:'',arrivecityname:'',flightDetailsList:resultList[index],TotalPrice:'',departCity:'',adultCount: '',stopCountForward:'',stopCountReturn:'',childrenCount: '',departdate: '',infantCount: '',
+                              navigate(TwoWayBooking(refundable:'',TPToken:'',arrivecityname:'',flightDetailsList:resultList[index],TotalPrice:'',departCity:'',adultCount: '',stopCountForward:'',stopCountReturn:'',childrenCount: '',departdate: '',infantCount: '',
                                 flightDetails: resultList[index],TokenValue: '',
-                              ));*/
+                              ));
                             },
                           );
                         }))

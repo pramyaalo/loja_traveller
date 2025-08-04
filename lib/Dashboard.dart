@@ -1706,9 +1706,9 @@ class _CorDashboardState extends State<Dashboard> {
                                                                 sections: [
                                                                   PieChartSectionData(
                                                                     color:
-                                                                    Colors.blue,
+                                                                    Color(0xFF00ADEE),
                                                                     value: 70,
-                                                                    title: '40%',
+                                                                    title: '',
                                                                     radius: 30,
                                                                     titleStyle:
                                                                     TextStyle(
@@ -4629,7 +4629,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                                   fontWeight: FontWeight.bold),
                                             ),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: Color(0xFF00ADEE),
+                                              backgroundColor:  Color(0xFF00ADEE),
 
                                               // Background color of the button
                                               shape: RoundedRectangleBorder(

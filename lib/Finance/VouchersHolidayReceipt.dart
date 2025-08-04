@@ -260,17 +260,17 @@ class _BookingCardGeneralDetailsState extends State<VouchersHolidayReceipt> {
                                               const TextSpan(text: 'Dear '),
                                               TextSpan(
                                                 text: m3!.passenger, // e.g., 'AdhitiSSD'
-                                                style: const TextStyle(color: Colors.blue,),
+                                                style: const TextStyle(color: Color(0xFF00ADEE),),
                                               ),
                                               const TextSpan(text: ',\n\nThank you for booking with Travel Demo. Your booking has been accepted. On Approval/Clearance of your payment, we will send you another email with your e-ticket. Reference number: '),
                                               TextSpan(
                                                 text: m3!.pnr, // e.g., '355D17'
-                                                style: const TextStyle(color: Colors.blue),
+                                                style: const TextStyle(color: Color(0xFF00ADEE)),
                                               ),
                                               const TextSpan(text: '.\n\nFor any concerns / queries pertaining to this booking, We request you to quote this reference number in all your future communications with us.\n\nBooking Status: '),
                                               TextSpan(
                                                 text: m0!.bookingStatus, // e.g., '355D17'
-                                                style: const TextStyle(color: Colors.blue),
+                                                style: const TextStyle(color: Color(0xFF00ADEE)),
                                               ),
                                             ],
                                           ),

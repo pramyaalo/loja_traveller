@@ -190,7 +190,7 @@ class _FilterPageState extends State<HotelFilterPage> {
             ),
 
           ],
-          backgroundColor: Color(0xFF152238),
+          backgroundColor: Color(0xFF00ADEE),
         ),
       body: Column(
         children: [

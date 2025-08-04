@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:intl/intl.dart';
 import 'package:xml/xml.dart' as xml;
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:carousel_slider/carousel_slider.dart';
@@ -9,7 +10,7 @@ import 'dart:async';
 import 'package:http/http.dart' as http;
 import '../../Booking/HotelChildrendatabasehelper.dart';
 import '../../Booking/HoteldatabaseHelper.dart';
- import '../../Models/hotel_destination_models.dart';
+import '../../models/hotel_destination_models.dart';
 import '../../utils/response_handler.dart';
 import '../AutofilHotelModel.dart';
 import '../flight/AddGuestes_Hotel.dart';
@@ -23,10 +24,10 @@ class HotelsScreen extends StatefulWidget {
 
 class _HotelsScreenState extends State<HotelsScreen> {
   DateTime? checkInDate;
-
+  int nights=1;
   Future<http.Response>? __futureAirlinesDDL;
   DateTime? checkOutDate;
-  String Cityid = '', countrycode = '';
+  String Cityid = '', countrycode = '',CityName='';
   int AdultCount = 1, childrenCount = 0;
   int AdultCount1 = 1, childrenCount1 = 0;
   int AdultCount2 = 1, childrenCount2 = 0;
@@ -37,7 +38,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
   String fromTextHolder = "";
   List<AutofilHotelModel> AutofilHotelModelList = [];
   static String _displayOptionForAirportDDL(
-          AutofilHotelModel AutofilHotelModel) =>
+      AutofilHotelModel AutofilHotelModel) =>
       AutofilHotelModel.className;
   int TotChildrenCount = 0;
   late AutofilHotelModel selectedPassenger;
@@ -47,22 +48,21 @@ class _HotelsScreenState extends State<HotelsScreen> {
         title: "Fairview Nairobi",
         subtitle: "4 great deals",
         image:
-            "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0d/c3/8f/9c/fairview-hotel.jpg?w=1200&h=-1&s=1"),
+        "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0d/c3/8f/9c/fairview-hotel.jpg?w=1200&h=-1&s=1"),
     HotelDestination(
         title: "Diani Reef Beach Resort",
         subtitle: "10 great deals",
         image:
-            "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/95/4a/ce/diani-reef-beach-resort.jpg?w=1200&h=-1&s=1"),
+        "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/95/4a/ce/diani-reef-beach-resort.jpg?w=1200&h=-1&s=1"),
     HotelDestination(
         title: "Southern Palms Beach Resort",
         subtitle: "7 great deals",
         image:
-            "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/26/b8/4a/4a/southern-palms-beach.jpg?w=1200&h=-1&s=1"),
+        "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/26/b8/4a/4a/southern-palms-beach.jpg?w=1200&h=-1&s=1"),
   ];
   @override
   void initState() {
     orginController.text = 'DUBAI';
-    //searchBookingTravellers(orginController.text.toString());
 
     super.initState();
   }
@@ -72,8 +72,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
         context, MaterialPageRoute(builder: (BuildContext context) => screen));
   }
 
-  static String _displayOptionForPassengerDDl(AutofilHotelModel passengerDDL) =>
-      passengerDDL.latinFullName;
+
   List<AutofilHotelModel> passengers = [];
   bool _isPassengersLoading = true;
   DateTime selectedDate = DateTime.now();
@@ -85,28 +84,40 @@ class _HotelsScreenState extends State<HotelsScreen> {
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(2015, 8),
-      lastDate: DateTime(2101), builder: (BuildContext context, Widget? child) {
-      return Theme(data: ThemeData.light().copyWith(
+      lastDate: DateTime(2101),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: ThemeData.light().copyWith(
+            colorScheme: const ColorScheme.light(primary: Color(0xFF00ADEE)),
+            datePickerTheme: const DatePickerThemeData(
+              backgroundColor: Colors.white,
+              dividerColor: Color(0xFF00ADEE),
+              headerBackgroundColor: Color(0xFF00ADEE),
+              headerForegroundColor: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
 
-        colorScheme: const ColorScheme.light(primary: Color(0xFF00ADEE)),
-        datePickerTheme: const DatePickerThemeData(
-          backgroundColor:Color(0xFF00ADEE),
-          dividerColor: Color(0xFF00ADEE),
-          headerBackgroundColor:Color(0xFF00ADEE),
-          headerForegroundColor: Colors.white, // Custom primary color
-        ),), child: child!,
-
-
-      );
-    },);
     if (picked != null && picked != selectedDate) {
       setState(() {
         if (type == 1) {
           selectedDate = picked;
-          print(selectedDate);
+          print('Check-in: $selectedDate');
         } else {
           selectedReturnDate = picked;
-          print(selectedReturnDate);
+          print('Check-out: $selectedReturnDate');
+        }
+
+        // ✅ Calculate nights difference whenever date changes
+        if (selectedDate != null && selectedReturnDate != null) {
+          nights = selectedReturnDate.difference(selectedDate).inDays;
+          if (nights < 1) {
+            nights = 1; // Minimum 1 night
+          }
+          print('Nights: $nights');
         }
       });
     }
@@ -115,9 +126,10 @@ class _HotelsScreenState extends State<HotelsScreen> {
 
 
 
+
   Future<void> _deleteAllRecordsAdults() async {
 
-    await HoteldatabaseHelper.instance.deleteAllhotelRecords('hoteladults');
+    await HoteldatabaseHelper.instance.deleteAllRecords();
 
   }
   Future<void> _deleteAllRecords() async {
@@ -149,23 +161,25 @@ class _HotelsScreenState extends State<HotelsScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Hotel Booking",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.white, fontFamily: "Montserrat",
+                  fontSize: 18),
             ),
           ],
         ),
@@ -177,6 +191,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
           ),
 
         ],
+        backgroundColor:Color(0xFF00ADEE),
       ),
       body: Container(
         child: Column(
@@ -212,9 +227,9 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                           right: 10, left: 10, top: 10),
                                       child: Column(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.start,
+                                        MainAxisAlignment.start,
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                        CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             "City/Area/Landmark/Hotel",
@@ -225,80 +240,61 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                 color: Colors.black54),
                                           ),
                                           Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                             children: [
-                                              SizedBox(
-                                                width: 280,
-                                                child: Autocomplete<
-                                                    AutofilHotelModel>(
-                                                  optionsBuilder: (TextEditingValue
-                                                      textEditingValue) async {
-                                                    if (textEditingValue
-                                                        .text.isEmpty) {
-                                                      return const Iterable<
-                                                          AutofilHotelModel>.empty();
+                                              Expanded( // ✅ Makes the Autocomplete take available space dynamically
+                                                child: Autocomplete<AutofilHotelModel>(
+                                                  optionsBuilder: (TextEditingValue textEditingValue) async {
+                                                    if (textEditingValue.text.isEmpty) {
+                                                      return const Iterable<AutofilHotelModel>.empty();
                                                     }
-                                                    return await fetchAutocompleteData(
-                                                        textEditingValue.text);
+                                                    return await fetchAutocompleteData(textEditingValue.text);
                                                   },
-                                                  displayStringForOption:
-                                                      (AutofilHotelModel
-                                                              option) =>
-                                                          '${option.latinFullName}, ${option.countryCode}, ${option.regionId}',
-                                                  onSelected:
-                                                      (AutofilHotelModel?
-                                                          selectedOption) {
-                                                    if (selectedOption !=
-                                                        null) {
+                                                  displayStringForOption: (AutofilHotelModel option) =>
+                                                  '${option.latinFullName}, ${option.countryCode}, ${option.regionId}',
+                                                  onSelected: (AutofilHotelModel? selectedOption) {
+                                                    if (selectedOption != null) {
                                                       print(
-                                                          'Selected: ${selectedOption.latinFullName} (${selectedOption.regionId})');
+                                                          'Selected: ${selectedOption.latinFullName} (${selectedOption.className})');
                                                       setState(() {
-                                                        Cityid = selectedOption
-                                                            .regionId;
-                                                        countrycode =
-                                                            selectedOption
-                                                                .countryCode;
+                                                        Cityid = selectedOption.regionId;
+
+                                                        /// ✅ Split safely (avoid error if no comma present)
+                                                        String fullName = selectedOption.latinFullName;
+                                                        CityName = fullName.contains(',')
+                                                            ? fullName.split(',')[0].trim()
+                                                            : fullName;
+
+                                                        countrycode = selectedOption.countryCode;
+
+                                                        print("City: $CityName | Country: $countrycode | ID: $Cityid");
                                                       });
-                                                      // Do something with the selected option
                                                     }
                                                   },
-                                                  fieldViewBuilder: (context,
-                                                      controller,
-                                                      focusNode,
-                                                      onFieldSubmitted) {
-                                                    return Container(
-                                                      height: 38,
-                                                      width: 150,
-                                                      child: TextFormField(
-                                                        controller: controller,
-                                                        focusNode: focusNode,
-                                                        // Adjust the signature of onFieldSubmitted to accept a String parameter
-                                                        onFieldSubmitted:
-                                                            (String value) {
-                                                          // Your logic here
-                                                        },
-                                                        maxLines: 2,
-                                                        style: TextStyle(
-                                                          color: Colors.black,
-                                                          fontSize: 15,
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                        ),
-                                                        decoration:
-                                                            InputDecoration(
-                                                          isDense: true,
-                                                          contentPadding:
-                                                              EdgeInsets.only(
-                                                                  top: 7),
-                                                        ),
+                                                  fieldViewBuilder:
+                                                      (context, controller, focusNode, onFieldSubmitted) {
+                                                    return TextFormField(
+                                                      controller: controller,
+                                                      focusNode: focusNode,
+                                                      onFieldSubmitted: (String value) {},
+                                                      maxLines: 1,
+                                                      style: TextStyle(
+                                                        color: Colors.black,
+                                                        fontSize: 15,
+                                                        fontWeight: FontWeight.w500,
+                                                      ),
+                                                      decoration: InputDecoration(
+                                                        isDense: true,
+                                                        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+
+                                                        hintText: 'Enter City',
                                                       ),
                                                     );
                                                   },
                                                 ),
                                               ),
                                             ],
-                                          )
+                                          ),
                                         ],
                                       ),
                                     ),
@@ -306,13 +302,13 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                       margin: const EdgeInsets.all(10),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                         children: [
                                           Column(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.start,
+                                            MainAxisAlignment.start,
                                             crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 "CheckIn",
@@ -326,56 +322,61 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                               SizedBox(
                                                 height: 5,
                                               ),
+
                                               GestureDetector(
                                                 onTap: () {
-                                                  print('selecteddate' +
-                                                      selecteddate);
-
+                                                  print('selecteddate: $selecteddate');
                                                   _selectDate(context, 1);
                                                 },
-                                                child: Text(
-                                                  checkInDate != ''
-                                                      ? "${selectedDate.toLocal()}"
-                                                          .split(' ')[0]
-                                                      : "${checkInDate}",
-                                                  style: TextStyle(
-                                                    fontFamily: "Montserrat",
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      checkInDate != ''
+                                                          ? "${selectedDate.toLocal()}".split(' ')[0]
+                                                          : "${checkInDate}",
+                                                      style: TextStyle(
+                                                        fontFamily: "Montserrat",
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 5),
+                                                    Text(
+                                                      checkInDate != ''
+                                                          ? DateFormat('EEEE').format(selectedDate) // ✅ Get day name
+                                                          : '',
+                                                      style: TextStyle(
+                                                        fontFamily: "Montserrat",
+                                                        fontSize: 13,
+                                                        fontWeight: FontWeight.w500,
+                                                        color: Colors.black54,
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                              SizedBox(
-                                                height: 5,
-                                              ),
-                                              Text(
-                                                "Saturday",
-                                                style: TextStyle(
-                                                  fontFamily: "Montserrat",
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.black54,
-                                                ),
-                                              ),
+
                                             ],
                                           ),
                                           Column(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.center,
+                                            MainAxisAlignment.center,
                                             crossAxisAlignment:
-                                                CrossAxisAlignment.center,
+                                            CrossAxisAlignment.center,
                                             children: [
                                               SizedBox(
                                                 height: 5,
                                               ),
                                               Text(
-                                                "1",
+                                                nights.toString(),
                                                 style: TextStyle(
-                                                    fontFamily: "Montserrat",
-                                                    fontSize: 14,
-                                                    fontWeight:
-                                                        FontWeight.w500),
+                                                  fontFamily: "Montserrat",
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
+
                                               SizedBox(
                                                 height: 5,
                                               ),
@@ -391,9 +392,9 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                           ),
                                           Column(
                                             mainAxisAlignment:
-                                                MainAxisAlignment.start,
+                                            MainAxisAlignment.start,
                                             crossAxisAlignment:
-                                                CrossAxisAlignment.end,
+                                            CrossAxisAlignment.end,
                                             children: [
                                               Text(
                                                 "CheckOut",
@@ -410,27 +411,34 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                 onTap: () {
                                                   _selectDate(context, 2);
                                                 },
-                                                child: Text(
-                                                  "${selectedReturnDate.toLocal()}"
-                                                      .split(' ')[0],
-                                                  style: TextStyle(
-                                                    fontFamily: "Montserrat",
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.bold,
-                                                  ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                                  children: [
+                                                    Text(
+                                                      DateFormat('dd-MM-yyyy').format(selectedReturnDate), // ✅ Proper date format
+                                                      style: TextStyle(
+                                                        fontFamily: "Montserrat",
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    SizedBox(height: 5),
+                                                    Center(
+                                                      child: Text(
+                                                        DateFormat('EEEE').format(selectedReturnDate), // ✅ Dynamic day name
+                                                        style: TextStyle(
+                                                          fontFamily: "Montserrat",
+                                                          fontSize: 13,
+                                                          fontWeight: FontWeight.w500,
+                                                          color: Colors.black54,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ],
                                                 ),
                                               ),
-                                              SizedBox(
-                                                height: 5,
-                                              ),
-                                              Text(
-                                                "Sunday",
-                                                style: TextStyle(
-                                                    fontFamily: "Montserrat",
-                                                    fontSize: 13,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.black54),
-                                              ),
+
+
                                             ],
                                           )
                                         ],
@@ -453,7 +461,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                           left: 10, right: 10, top: 0),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             'Rooms/Guests',
@@ -472,61 +480,61 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                           left: 10, right: 10, top: 5),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                         children: [
                                           GestureDetector(
                                             onTap: () async {
                                               print('AdultCount' +
                                                   AdultCount.toString());
                                               final selectedDates =
-                                                  await Navigator.push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                          builder: (BuildContext
-                                                                  context) =>
-                                                              AddGuestes_Hotel(
-                                                                checkInDate:
-                                                                    selectedDate,
-                                                                checkOutDate:
-                                                                    selectedReturnDate,
-                                                                roomcount:
-                                                                    RoomType,
-                                                                adultsCount:
-                                                                    AdultCount,
-                                                                childrenCount:
-                                                                    childrenCount,
-                                                                adultsCount1:
-                                                                    AdultCount1,
-                                                                childrenCount1:
-                                                                    childrenCount1,
-                                                                adultsCount2:
-                                                                    AdultCount2,
-                                                                childrenCount2:
-                                                                    childrenCount2,
-                                                                adultsCount3:
-                                                                    AdultCount3,
-                                                                childrenCount3:
-                                                                    childrenCount3,
-                                                              )));
+                                              await Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                      builder: (BuildContext
+                                                      context) =>
+                                                          AddGuestes_Hotel(
+                                                            checkInDate:
+                                                            selectedDate,
+                                                            checkOutDate:
+                                                            selectedReturnDate,
+                                                            roomcount:
+                                                            RoomType,
+                                                            adultsCount:
+                                                            AdultCount,
+                                                            childrenCount:
+                                                            childrenCount,
+                                                            adultsCount1:
+                                                            AdultCount1,
+                                                            childrenCount1:
+                                                            childrenCount1,
+                                                            adultsCount2:
+                                                            AdultCount2,
+                                                            childrenCount2:
+                                                            childrenCount2,
+                                                            adultsCount3:
+                                                            AdultCount3,
+                                                            childrenCount3:
+                                                            childrenCount3,
+                                                          )));
                                               if (selectedDates != null) {
                                                 setState(() {
                                                   checkInDate = selectedDates[
-                                                      'checkInDate'];
+                                                  'checkInDate'];
                                                   checkOutDate = selectedDates[
-                                                      'checkOutDate'];
+                                                  'checkOutDate'];
                                                   print('checkInDate' +
                                                       checkInDate!
                                                           .toIso8601String());
                                                   RoomType = selectedDates[
-                                                      'roomcount'];
+                                                  'roomcount'];
                                                   print('RoomTydffpe' +
                                                       RoomType!.toString());
                                                   if (RoomType == '1') {
                                                     AdultCount = selectedDates[
-                                                        'adultsCount'];
+                                                    'adultsCount'];
                                                     childrenCount =
-                                                        selectedDates[
-                                                            'childrenCount'];
+                                                    selectedDates[
+                                                    'childrenCount'];
                                                     TotAdultCount = AdultCount;
                                                     TotChildrenCount =
                                                         childrenCount;
@@ -539,15 +547,15 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                     print('object1' +
                                                         AdultCount1.toString());
                                                     AdultCount = selectedDates[
-                                                        'adultsCount'];
+                                                    'adultsCount'];
                                                     childrenCount =
-                                                        selectedDates[
-                                                            'childrenCount'];
+                                                    selectedDates[
+                                                    'childrenCount'];
                                                     AdultCount1 = selectedDates[
-                                                        'adultsCount1'];
+                                                    'adultsCount1'];
                                                     childrenCount1 =
-                                                        selectedDates[
-                                                            'childrenCount1'];
+                                                    selectedDates[
+                                                    'childrenCount1'];
 
                                                     TotAdultCount = AdultCount +
                                                         AdultCount1;
@@ -558,20 +566,20 @@ class _HotelsScreenState extends State<HotelsScreen> {
 
                                                   if (RoomType == '3') {
                                                     AdultCount = selectedDates[
-                                                        'adultsCount'];
+                                                    'adultsCount'];
                                                     childrenCount =
-                                                        selectedDates[
-                                                            'childrenCount'];
+                                                    selectedDates[
+                                                    'childrenCount'];
                                                     AdultCount1 = selectedDates[
-                                                        'adultsCount1'];
+                                                    'adultsCount1'];
                                                     childrenCount1 =
-                                                        selectedDates[
-                                                            'childrenCount1'];
+                                                    selectedDates[
+                                                    'childrenCount1'];
                                                     AdultCount2 = selectedDates[
-                                                        'adultsCount2'];
+                                                    'adultsCount2'];
                                                     childrenCount2 =
-                                                        selectedDates[
-                                                            'childrenCount2'];
+                                                    selectedDates[
+                                                    'childrenCount2'];
 
                                                     TotAdultCount = AdultCount +
                                                         AdultCount1 +
@@ -582,26 +590,26 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                             childrenCount2;
                                                   }
                                                   AdultCount = selectedDates[
-                                                      'adultsCount'];
+                                                  'adultsCount'];
                                                   print('AdultCoudfnt' +
                                                       AdultCount.toString());
                                                   childrenCount = selectedDates[
-                                                      'childrenCount'];
+                                                  'childrenCount'];
                                                   AdultCount1 = selectedDates[
-                                                      'adultsCount1'];
+                                                  'adultsCount1'];
                                                   childrenCount1 =
-                                                      selectedDates[
-                                                          'childrenCount1'];
+                                                  selectedDates[
+                                                  'childrenCount1'];
                                                   AdultCount2 = selectedDates[
-                                                      'adultsCount2'];
+                                                  'adultsCount2'];
                                                   childrenCount2 =
-                                                      selectedDates[
-                                                          'childrenCount2'];
+                                                  selectedDates[
+                                                  'childrenCount2'];
                                                   AdultCount3 = selectedDates[
-                                                      'adultsCount3'];
+                                                  'adultsCount3'];
                                                   childrenCount3 =
-                                                      selectedDates[
-                                                          'childrenCount3'];
+                                                  selectedDates[
+                                                  'childrenCount3'];
                                                   /* if (RoomType == '4') {
                                                     AdultCount = selectedDates[
                                                         'adultCount'];
@@ -666,7 +674,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                           left: 10, right: 10, top: 0),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
                                             TotAdultCount.toString() +
@@ -693,7 +701,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                       width: double.infinity,
                                       child: Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.center,
+                                        CrossAxisAlignment.center,
                                         children: [
                                           Container(
                                             width: 300,
@@ -706,35 +714,40 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                 print(
                                                     'adfjhiufhiu$selectedDate$selectedReturnDate$RoomType$AdultCount$childrenCount$AdultCount1$childrenCount1$AdultCount2$childrenCount2$AdultCount3$childrenCount3');
                                                 navigate(HotelDetail(
-                                                  checkinDate: selectedDate,
-                                                  checkoutDate:
-                                                      selectedReturnDate,
-                                                  RoomCount: RoomType,
-                                                  AdultCountRoom1: AdultCount,
-                                                  ChildrenCountRoom1:
-                                                      childrenCount,
-                                                  AdultCountRoom2: AdultCount1,
-                                                  ChildrenCountRoom2:
-                                                      childrenCount1,
-                                                  AdultCountRoom3: AdultCount2,
-                                                  ChildrenCountRoom3:
-                                                      childrenCount2,
-                                                  AdultCountRoom4: AdultCount3,
-                                                  ChildrenCountRoom4:
-                                                      childrenCount3,
-                                                  cityid: Cityid,
-                                                  countrycode: countrycode,
+                                                    regionID:Cityid,
+                                                    checkinDate: selectedDate,
+                                                    checkoutDate:
+                                                    selectedReturnDate,
+                                                    RoomCount: RoomType,
+                                                    AdultCountRoom1: AdultCount,
+                                                    ChildrenCountRoom1:
+                                                    childrenCount,
+                                                    AdultCountRoom2: AdultCount1,
+                                                    ChildrenCountRoom2:
+                                                    childrenCount1,
+                                                    AdultCountRoom3: AdultCount2,
+                                                    ChildrenCountRoom3:
+                                                    childrenCount2,
+                                                    AdultCountRoom4: AdultCount3,
+                                                    ChildrenCountRoom4:
+                                                    childrenCount3,
+                                                    cityid: Cityid,
+                                                    Cityname:CityName,
+                                                    countrycode: countrycode,
+                                                    TotalAdultCount:TotAdultCount,
+                                                    TotalChildrenCOunt:TotChildrenCount,
+                                                    NoOfnights:nights.toString()
                                                 ));
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
-                                                    Color(0xFF00ADEE),
+                                                Color(0xFF00ADEE),
 
                                                 // Background color of the button
                                                 shape: RoundedRectangleBorder(
                                                   borderRadius:
-                                                      BorderRadius.circular(
-                                                          20), // Circular radius of 20
+                                                  BorderRadius.circular(
+                                                      20), // Circular radius of 20
                                                 ),
                                               ),
                                               child: const Text(
@@ -787,9 +800,9 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                               height: 40,
                                               width: 40,
                                               child:
-                                                  CircularProgressIndicator())),
+                                              CircularProgressIndicator())),
                                       errorWidget: (context, url, error) =>
-                                          const Icon(Icons.error),
+                                      const Icon(Icons.error),
                                       fit: BoxFit.fill,
                                     ),
                                   ),
@@ -800,11 +813,11 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                       padding: const EdgeInsets.all(5.0),
                                       child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
+                                        MainAxisAlignment.spaceBetween,
                                         children: [
                                           Column(
                                             crossAxisAlignment:
-                                                CrossAxisAlignment.start,
+                                            CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 hotelDestination[index].title,
@@ -813,7 +826,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                     fontFamily: "Montserrat",
                                                     fontSize: 14,
                                                     fontWeight: FontWeight.bold,
-                                                    color: Colors.white),
+                                                    color: Color(0xFF00ADEE)),
                                               ),
                                               const SizedBox(
                                                 height: 5,
@@ -826,10 +839,10 @@ class _HotelsScreenState extends State<HotelsScreen> {
                                                   maxLines: 1,
                                                   style: const TextStyle(
                                                       overflow:
-                                                          TextOverflow.ellipsis,
+                                                      TextOverflow.ellipsis,
                                                       fontFamily: "Montserrat",
                                                       fontSize: 13,
-                                                      color: Colors.white),
+                                                      color: Color(0xFF00ADEE)),
                                                 ),
                                               ),
                                             ],
@@ -863,11 +876,11 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         child: CarouselSlider(
                           items: [
                             Image.asset(
-                              "assets/images/hotelllllei.jpg",
-                              fit: BoxFit.fitWidth,
+                              "assets/images/kenyahotel.jpg",
+                              fit: BoxFit.cover,
                             ),
                             Image.asset(
-                              "assets/images/hotelgotra.jpg",
+                              "assets/images/kenyahotel1.jpg",
                               fit: BoxFit.cover,
                             ),
 
@@ -926,14 +939,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         ),*/
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      'https://img.freepik.com/free-psd/travel-safely-banner-template_23-2149203644.jpg',
+                                  'https://img.freepik.com/free-psd/travel-safely-banner-template_23-2149203644.jpg',
                                   placeholder: (context, url) => const Center(
                                       child: SizedBox(
                                           height: 40,
                                           width: 40,
                                           child: CircularProgressIndicator())),
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                  const Icon(Icons.error),
                                   fit: BoxFit.fill,
                                 ),
                               ),
@@ -957,14 +970,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         ),*/
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      'https://cdn5.vectorstock.com/i/1000x1000/58/94/covid-safe-travel-logo-banner-with-passengers-vector-41645894.jpg',
+                                  'https://cdn5.vectorstock.com/i/1000x1000/58/94/covid-safe-travel-logo-banner-with-passengers-vector-41645894.jpg',
                                   placeholder: (context, url) => const Center(
                                       child: SizedBox(
                                           height: 40,
                                           width: 40,
                                           child: CircularProgressIndicator())),
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                  const Icon(Icons.error),
                                   fit: BoxFit.fill,
                                 ),
                               ),
@@ -988,14 +1001,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         ),*/
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      'https://previews.123rf.com/images/decorwithme/decorwithme1903/decorwithme190300110/124429946-travel-insurance-colorful-flat-design-style-web-banner-on-white-background-with-copy-space-for.jpg',
+                                  'https://previews.123rf.com/images/decorwithme/decorwithme1903/decorwithme190300110/124429946-travel-insurance-colorful-flat-design-style-web-banner-on-white-background-with-copy-space-for.jpg',
                                   placeholder: (context, url) => const Center(
                                       child: SizedBox(
                                           height: 40,
                                           width: 40,
                                           child: CircularProgressIndicator())),
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                  const Icon(Icons.error),
                                   fit: BoxFit.fill,
                                 ),
                               ),
@@ -1052,14 +1065,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         ),*/
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      'https://marketplace.canva.com/EAE-oK6TfmI/1/0/800w/canva-elegant-grand-opening-annoncement-invitation-banner-portrait-ZkcmPUyKFRY.jpg',
+                                  'https://marketplace.canva.com/EAE-oK6TfmI/1/0/800w/canva-elegant-grand-opening-annoncement-invitation-banner-portrait-ZkcmPUyKFRY.jpg',
                                   placeholder: (context, url) => const Center(
                                       child: SizedBox(
                                           height: 40,
                                           width: 40,
                                           child: CircularProgressIndicator())),
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                  const Icon(Icons.error),
                                   fit: BoxFit.fill,
                                 ),
                               ),
@@ -1083,14 +1096,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         ),*/
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/travel-banner-design-template-74c2986da1078a325518f2202d02d74e_screen.jpg?ts=1661668122',
+                                  'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/travel-banner-design-template-74c2986da1078a325518f2202d02d74e_screen.jpg?ts=1661668122',
                                   placeholder: (context, url) => const Center(
                                       child: SizedBox(
                                           height: 40,
                                           width: 40,
                                           child: CircularProgressIndicator())),
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                  const Icon(Icons.error),
                                   fit: BoxFit.fill,
                                 ),
                               ),
@@ -1114,14 +1127,14 @@ class _HotelsScreenState extends State<HotelsScreen> {
                         ),*/
                                 child: CachedNetworkImage(
                                   imageUrl:
-                                      'https://marketplace.canva.com/EAEbm1h5br4/1/0/1200w/canva-blue-red-clean-%26-corporate-workplace-health-%26-safety-rules-health-explainer-poster-y07YKNJaiQ4.jpg',
+                                  'https://marketplace.canva.com/EAEbm1h5br4/1/0/1200w/canva-blue-red-clean-%26-corporate-workplace-health-%26-safety-rules-health-explainer-poster-y07YKNJaiQ4.jpg',
                                   placeholder: (context, url) => const Center(
                                       child: SizedBox(
                                           height: 40,
                                           width: 40,
                                           child: CircularProgressIndicator())),
                                   errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
+                                  const Icon(Icons.error),
                                   fit: BoxFit.fill,
                                 ),
                               ),

@@ -65,20 +65,7 @@ class _OneWayBookingState extends State<AddInfantScreen> {
   String selectedTitleAdult3 = 'Mr';
   String selectedTitleAdult4 = 'Mr';
   String selectedTitleAdult5 = 'Mr';
-  TextEditingController IssueDateController=new TextEditingController();
-  Future<void> _selectIssueDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setState(() {
-        IssueDateController.text = DateFormat('yyyy-MM-dd').format(picked);
-      });
-    }
-  }
+
   String selectedTitleChildren1 = 'Mr';
   String selectedTitleChildren2 = 'Mr';
   String selectedTitleChildren3 = 'Mr';
@@ -116,7 +103,6 @@ class _OneWayBookingState extends State<AddInfantScreen> {
   FocusNode _lastNameFocusNode = FocusNode();
 
   TextEditingController adultFname_controller = new TextEditingController();
-  TextEditingController adultMname_controller=new TextEditingController();
   TextEditingController adultLname_controller = new TextEditingController();
 
   TextEditingController adult1_Fname_controller = new TextEditingController();
@@ -136,10 +122,7 @@ class _OneWayBookingState extends State<AddInfantScreen> {
     _lastNameFocusNode.dispose();
     super.dispose();
   }
-  String? selectedGender = 'Male';
-  List<String> documentTypes = ['Passport No', 'Iqama', 'National ID'];
 
-  String? selectedDocumentType;
   var selectedDate = DateTime.now().obs;
   TextEditingController ExpiryDateController = TextEditingController();
   TextEditingController dateControllerAdult1 = TextEditingController();
@@ -197,11 +180,6 @@ class _OneWayBookingState extends State<AddInfantScreen> {
   @override
   void initState() {
     super.initState();
-
-
-    /*  InfantDatabaseHelper.instance.deleteDatabaseFile();
-
-    print("Database deleted successfully");*/
     mutableInfantList = List.from(widget.InfantList);
     _retrieveSavedValues();
     adultFname_controller = TextEditingController();
@@ -217,100 +195,92 @@ class _OneWayBookingState extends State<AddInfantScreen> {
 
       adultFname_controller.text = adult['firstName'];
       print('object' + adultFname_controller.text);
-      adultMname_controller.text=adult['middleName'];
       adultLname_controller.text = adult['surname'];
       dateControllerAdult1.text = adult['dob']; // Keep DOB as is
-      selectedDocumentType =
+      Documentype_controller.text =
           adult['documentType'] ?? ''; // Handle null values
       Documentnumber_controller.text = adult['documentNumber'] ?? '';
       ExpiryDateController.text = adult['expiryDate'] ?? '';
       selectedTitleAdult1 = adult['title'] ?? '';
-      selectedGender = adult['gender'] ?? '';
     }
   }
 
   void _saveAdult() async {
-    final dbHelper = InfantDatabaseHelper.instance;
-
-   /* // 🔁 Reset DB only during development/testing (remove this after one-time use)
-    await dbHelper.deleteDatabaseFile();
-    await dbHelper.reopenDatabase();
-    final db = await dbHelper.database;
-    print("After reopen, DB open? ${db.isOpen}");*/
-
     try {
-
-
-
       String title = selectedTitleAdult1.toString();
       String firstName = adultFname_controller.text.trim();
-      String middleName = adultMname_controller.text.trim(); // ✅ New field
       String surname = adultLname_controller.text.trim();
       String dob = dateControllerAdult1.text.trim();
-      String gender = selectedGender ?? ''; // ✅ New field
-      String documentType =selectedDocumentType??'';
+      String documentType = Documentype_controller.text.trim();
       String documentNumber = Documentnumber_controller.text.trim();
-      String issueDate = IssueDateController.text.trim(); // ✅ New field
       String expiryDate = ExpiryDateController.text.trim();
-
-      Map<String, dynamic> infantData = {
+      Map<String, dynamic> adultData = {
         'title': title,
         'firstName': firstName,
-        'middleName': middleName,      // ✅
         'surname': surname,
         'dob': dob,
-        'gender': gender,              // ✅
         'documentType': documentType,
         'documentNumber': documentNumber,
-        'issueDate': issueDate,        // ✅
         'expiryDate': expiryDate,
       };
+      final dbHelper = InfantDatabaseHelper.instance;
 
-      // 🔍 Check for duplicate name
-      bool nameExists = mutableInfantList.any((infant) {
-        return infant['firstName'] == firstName &&
-            infant['surname'] == surname &&
+      // Check if the name already exists in the list
+      bool nameExists = mutableInfantList.any((adult) {
+        return adult['firstName'] == firstName &&
+            adult['surname'] == surname &&
             (widget.isEdit == 'Add' ||
-                (infant['id'] != mutableInfantList[widget.InfantIndex]['id']));
+                (adult['id'] != mutableInfantList[widget.InfantIndex]['id']));
       });
 
       if (nameExists) {
+        // Show a snackbar to inform the user
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text("Name Already Exists. Please Select another Name"),
-            duration: Duration(seconds: 2),
+            duration: Duration(seconds: 2), // Duration the snackbar is shown
           ),
         );
-        return;
+        return; // Exit the function early
       }
 
+      // Check if we are editing an existing entry
       if (widget.isEdit == 'Edit' &&
           widget.InfantIndex >= 0 &&
           widget.InfantIndex < mutableInfantList.length) {
-        int? infantId = mutableInfantList[widget.InfantIndex]['id'];
-        if (infantId != null) {
-          await dbHelper.updateInfant(infantId, infantData);
-          print("Updated infant data for ID: $infantId");
+        // Retrieve the ID of the adult we are updating
+        int? adultId = mutableInfantList[widget.InfantIndex]['id'];
+        if (adultId != null) {
+          // Update existing adult using the correct ID
+          await dbHelper.updateInfant(adultId, adultData);
+          print("Updated adult data for ID: $adultId");
 
-          Map<String, dynamic>? updatedInfant =
-          await dbHelper.fetchInfantData(infantId);
-          if (updatedInfant != null) {
+          // Fetch updated data after the update
+          Map<String, dynamic>? updatedAdult =
+              await dbHelper.fetchAdultData(adultId);
+          print("Updated adult: $updatedAdult");
+
+          if (updatedAdult != null) {
             setState(() {
-              mutableInfantList[widget.InfantIndex] = updatedInfant;
+              // Update the specific child in the mutable list
+              mutableInfantList[widget.InfantIndex] = updatedAdult;
             });
+            // Show a success message
             Fluttertoast.showToast(
-              msg: "Infant data updated successfully",
+              msg: "Child data updated successfully",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.BOTTOM,
               backgroundColor: Colors.green,
               textColor: Colors.white,
             );
+            print("Updated data: $updatedAdult");
           }
         }
       } else if (widget.isEdit == 'Add') {
-        await dbHelper.insertInfant(infantData);
+        // Handle the case for adding new children
+        await dbHelper.insertInfant(adultData);
         Fluttertoast.showToast(
-          msg: "Infant added successfully",
+          msg: "Child added successfully",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.green,
@@ -318,11 +288,14 @@ class _OneWayBookingState extends State<AddInfantScreen> {
         );
       }
 
-      Navigator.pop(context, mutableInfantList);
+      // Navigate back and pass the updated list back to the previous page
+      Navigator.pop(context, mutableInfantList); // Pass the updated list back
     } catch (e) {
-      print("Error saving Infant data: $e");
+      // Log or display the error for debugging
+      print("Error saving child data: $e");
+      // Optionally show an error message
       Fluttertoast.showToast(
-        msg: "Error saving Infant data: $e",
+        msg: "Error saving child data: $e",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -330,7 +303,6 @@ class _OneWayBookingState extends State<AddInfantScreen> {
       );
     }
   }
-
 
   Future<void> _retrieveSavedValues() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -345,10 +317,11 @@ class _OneWayBookingState extends State<AddInfantScreen> {
   Future<List<TravellerDetailsModel>> fetchAutocompleteData(
       String empName) async {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellers?UserId=1108&UserTypeId=2&SearchFilter=$empName&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
-
+        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellers?UserId=2611&UserTypeId=8&SearchFilter=$empName&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
+    print('userID' + widget.userid);
+    print('userTypeID' + widget.usertypeid);
     print('empName' + empName);
-
+    print(widget.departdate);
 
     final response = await http.get(Uri.parse(url));
     print('response: ${response.statusCode}');
@@ -368,24 +341,18 @@ class _OneWayBookingState extends State<AddInfantScreen> {
   }
 
   String convertDate(String inputDate) {
-    try {
-      // Match the format: 13 January 1983
-      DateFormat inputFormat = DateFormat("d MMMM yyyy");
-      DateTime parsedDate = inputFormat.parse(inputDate);
+    // Parse the input date string
+    DateTime date = DateFormat('dd MMM yyyy').parse(inputDate);
 
-      // Output format: 1983-01-13 (or whatever you want)
-      DateFormat outputFormat = DateFormat("yyyy-MM-dd");
-      return outputFormat.format(parsedDate);
-    } catch (e) {
-      print("Date parsing error: $e");
-      return inputDate; // fallback in case parsing fails
-    }
+    // Format the date in the desired format
+    formattedDate = DateFormat('yyyy-MM-dd').format(date);
+
+    return formattedDate;
   }
-
 
   Future<void> callSecondApi(String id) async {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
+        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
     print('object' + id);
 
     final response = await http.get(Uri.parse(url));
@@ -416,30 +383,27 @@ class _OneWayBookingState extends State<AddInfantScreen> {
             table1Data[0]; // Assuming there's only one entry in Table1
 
         setState(() {
-          adultFname_controller.text = traveller['UDFirstName'] ?? '';
-          adultMname_controller.text=traveller['UDMiddName'];
+          String _firstNameController = traveller['UDFirstName'];
           adultLname_controller.text = traveller['UDLastName'];
           dateControllerAdult1.text = traveller['UDDOB'];
           String inputDate = dateControllerAdult1.text;
-          String cleanedDate = inputDate.split("at").first.trim(); // Gets "13 January 1983"
-          formattedDate = convertDate(cleanedDate);
+          formattedDate = convertDate(inputDate);
+          print("formattedDate" + formattedDate);
 
-          print('formattedDate' + formattedDate);
-          if (traveller['GenderId'] == 1) {
-            selectedGender = "Male";
-            Gendar = '1';
-          } else if (traveller['GenderId'] == 2) {
-            selectedGender = "Female";
-            Gendar = "2";
-          } else {
-            selectedGender = "Other";
-            Gendar = "3";
+          print('finDate' + dateControllerAdult1.text.toString());
+          if (traveller['GenderId'] == 0) {
+            selectedGendarContactDetail = "Male";
+            Gendar = '0';
+          } else if (traveller['GenderId'] == 1) {
+            selectedGendarContactDetail = "Female";
+            Gendar = "1";
           }
+          print("Gendar" + Gendar);
           // Get data from Table1
           Documentnumber_controller.text = passportInfo['PDPassportNo'];
 
           String dateOfBirth = passportInfo['PDDateofBirth'];
-          selectedDocumentType = passportInfo['PDDocument'] ?? 'Passport';
+          Documentype_controller.text = passportInfo['PDDocument'];
           String issuingCountry = passportInfo['PDIssuingCountry'];
           ExpiryDateController.text = passportInfo['PDDateofExpiry'];
           DateTime checkinDateTime = DateTime.parse(ExpiryDateController.text);
@@ -455,13 +419,526 @@ class _OneWayBookingState extends State<AddInfantScreen> {
     }
   }
 
+  Future<void> _selectDateAdult2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult2) {
+      setState(() {
+        dateControllerAdult2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateAdult3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult3) {
+      setState(() {
+        dateControllerAdult3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateAdult4(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult4) {
+      setState(() {
+        dateControllerAdult4.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateAdult5(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult5) {
+      setState(() {
+        dateControllerAdult5.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateChildren1(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren1) {
+      setState(() {
+        dateControllerChildren1.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateChildren2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren2) {
+      setState(() {
+        dateControllerChildren2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateChildren3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren3) {
+      setState(() {
+        dateControllerChildren3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateChildren4(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren4) {
+      setState(() {
+        dateControllerChildren4.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateChildren5(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren5) {
+      setState(() {
+        dateControllerChildren5.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant1(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant1) {
+      setState(() {
+        dateControllerInfant1.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant2) {
+      setState(() {
+        dateControllerInfant2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant3) {
+      setState(() {
+        dateControllerInfant3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  var resultFlightData = [];
+
+  Future<void> submitAdivahaFlightBooking() async {
+    final url = Uri.parse(
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightBooking');
+    final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+
+    String resultIndex = widget.flightDetails['ResultIndexID'];
+    String traceId = widget.flightDetails['ItemId'];
+
+    DateTime date = DateFormat('yyyy/MM/dd').parse(widget.departdate);
+
+    // Format the date string with dashes
+    formattedFromDate = DateFormat('yyyy-MM-dd').format(date);
+
+    print(formattedFromDate);
+    var reqBody = {
+      'ResultIndex': resultFlightData[0]['ResultIndexID'].toString(),
+      'TraceId': resultFlightData[0]['ItemId'].toString(),
+      'LCC': resultFlightData[0]['IsLCC'].toString(),
+      'TripType': 'OneWay',
+      'UserId': userID.toString(),
+      'UserTypeId': userTypeID.toString(),
+      'DefaultCurrency': resultFlightData[0]['BookingCurrency'].toString(),
+      'FromDate': formattedFromDate.toString(),
+      'AdultCount': widget.adultCount.toString(),
+      'ChildCount': widget.childrenCount.toString(),
+      'InfantCount': widget.infantCount.toString(),
+      'BookingCurrency': Currency.toString(),
+      'BookingBaseFare': resultFlightData[0]['BookingBaseFare'].toString(),
+      'BookingTax': resultFlightData[0]['BookingTax'].toString(),
+      'BookingYQTax': resultFlightData[0]['BookingYQTax'].toString(),
+      'BookingAdditionalTxnFeePub':
+          resultFlightData[0]['BookingAdditionalTxnFeePub'].toString(),
+      'BookingAdditionalTxnFeeOfrd':
+          resultFlightData[0]['BookingAdditionalTxnFeeOfrd'].toString(),
+      'BookingOtherCharges':
+          resultFlightData[0]['BookingOtherCharges'].toString(),
+      'BookingDiscount': resultFlightData[0]['BookingDiscount'].toString(),
+      'BookingPublishedFare':
+          resultFlightData[0]['BookingPublishedFare'].toString(),
+      'BookingOfferedFare':
+          resultFlightData[0]['BookingOfferedFare'].toString(),
+      'BookingTdsOnCommission':
+          resultFlightData[0]['BookingTdsOnCommission'].toString(),
+      'BookingTdsOnPLB': resultFlightData[0]['BookingTdsOnPLB'].toString(),
+      'BookingTdsOnIncentive':
+          resultFlightData[0]['BookingTdsOnIncentive'].toString(),
+      'BookingServiceFee': resultFlightData[0]['BookingServiceFee'].toString(),
+      'GSTCompanyAddress': '',
+      'GSTCompanyContactNumber': '',
+      'GSTCompanyName': '',
+      'GSTNumber': '',
+      'GSTCompanyEmail': '',
+      'TitleAdult1': selectedTitleAdult1.toString(),
+      'FNameAdult1': AdultName1.toString(),
+      'LNameAdult1': adultLname_controller.text.toString(),
+      'LDOBAdult1': formattedDate.toString(),
+      'GenderAdult1': Gendar.toString(),
+      'DocNumAdult1': Documentnumber_controller.text.toString(),
+      'ExpDateAdult1': ExpiryDateController.text.toString(),
+      'TitleAdult2': '',
+      'FNameAdult2': '',
+      'LNameAdult2': '',
+      'LDOBAdult2': '',
+      'GenderAdult2': '',
+      'DocNumAdult2': '',
+      'ExpDateAdult2': '',
+      'TitleAdult3': '',
+      'FNameAdult3': '',
+      'LNameAdult3': '',
+      'LDOBAdult3': '',
+      'GenderAdult3': '',
+      'DocNumAdult3': '',
+      'ExpDateAdult3': '',
+      'TitleAdult4': '',
+      'FNameAdult4': '',
+      'LNameAdult4': '',
+      'LDOBAdult4': '',
+      'GenderAdult4': '',
+      'DocNumAdult4': '',
+      'ExpDateAdult4': '',
+      'TitleAdult5': '',
+      'FNameAdult5': '',
+      'LNameAdult5': '',
+      'LDOBAdult5': '',
+      'GenderAdult5': '',
+      'DocNumAdult5': '',
+      'ExpDateAdult5': '',
+      'TitleAdult6': '',
+      'FNameAdult6': '',
+      'LNameAdult6': '',
+      'LDOBAdult6': '',
+      'GenderAdult6': '',
+      'DocNumAdult6': '',
+      'ExpDateAdult6': '',
+      'TitleAdult7': '',
+      'FNameAdult7': '',
+      'LNameAdult7': '',
+      'LDOBAdult7': '',
+      'GenderAdult7': '',
+      'DocNumAdult7': '',
+      'ExpDateAdult7': '',
+      'TitleAdult8': '',
+      'FNameAdult8': '',
+      'LNameAdult8': '',
+      'LDOBAdult8': '',
+      'GenderAdult8': '',
+      'DocNumAdult8': '',
+      'ExpDateAdult8': '',
+      'TitleAdult9': '',
+      'FNameAdult9': '',
+      'LNameAdult9': '',
+      'LDOBAdult9': '',
+      'GenderAdult9': '',
+      'DocNumAdult9': '',
+      'ExpDateAdult9': '',
+      'TitleAdult10': '',
+      'FNameAdult10': '',
+      'LNameAdult10': '',
+      'LDOBAdult10': '',
+      'GenderAdult10': '',
+      'DocNumAdult10': '',
+      'ExpDateAdult10': '',
+      'TitleChild1': '',
+      'FNameChild1': '',
+      'LNameChild1': '',
+      'LDOBChild1': '',
+      'GenderChild1': '',
+      'DocNumChild1': '',
+      'ExpDateChild1': '',
+      'TitleChild2': '',
+      'FNameChild2': '',
+      'LNameChild2': '',
+      'LDOBChild2': '',
+      'GenderChild2': '',
+      'DocNumChild2': '',
+      'ExpDateChild2': '',
+      'TitleChild3': '',
+      'FNameChild3': '',
+      'LNameChild3': '',
+      'LDOBChild3': '',
+      'GenderChild3': '',
+      'DocNumChild3': '',
+      'ExpDateChild3': '',
+      'TitleChild4': '',
+      'FNameChild4': '',
+      'LNameChild4': '',
+      'LDOBChild4': '',
+      'GenderChild4': '',
+      'DocNumChild4': '',
+      'ExpDateChild4': '',
+      'TitleChild5': '',
+      'FNameChild5': '',
+      'LNameChild5': '',
+      'LDOBChild5': '',
+      'GenderChild5': '',
+      'DocNumChild5': '',
+      'ExpDateChild5': '',
+      'TitleInfant1': '',
+      'FNameInfant1': '',
+      'LNameInfant1': '',
+      'LDOBInfant1': '',
+      'GenderInfant1': '',
+      'DocNumInfant1': '',
+      'ExpDateInfant1': '',
+      'TitleInfant2': '',
+      'FNameInfant2': '',
+      'LNameInfant2': '',
+      'LDOBInfant2': '',
+      'GenderInfant2': '',
+      'DocNumInfant2': '',
+      'ExpDateInfant2': '',
+      'TitleInfant3': '',
+      'FNameInfant3': '',
+      'LNameInfant3': '',
+      'LDOBInfant3': '',
+      'GenderInfant3': '',
+      'DocNumInfant3': '',
+      'ExpDateInfant3': '',
+      'TitleInfant4': '',
+      'FNameInfant4': '',
+      'LNameInfant4': '',
+      'LDOBInfant4': '',
+      'GenderInfant4': '',
+      'DocNumInfant4': '',
+      'ExpDateInfant4': '',
+      'TitleInfant5': '',
+      'FNameInfant5': '',
+      'LNameInfant5': '',
+      'LDOBInfant5': '',
+      'GenderInfant5': '',
+      'DocNumInfant5': '',
+      'ExpDateInfant5': '',
+      'Address': contactAddressController.text.toString(),
+      'City': contactCityController.text.toString(),
+      'CountryCode': 'IN',
+      'CountryName': _CountryController.text.toString(),
+      'MobileNumber': contactMobileController.text.toString(),
+      'Email': contactEmailController.text.toString(),
+      'IsPassportRequired': 'True',
+      'AdultTravellerID1': AdultTravellerId1.toString(),
+      'AdultTravellerID2': '',
+      'AdultTravellerID3': '',
+      'AdultTravellerID4': '',
+      'AdultTravellerID5': '',
+      'AdultTravellerID6': '',
+      'AdultTravellerID7': '',
+      'AdultTravellerID8': '',
+      'AdultTravellerID9': '',
+      'AdultTravellerID10': ''
+    };
+    developer.log('ResultIndex: $resultIndex');
+    print('TraceId: $traceId');
+    print('LCC: True');
+    print('TripType: OneWay');
+    print('UserId: $userID');
+    print('UserTypeId: $userTypeID');
+    print('DefaultCurrency: $Currency');
+    print('FromDate: ${formattedFromDate.toString()}');
+    print('AdultCount: ${widget.adultCount}');
+    print('ChildCount: ${widget.childrenCount}');
+    print('InfantCount: ${widget.infantCount}');
+    print('BookingCurrency: ${resultFlightData[0]['BookingCurrency']}');
+    print('BookingBaseFare: ${resultFlightData[0]['BookingBaseFare']}');
+    print('BookingTax: ${resultFlightData[0]['BookingTax']}');
+    print('BookingYQTax: ${resultFlightData[0]['BookingYQTax']}');
+    print(
+        'BookingAdditionalTxnFeePub: ${resultFlightData[0]['BookingAdditionalTxnFeePub']}');
+    print(
+        'BookingAdditionalTxnFeeOfrd: ${resultFlightData[0]['BookingAdditionalTxnFeeOfrd']}');
+    print('BookingOtherCharges: ${resultFlightData[0]['BookingOtherCharges']}');
+    print('BookingDiscount: ${resultFlightData[0]['BookingDiscount']}');
+    print(
+        'BookingPublishedFare: ${resultFlightData[0]['BookingPublishedFare']}');
+    print('BookingOfferedFare: ${resultFlightData[0]['BookingOfferedFare']}');
+    print(
+        'BookingTdsOnCommission: ${resultFlightData[0]['BookingTdsOnCommission']}');
+    print('BookingTdsOnPLB: ${resultFlightData[0]['BookingTdsOnPLB']}');
+    print(
+        'BookingTdsOnIncentive: ${resultFlightData[0]['BookingTdsOnIncentive']}');
+    print('BookingServiceFee: ${resultFlightData[0]['BookingServiceFee']}');
+    print('GSTCompanyAddress: ');
+    print('GSTCompanyContactNumber: ');
+    print('GSTCompanyName: ');
+    print('GSTNumber: ');
+    print('GSTCompanyEmail: ');
+    print('TitleAdult1: $selectedTitleAdult1');
+    print('FNameAdult1: $AdultName1');
+    print(
+        'LNameAdult1: ${adultLname_controller.text.isEmpty ? 'A' : adultLname_controller.text}');
+    print('LDOBAdult1: ${formattedDate.toString()}');
+    print('GenderAdult1: $Gendar');
+    print('DocNumAdult1: ${Documentnumber_controller.text}');
+    print('ExpDateAdult1: ${ExpiryDateController.text}');
+// Repeat this pattern for all other fields
+
+    print('Address: ${contactAddressController.text}');
+    print('City: ${contactCityController.text}');
+    print('CountryCode: IN');
+    print('CountryName: India');
+    print('MobileNumber: ${contactMobileController.text}');
+    print('Email: ${contactEmailController.text}');
+    print('AdultTravellerID1:${AdultTravellerId1}');
+
+    try {
+      setState(() {
+        isBookingLoading = true;
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: reqBody,
+      );
+
+      setState(() {
+        isBookingLoading = false;
+      });
+      if (response.statusCode == 200) {
+        print('Response: ${response.body}');
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+
+        // Handle the failure scenario
+      }
+    } catch (error) {
+      print('Error sending request: $error');
+    }
+  }
+
+  List<Map<String, dynamic>> extractJsonFromXml(String xmlString) {
+    var document = xml.XmlDocument.parse(xmlString);
+
+    String jsonString = document.findAllElements('string').first.text;
+
+    List<Map<String, dynamic>> jsonList =
+        json.decode(jsonString).cast<Map<String, dynamic>>();
+
+    return jsonList;
+  }
+
+  Future<void> getAdivahaFlightDetails() async {
+    final url = Uri.parse(
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightDetailsGet');
+    final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+
+    String resultIndex = widget.flightDetails['ResultIndexID'].toString();
+    String traceId = widget.flightDetails['ItemId'].toString();
+
+    print(resultIndex);
+    print(traceId);
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: {
+          'ResultIndex': resultIndex.toString(),
+          'TraceId': traceId.toString(),
+          'TripType': 'OneWay'
+        },
+      );
+      setState(() {
+        isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        //var jsonresp = ResponseHandler.parseData(response.body);
+        //var tmp_resultFlightData = json.decode(extractJsonFromXml(response.body).toString());
+
+        print('newww - jsonResulttt:');
+        developer.log(extractJsonFromXml(response.body).toString());
+        //developer.log(tmp_resultFlightData);
+        setState(() {
+          resultFlightData = extractJsonFromXml(response.body).toList();
+          print('DepartCode : ${resultFlightData[0]['DepartCityCode']}');
+        });
+
+        //print('Request successful! Response: ${response.body}');
+        // Handle the response data here
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+        // Handle the failure scenario
+      }
+    } catch (error) {
+      print('Error sending request: $error');
+      // Handle any exceptions or errors that occurred during the request
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -469,34 +946,38 @@ class _OneWayBookingState extends State<AddInfantScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Add Infant",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.black, fontFamily: "Montserrat", fontSize: 19),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-            width: 100,
+            width: 150,
             height: 50,
           ),
-
+          SizedBox(
+            width: 10,
+          )
         ],
+        backgroundColor: Colors.white,
       ),
       resizeToAvoidBottomInset: true,
       body: isLoading
@@ -552,9 +1033,9 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                             ],
                           ),
                           Padding(
-                            padding: const EdgeInsets.only(top: 7,left:10,right:10),
+                            padding: const EdgeInsets.only(top: 7),
                             child: Container(
-                              width: double.infinity,
+                              width: 340,
                               height: 50,
                               child: Autocomplete<TravellerDetailsModel>(
                                 optionsBuilder:
@@ -584,9 +1065,9 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                                       adultFname_controller.text =
                                           selectedOption.name;
                                       AdultName1 = selectedOption.name;
-                                      AdultTravellerId1 = selectedOption.id.toString();
+                                      AdultTravellerId1 = selectedOption.id;
                                       print('Selected name: ' + AdultName1);
-                                      callSecondApi(selectedOption.id.toString());
+                                      callSecondApi(selectedOption.id);
                                     });
                                   }
                                 },
@@ -619,7 +1100,7 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                                     },
                                     readOnly: widget.isEdit == 'Edit',
                                     decoration: InputDecoration(
-                                      label: const Text('First Name'),
+                                      label: const Text('First & Middle Name'),
                                       hintText: 'Enter First Name',
                                       enabledBorder: OutlineInputBorder(
                                         borderSide: const BorderSide(
@@ -650,39 +1131,7 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                           Padding(
                             padding: const EdgeInsets.only(right: 10, left: 10),
                             child: Container(
-                              width: double.infinity,
-                              height: 50,
-                              child: TextFormField(
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                                controller: adultMname_controller, // ✅ Your middle name controller
-                                readOnly: widget.isEdit == 'Edit',
-                                decoration: InputDecoration(
-                                  label: const Text('Middle Name'),
-                                  hintText: 'Middle Name',
-                                  enabledBorder: OutlineInputBorder(
-                                    borderSide: const BorderSide(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderSide: const BorderSide(color: Colors.black, width: 1.5),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  labelStyle: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  errorBorder: OutlineInputBorder(
-                                    borderSide: const BorderSide(color: Colors.red, width: 2),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 20),
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10, left: 10),
-                            child: Container(
-                              width: double.infinity,
+                              width: 350,
                               height: 50,
                               child: TextFormField(
                                 style: TextStyle(fontWeight: FontWeight.w500),
@@ -765,103 +1214,45 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                           SizedBox(
                             height: 20,
                           ),
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10, left: 10),
-                            child: Container(
-                              height: 50, // Set height here
-                              child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(
-                                  labelText: 'Gender',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  labelStyle: TextStyle(fontWeight: FontWeight.bold),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                ),
-                                value: selectedGender,
-                                items: ['Male', 'Female', 'Other'].map((gender) {
-                                  return DropdownMenuItem<String>(
-                                    value: gender,
-                                    child: Text(gender),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedGender = value;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-
-
-                          SizedBox(
-                            height: 20,
-                          ),
                           Visibility(
                             visible:
                                 Status == 2, // Show or hide based on status
                             child: Column(
                               children: [
+                                // Fields to show when status is 1
+                                // Modify or add more fields as needed
                                 Padding(
-                                  padding: const EdgeInsets.only(left: 10, right: 10),
+                                  padding: const EdgeInsets.only(
+                                      left: 10, right: 10),
                                   child: Container(
                                     height: 50,
-                                    child: DropdownButtonFormField<String>(
-                                      value: documentTypes.contains(selectedDocumentType) ? selectedDocumentType : null,
+                                    child: TextFormField(
+                                      controller: Documentype_controller,
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.w500),
                                       decoration: InputDecoration(
-                                        label: const Text('Document Type',),labelStyle: TextStyle(
-                                        color: Colors.black,  // 🔹 Label in black
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                        hintText: 'Select Document Type',
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
+                                        label: const Text('Document Type'),
+                                        hintText: 'Document Type',
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(color: Colors.grey),
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderSide: const BorderSide(
+                                              color: Colors.grey),
+                                          borderRadius:
+                                              BorderRadius.circular(5),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: BorderSide(color: Colors.grey, width: 1),
-                                          borderRadius: BorderRadius.circular(5),
+                                          borderSide: const BorderSide(
+                                              color: Colors.black, width: 1.5),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
-                                      ),
-                                      items: documentTypes.map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          selectedDocumentType = value!;
-                                        });
-                                      },
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 20,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 10, right: 10),
-                                  child: Container(
-                                    height: 50,
-                                    child: TextField(
-                                      onTap: () {
-                                        _selectIssueDate(context);
-                                      },
-                                      controller: IssueDateController,
-                                      readOnly: true,
-                                      style: TextStyle(fontWeight: FontWeight.w500),
-                                      decoration: inputDecoration('Issue Date', 'Issue Date').copyWith(
-                                        prefixIcon: GestureDetector(
-                                          onTap: () {
-                                            _selectIssueDate(context);
-                                          },
-                                          child: Icon(Icons.calendar_today),
+                                        labelStyle: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderSide: const BorderSide(
+                                              color: Colors.red, width: 2),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                       ),
                                     ),
@@ -986,7 +1377,7 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                             // Makes the button take full width
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:Color(0xFF00ADEE),
+                                backgroundColor: Color(0xFF152238),
                                 // Button background color
                                 fixedSize: const Size.fromHeight(47),
                                 // Set button height to 45
@@ -1012,25 +1403,6 @@ class _OneWayBookingState extends State<AddInfantScreen> {
                 ),
               ),
             ]),
-    );
-  }
-  InputDecoration inputDecoration(String label, String hint) {
-    return InputDecoration(
-      label: Text(label),
-      hintText: hint,
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.black, width: 1.5),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      labelStyle: TextStyle(fontWeight: FontWeight.bold),
-      errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.red, width: 2),
-        borderRadius: BorderRadius.circular(10),
-      ),
     );
   }
 }

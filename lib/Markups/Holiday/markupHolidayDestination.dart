@@ -216,7 +216,7 @@ class _BookingCardGeneralDetailsState extends State<markupHolidayDestination> {
                                                                 'assets/images/tickiconpng.png'),
                                                             width: 16,
                                                             height: 16,
-                                                            color: Colors.blue,
+                                                            color: Color(0xFF00ADEE),
                                                           ),
                                                           Padding(
                                                             padding:
@@ -235,7 +235,7 @@ class _BookingCardGeneralDetailsState extends State<markupHolidayDestination> {
                                                                     .w500,
                                                                 fontSize: 15,
                                                                 color:
-                                                                Colors.blue,
+                                                                Color(0xFF00ADEE),
                                                               ),
                                                             ),
                                                           ),
@@ -287,7 +287,7 @@ class _BookingCardGeneralDetailsState extends State<markupHolidayDestination> {
                                                                 'assets/images/tickiconpng.png'),
                                                             width: 16,
                                                             height: 16,
-                                                            color: Colors.blue,
+                                                            color: Color(0xFF00ADEE),
                                                           ),
                                                           Padding(
                                                             padding:
@@ -308,7 +308,7 @@ class _BookingCardGeneralDetailsState extends State<markupHolidayDestination> {
                                                                     .w500,
                                                                 fontSize: 15,
                                                                 color:
-                                                                Colors.blue,
+                                                                Color(0xFF00ADEE),
                                                               ),
                                                             ),
                                                           ),

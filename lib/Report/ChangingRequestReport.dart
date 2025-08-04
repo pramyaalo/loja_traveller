@@ -206,7 +206,7 @@ class _ChangingRequestReportState extends State<ChangingRequestReport> {
                                                   padding: const EdgeInsets.fromLTRB(10.0, 5, 10, 5),
                                                   decoration: BoxDecoration(
                                                     color: getStatusColor(snapshot.data![index].request),
-                                                    border: Border.all(width: 0.1, color: Colors.blue),
+                                                    border: Border.all(width: 0.1, color: Color(0xFF00ADEE)),
                                                     borderRadius: BorderRadius.circular(5.0),
                                                   ),
                                                   child: Text(
@@ -233,7 +233,7 @@ class _ChangingRequestReportState extends State<ChangingRequestReport> {
                                                         image: AssetImage('assets/images/tickiconpng.png'),
                                                         width: 16,
                                                         height: 16,
-                                                        color: Colors.blue,
+                                                        color: Color(0xFF00ADEE),
                                                       ),
                                                       const SizedBox(width: 5),
                                                       Flexible(
@@ -243,7 +243,7 @@ class _ChangingRequestReportState extends State<ChangingRequestReport> {
                                                             fontFamily: "Montserrat",
                                                             fontWeight: FontWeight.w500,
                                                             fontSize: 15,
-                                                            color: Colors.blue,
+                                                            color: Color(0xFF00ADEE),
                                                           ),
                                                           overflow: TextOverflow.visible,
                                                         ),
@@ -257,7 +257,7 @@ class _ChangingRequestReportState extends State<ChangingRequestReport> {
                                                         image: AssetImage('assets/images/tickiconpng.png'),
                                                         width: 16,
                                                         height: 16,
-                                                        color: Colors.blue,
+                                                        color: Color(0xFF00ADEE),
                                                       ),
                                                       const SizedBox(width: 5),
                                                       Flexible(
@@ -267,7 +267,7 @@ class _ChangingRequestReportState extends State<ChangingRequestReport> {
                                                             fontFamily: "Montserrat",
                                                             fontWeight: FontWeight.w500,
                                                             fontSize: 15,
-                                                            color: Colors.blue,
+                                                            color: Color(0xFF00ADEE),
                                                           ),
                                                           overflow: TextOverflow.visible,
                                                         ),

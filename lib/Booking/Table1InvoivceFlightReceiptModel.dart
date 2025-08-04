@@ -25,6 +25,7 @@ class Table1InvoivceFlightReceiptModel {
   String tfsStopoverInfo;
   String tfsDuration1;
   String equipment;
+  String BookingNumber;
 
   Table1InvoivceFlightReceiptModel({
     required this.bftfsLightID,
@@ -53,6 +54,7 @@ class Table1InvoivceFlightReceiptModel {
     required this.tfsStopoverInfo,
     required this.tfsDuration1,
     required this.equipment,
+    required this.BookingNumber,
   });
 
   factory Table1InvoivceFlightReceiptModel.fromJson(Map<String, dynamic> json) {
@@ -83,6 +85,7 @@ class Table1InvoivceFlightReceiptModel {
       tfsStopoverInfo: json['TFSStopoverInfo'].toString(),
       tfsDuration1: json['TFSDuration1'].toString(),
       equipment: json['Equipment'].toString(),
+      BookingNumber:json['BookingNumber'].toString(),
     );
   }
 }

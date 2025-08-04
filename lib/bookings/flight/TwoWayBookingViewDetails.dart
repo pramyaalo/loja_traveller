@@ -595,34 +595,38 @@ class _TwoWayBookingState extends State<TwoWayBookingViewDetails> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.black,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Flight Booking",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.black, fontFamily: "Montserrat", fontSize: 19),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-            width: 100,
+            width: 150,
             height: 50,
           ),
-
+          SizedBox(
+            width: 10,
+          )
         ],
+        backgroundColor: Colors.white,
       ),
       body: isLoading
           ? Center(
@@ -3955,7 +3959,7 @@ class _TwoWayBookingState extends State<TwoWayBookingViewDetails> {
                                       Text(
                                         'View Full Breakup',
                                         style: TextStyle(
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                           fontWeight: FontWeight.bold,
                                           fontSize: 14,
                                         ),
@@ -4116,7 +4120,7 @@ class _TwoWayBookingState extends State<TwoWayBookingViewDetails> {
                                           CircleAvatar(
                                             backgroundColor:
                                             hasAdultData
-                                                ? Color(0xFF00ADEE)
+                                                ? Color(0xFF152238)
                                                 : Colors.grey,
                                           ),
                                           SizedBox(width: 10),
@@ -4179,7 +4183,7 @@ class _TwoWayBookingState extends State<TwoWayBookingViewDetails> {
                                           // Edit Button
                                           IconButton(
                                             icon: Icon(Icons.edit,
-                                                color: Color(0xFF00ADEE)),
+                                                color: Color(0xFF152238)),
                                             onPressed: hasAdultData &&
                                                 !isEditAdult
                                                 ? () {
@@ -4739,7 +4743,7 @@ class _TwoWayBookingState extends State<TwoWayBookingViewDetails> {
                             child: ElevatedButton(
                               onPressed: submitAdivahaFlightBooking,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:Color(0xFF00ADEE),
+                                backgroundColor: Color(0xFF152238),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10.0),
                                 ),

@@ -104,7 +104,7 @@ final TextEditingController FromdateController=TextEditingController();
         ),
         actions: [
           Image.asset(
-            'assets/images/logo.png',
+            'assets/images/lojologo.png',
             width: 150,
             height: 50,
           ),
@@ -270,7 +270,7 @@ final TextEditingController FromdateController=TextEditingController();
                       Row(
                         children: [
                           Radio(
-                            activeColor: Colors.blue,
+                            activeColor: Color(0xFF00ADEE),
                             value: 1,
                             groupValue: apiValue,
                             onChanged: (value) {
@@ -282,7 +282,7 @@ final TextEditingController FromdateController=TextEditingController();
                           Text(
                             'Active',
                             style: TextStyle(
-                              color: apiValue == 1 ? Colors.blue : Colors.grey,
+                              color: apiValue == 1 ? Color(0xFF00ADEE) : Colors.grey,
                             ),
                           ),
                         ],
@@ -290,7 +290,7 @@ final TextEditingController FromdateController=TextEditingController();
                       Row(
                         children: [
                           Radio(
-                            activeColor: Colors.blue,
+                            activeColor: Color(0xFF00ADEE),
                             value: 0,
                             groupValue: apiValue,
                             onChanged: (value) {
@@ -302,7 +302,7 @@ final TextEditingController FromdateController=TextEditingController();
                           Text(
                             'Inactive',
                             style: TextStyle(
-                              color: apiValue == 0 ? Colors.blue : Colors.grey,
+                              color: apiValue == 0 ? Color(0xFF00ADEE) : Colors.grey,
                             ),
                           ),
                         ],

@@ -1,28 +1,12 @@
 import 'package:flutter/material.dart';
 
 class FilterPage extends StatefulWidget {
+  final Map<String, bool> airlineCheckboxes;
   final bool Refundable;
   final bool NonRefundable;
   final bool NonStop;
   final bool oneStop;
   final bool twoStop;
-  final bool AirIndia;
-  final bool AirIndiaExpress;
-  final bool isBimanBangladesh;
-  final bool isBritishAirways;
-  final bool isEmirates;
-  final bool isEtihad;
-  final bool isGulfAir;
-  final bool isIndigo;
-  final bool isLufthansa;
-  final bool isOmanAviation;
-  final bool isQatarAirways;
-  final bool isSalamAir;
-  final bool isSingaporeAirlines;
-  final bool isSpiceJet;
-  final bool isSriLankanAirlines;
-  final bool isTurkishAirlines;
-  final bool isVistara;
   final bool DepartisEarlySelected;
   final bool DepartisMorningSelected;
   final bool DepartisNoonSelected;
@@ -33,30 +17,13 @@ class FilterPage extends StatefulWidget {
   final bool ArrivalisEveningSelected;
   final   add;
 
-    FilterPage({
-
+  FilterPage({
+    required this.airlineCheckboxes,
     required this.Refundable,
     required this.NonRefundable,
     required this.NonStop,
     required this.oneStop,
     required this.twoStop,
-    required this.AirIndia,
-    required this.AirIndiaExpress,
-    required this.isBimanBangladesh,
-    required this.isBritishAirways,
-    required this.isEmirates,
-    required this.isEtihad,
-    required this.isGulfAir,
-    required this.isIndigo,
-    required this.isLufthansa,
-    required this.isOmanAviation,
-    required this.isQatarAirways,
-    required this.isSalamAir,
-    required this.isSingaporeAirlines,
-    required this.isSpiceJet,
-    required this.isSriLankanAirlines,
-    required this.isTurkishAirlines,
-    required this.isVistara,
     required this.DepartisEarlySelected,
     required this.DepartisMorningSelected,
     required this.DepartisNoonSelected,
@@ -73,7 +40,8 @@ class FilterPage extends StatefulWidget {
 }
 
 class _FilterPageState extends State<FilterPage> {
-// Switch and Checkbox states
+  late Map<String, bool> airlineCheckboxes;
+
   bool isRefundable = false;
   bool isNonRefundable = false;
   bool isNonStop = false;
@@ -112,52 +80,52 @@ class _FilterPageState extends State<FilterPage> {
       RefundableselectedCount = 1; // Only count if Refundable is selected
     }else {  RefundableselectedCount = 0; }
 
-        if (isNonRefundable==true) {
+    if (isNonRefundable==true) {
       RefundableselectedCount = 1; // Only count if Non-Refundable is selected
     }
 
     if (isNonStop==true) {
       selectedCount = 1; // Only count if Refundable is selected
     }
-   else {
+    else {
       selectedCount = 0;
     } if (isOneStop) {
       selectedCount = 1; // Only count if Non-Refundable is selected
     }
-      if (isTwoPlusStops) {
+    if (isTwoPlusStops) {
       selectedCount = 1; // Only count if Non-Refundable is selected
     }
 
 
     if (isAirIndia==true) {airlinesselectedCount=1;}else
-      {
-        airlinesselectedCount=0;
-      }
-        
-        if (isAirIndiaExpress==true) {airlinesselectedCount=1;}
-         if (isBimanBangladesh==true) {airlinesselectedCount=1;}
-          if (isBritishAirways==true) {airlinesselectedCount=1;}
-          if (isEmirates==true) {airlinesselectedCount=1;}
-          if (isEtihad==true){airlinesselectedCount=1;}
-          if (isGulfAir==true) {airlinesselectedCount=1;}
-          if (isIndigo==true){airlinesselectedCount=1;}
-           if (isLufthansa==true){airlinesselectedCount=1;}
-          if (isOmanAviation==true) {airlinesselectedCount=1;}
-          if (isQatarAirways==true) {airlinesselectedCount=1;}
-           if (isSalamAir==true) {airlinesselectedCount=1;}
-           if (isSingaporeAirlines==true) {airlinesselectedCount=1;}
-          if (isSpiceJet==true) {airlinesselectedCount=1;}
-           if (isSriLankanAirlines==true) {airlinesselectedCount=1;}
-          if (isTurkishAirlines==true) {airlinesselectedCount=1;}
-          if (isVistara==true) {airlinesselectedCount=1;}
+    {
+      airlinesselectedCount=0;
+    }
+
+    if (isAirIndiaExpress==true) {airlinesselectedCount=1;}
+    if (isBimanBangladesh==true) {airlinesselectedCount=1;}
+    if (isBritishAirways==true) {airlinesselectedCount=1;}
+    if (isEmirates==true) {airlinesselectedCount=1;}
+    if (isEtihad==true){airlinesselectedCount=1;}
+    if (isGulfAir==true) {airlinesselectedCount=1;}
+    if (isIndigo==true){airlinesselectedCount=1;}
+    if (isLufthansa==true){airlinesselectedCount=1;}
+    if (isOmanAviation==true) {airlinesselectedCount=1;}
+    if (isQatarAirways==true) {airlinesselectedCount=1;}
+    if (isSalamAir==true) {airlinesselectedCount=1;}
+    if (isSingaporeAirlines==true) {airlinesselectedCount=1;}
+    if (isSpiceJet==true) {airlinesselectedCount=1;}
+    if (isSriLankanAirlines==true) {airlinesselectedCount=1;}
+    if (isTurkishAirlines==true) {airlinesselectedCount=1;}
+    if (isVistara==true) {airlinesselectedCount=1;}
 
     if (DepartisEarlySelected==true) {
       DepartCount = 1; // Count if Early is selected
     }
     else
-      {
-        DepartCount=0;
-      }
+    {
+      DepartCount=0;
+    }
     if (DepartisMorningSelected==true) {
       DepartCount = 1; // Count if Morning is selected
     }
@@ -172,29 +140,29 @@ class _FilterPageState extends State<FilterPage> {
 
 
 
-  if (ArrivaltisEarlySelected==true) {
-    ArrivalCount = 1; // Count if Early is selected
-  }
-  else
-  {
-    ArrivalCount=0;
-  }
-  if (ArrivalisMorningSelected==true) {
-    ArrivalCount = 1; // Count if Morning is selected
-  }
+    if (ArrivaltisEarlySelected==true) {
+      ArrivalCount = 1; // Count if Early is selected
+    }
+    else
+    {
+      ArrivalCount=0;
+    }
+    if (ArrivalisMorningSelected==true) {
+      ArrivalCount = 1; // Count if Morning is selected
+    }
 
-  if (ArrivalisNoonSelected==true) {
-    ArrivalCount = 1; // Count if Noon is selected
-  }
+    if (ArrivalisNoonSelected==true) {
+      ArrivalCount = 1; // Count if Noon is selected
+    }
 
-  if (ArrivalisEveningSelected==true) {
-    ArrivalCount = 1; // Count if Evening is selected
+    if (ArrivalisEveningSelected==true) {
+      ArrivalCount = 1; // Count if Evening is selected
+    }
+    // Log the count for debugging
+    print('Total selected options: $selectedCount');
+    c=RefundableselectedCount+selectedCount+airlinesselectedCount+DepartCount+ArrivalCount;
+    print('Total selected options: $c');
   }
-  // Log the count for debugging
-  print('Total selected options: $selectedCount');
-  c=RefundableselectedCount+selectedCount+airlinesselectedCount+DepartCount+ArrivalCount;
-  print('Total selected options: $c');
-}
 
 // Map to hold the checkbox states
   bool isAirIndia = false;
@@ -232,28 +200,14 @@ class _FilterPageState extends State<FilterPage> {
   void initState() {
     // TODO: implement initState
     super.initState();
+    airlineCheckboxes = Map.from(widget.airlineCheckboxes);
+    print("✅ Airline Checkboxes in Filter Page: $airlineCheckboxes");
+
     isRefundable=widget.Refundable;
     isNonRefundable=widget.NonRefundable;
     isNonStop=widget.NonStop;
     isOneStop=widget.oneStop;
     isTwoPlusStops=widget.twoStop;
-    isAirIndia=widget.AirIndia;
-    isAirIndiaExpress=widget.AirIndiaExpress;
-    isBimanBangladesh=widget.isBimanBangladesh;
-    isBritishAirways=widget.isBritishAirways;
-    isEmirates=widget.isEmirates;
-    isEtihad=widget.isEtihad;
-    isGulfAir=widget.isGulfAir;
-    isIndigo=widget.isIndigo;
-    isLufthansa=widget.isLufthansa;
-    isOmanAviation=widget.isOmanAviation;
-    isQatarAirways=widget.isQatarAirways;
-    isSalamAir=widget.isSalamAir;
-    isSingaporeAirlines=widget.isSingaporeAirlines;
-    isSpiceJet=widget.isSpiceJet;
-    isSriLankanAirlines=widget.isSriLankanAirlines;
-    isTurkishAirlines=widget.isTurkishAirlines;
-    isVistara=widget.isVistara;
     DepartisEarlySelected=widget.DepartisEarlySelected;
     DepartisMorningSelected=widget.DepartisMorningSelected;
     DepartisNoonSelected=widget.DepartisNoonSelected;
@@ -276,7 +230,7 @@ class _FilterPageState extends State<FilterPage> {
             IconButton(
               icon: Icon(
                 Icons.arrow_back,
-                color: Colors.black,
+                color: Colors.white,
                 size: 27,
               ),
               onPressed: () {
@@ -286,21 +240,20 @@ class _FilterPageState extends State<FilterPage> {
 
             SizedBox(width: 1), // Set the desired width
             Text(
-              "Filter",
+              "Flight Filter",
               style: TextStyle(
-                  color: Colors.black, fontFamily: "Montserrat", fontSize: 19),
+                  color: Colors.white, fontFamily: "Montserrat",
+                  fontSize: 18),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-           width: 100,
-              height: 50,
+            width: 100,
+            height: 50,
           ),
-          SizedBox(
-            width: 10,
-          )
+
         ],
         backgroundColor:Color(0xFF00ADEE),
       ),
@@ -322,7 +275,7 @@ class _FilterPageState extends State<FilterPage> {
                         isRefundable = value;
                         _updateSelectedCount();
                       });
-                    },
+                    }, activeColor: Color(0xFF00ADEE),
                   ),
                 ],
               ),
@@ -337,7 +290,7 @@ class _FilterPageState extends State<FilterPage> {
                         isNonRefundable = value;
                         _updateSelectedCount();
                       });
-                    },
+                    }, activeColor: Color(0xFF00ADEE),
                   ),
                 ],
               ),
@@ -347,489 +300,116 @@ class _FilterPageState extends State<FilterPage> {
               Text('Stops From Dubai',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 10,),
-            Column(
-              mainAxisSize: MainAxisSize.min, // Minimizes vertical spacing within the Column
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.zero, // Removes any additional padding around each row
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Non-Stop',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0), // Minimizes density
-                        value: isNonStop,
-                        onChanged: (value) {
-                          setState(() {
-                            isNonStop = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
+              Column(
+                mainAxisSize: MainAxisSize.min, // Minimizes vertical spacing within the Column
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.zero, // Removes any additional padding around each row
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Non-Stop',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Checkbox(
+                          visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0), // Minimizes density
+                          value: isNonStop,
+                          onChanged: (value) {
+                            setState(() {
+                              isNonStop = value!;
+                              _updateSelectedCount();
+                            });
+                          }, activeColor: Color(0xFF00ADEE),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '1 Stop',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isOneStop,
-                        onChanged: (value) {
-                          setState(() {
-                            isOneStop = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
+                  SizedBox(height: 3,),
+                  Padding(
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '1 Stop',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Checkbox(
+                          visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
+                          value: isOneStop,
+                          onChanged: (value) {
+                            setState(() {
+                              isOneStop = value!;
+                              _updateSelectedCount();
+                            });
+                          }, activeColor: Color(0xFF00ADEE),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '2+ Stops',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isTwoPlusStops,
-                        onChanged: (value) {
-                          setState(() {
-                            isTwoPlusStops = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
+                  SizedBox(height: 3,),
+                  Padding(
+                    padding: EdgeInsets.zero,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '2+ Stops',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                        Checkbox(
+                          visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
+                          value: isTwoPlusStops,
+                          onChanged: (value) {
+                            setState(() {
+                              isTwoPlusStops = value!;
+                              _updateSelectedCount();
+                            });
+                          }, activeColor: Color(0xFF00ADEE),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
 
 
 
 
-            Divider(),
+              Divider(),
               SizedBox(height: 10,),
 // Airlines
               Text('Airlines',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               SizedBox(height: 10,),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Air India',
-                        style: TextStyle(fontSize: 16),
+              Column(
+                children: [
+                  ...airlineCheckboxes.keys.map((airline) {
+                    return CheckboxListTile(
+                      title: Text(
+                        airline,
+                        style: TextStyle(color: Colors.black,fontSize: 16),
                       ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0), // Minimize density
+                      value: airlineCheckboxes[airline],
+                      activeColor: Color(0xFF00ADEE),
+                      dense: true, // ✅ Reduces vertical space
+                      contentPadding: EdgeInsets.symmetric(horizontal: 0), // ✅ Less left-right padding
+                      onChanged: (bool? value) {
+                        setState(() {
+                          airlineCheckboxes[airline] = value ?? false;
+                        });
+                      },
+                    );
+                  }).toList(),
+                ],
+              ),
 
-                        value: isAirIndia,
-                        onChanged: (value) {
-                          setState(() {
-                            isAirIndia = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Air India Express',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0), // Minimize density
-                        value: isAirIndiaExpress,
-                        onChanged: (value) {
-                          setState(() {
-                            isAirIndiaExpress = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Biman Bangladesh Airlines',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isBimanBangladesh,
-                        onChanged: (value) {
-                          setState(() {
-                            isBimanBangladesh = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'British Airways',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isBritishAirways,
-                        onChanged: (value) {
-                          setState(() {
-                            isBritishAirways = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Emirates Airlines',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isEmirates,
-                        onChanged: (value) {
-                          setState(() {
-                            isEmirates = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Etihad Airways',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isEtihad,
-                        onChanged: (value) {
-                          setState(() {
-                            isEtihad = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Gulf Air',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isGulfAir,
-                        onChanged: (value) {
-                          setState(() {
-                            isGulfAir = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Indigo',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isIndigo,
-                        onChanged: (value) {
-                          setState(() {
-                            isIndigo = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Lufthansa',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isLufthansa,
-                        onChanged: (value) {
-                          setState(() {
-                            isLufthansa = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Oman Aviation',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isOmanAviation,
-                        onChanged: (value) {
-                          setState(() {
-                            isOmanAviation = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Qatar Airways',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isQatarAirways,
-                        onChanged: (value) {
-                          setState(() {
-                            isQatarAirways = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'SalamAir',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isSalamAir,
-                        onChanged: (value) {
-                          setState(() {
-                            isSalamAir = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Singapore Airlines',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isSingaporeAirlines,
-                        onChanged: (value) {
-                          setState(() {
-                            isSingaporeAirlines = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'SpiceJet',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isSpiceJet,
-                        onChanged: (value) {
-                          setState(() {
-                            isSpiceJet = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Sri Lankan Airlines',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isSriLankanAirlines,
-                        onChanged: (value) {
-                          setState(() {
-                            isSriLankanAirlines = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Turkish Airlines',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isTurkishAirlines,
-                        onChanged: (value) {
-                          setState(() {
-                            isTurkishAirlines = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 3,),
-                Padding(
-                  padding: EdgeInsets.zero,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Vistara',
-                        style: TextStyle(fontSize: 16),
-                      ),
-                      Checkbox(
-                        visualDensity: VisualDensity(horizontal: -4.0, vertical: -4.0),
-                        value: isVistara,
-                        onChanged: (value) {
-                          setState(() {
-                            isVistara = value!;
-                            _updateSelectedCount();
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                ),
 
-              ],
-            ),
 
-            Divider(),
+
+              Divider(),
               SizedBox(height: 10,),
 // Departure Time
               Text('Departure Time',
@@ -852,7 +432,7 @@ class _FilterPageState extends State<FilterPage> {
                           DepartisEarlySelected = value!;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -875,7 +455,7 @@ class _FilterPageState extends State<FilterPage> {
                           DepartisMorningSelected = value!;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -898,7 +478,7 @@ class _FilterPageState extends State<FilterPage> {
                           DepartisNoonSelected = value!;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -921,7 +501,7 @@ class _FilterPageState extends State<FilterPage> {
                           DepartisEveningSelected = value!;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -959,7 +539,7 @@ class _FilterPageState extends State<FilterPage> {
                           ArrivaltisEarlySelected = value ?? false;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -982,7 +562,7 @@ class _FilterPageState extends State<FilterPage> {
                           ArrivalisMorningSelected = value ?? false;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -1005,7 +585,7 @@ class _FilterPageState extends State<FilterPage> {
                           ArrivalisNoonSelected = value ?? false;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -1028,7 +608,7 @@ class _FilterPageState extends State<FilterPage> {
                           ArrivalisEveningSelected = value ?? false;
                           _updateSelectedCount();
                         });
-                      },
+                      }, activeColor: Color(0xFF00ADEE),
                     ),
                   ],
                 ),
@@ -1045,54 +625,26 @@ class _FilterPageState extends State<FilterPage> {
                     'isNonStop': isNonStop ? 'Yes' : 'No',
                     'isOneStop': isOneStop ? 'Yes' : 'No',
                     'isTwoPlusStops': isTwoPlusStops ? 'Yes' : 'No',
-                    'isAirIndia': isAirIndia ? 'Yes' : 'No',
-                    'isAirIndiaExpress': isAirIndiaExpress ? 'Yes' : 'No',
-                    'isBimanBangladesh': isBimanBangladesh ? 'Yes' : 'No',
-                    'isBritishAirways': isBritishAirways ? 'Yes' : 'No',
-                    'isEmirates': isEmirates ? 'Yes' : 'No',
-                    'isEtihad': isEtihad ? 'Yes' : 'No',
-                    'isGulfAir': isGulfAir ? 'Yes' : 'No',
-                    'isIndigo': isIndigo ? 'Yes' : 'No',
-                    'isLufthansa': isLufthansa ? 'Yes' : 'No',
-                    'isOmanAviation': isOmanAviation ? 'Yes' : 'No',
-                    'isQatarAirways': isQatarAirways ? 'Yes' : 'No',
-                    'isSalamAir': isSalamAir ? 'Yes' : 'No',
-                    'isSingaporeAirlines': isSingaporeAirlines ? 'Yes' : 'No',
-                    'isSpiceJet': isSpiceJet ? 'Yes' : 'No',
-                    'isSriLankanAirlines': isSriLankanAirlines ? 'Yes' : 'No',
-                    'isTurkishAirlines': isTurkishAirlines ? 'Yes' : 'No',
-                    'isVistara': isVistara ? 'Yes' : 'No',
                     'isEarlyDeparture': DepartisEarlySelected ? 'Yes' : 'No',
-                    // Early: Before 6 AM
-                    'isMorningDeparture':
-                    DepartisMorningSelected ? 'Yes' : 'No',
-                    // Morning: 6 AM - 12 PM
+                    'isMorningDeparture': DepartisMorningSelected ? 'Yes' : 'No',
                     'isNoonDeparture': DepartisNoonSelected ? 'Yes' : 'No',
-                    // Noon: 12 PM - 6 PM
-                    'isEveningDeparture':
-                    DepartisEveningSelected ? 'Yes' : 'No',
-                    // Evening: After 6 PM
-                    'ArrivalIsEarlyDeparture':
-                    ArrivaltisEarlySelected ? 'Yes' : 'No',
-                    // Early: Before 6 AM
-                    'ArrivalIsMorningDeparture':
-                    ArrivalisMorningSelected ? 'Yes' : 'No',
-                    // Morning: 6 AM - 12 PM
-                    'ArrivalIsNoonDeparture':
-                    ArrivalisNoonSelected ? 'Yes' : 'No',
-                    // Noon: 12 PM - 6 PM
-                    'ArrivalIsEveningDeparture':
-                    ArrivalisEveningSelected ? 'Yes' : 'No',
-                    // Evening: After 6 PM
+                    'isEveningDeparture': DepartisEveningSelected ? 'Yes' : 'No',
+                    'ArrivalIsEarlyDeparture': ArrivaltisEarlySelected ? 'Yes' : 'No',
+                    'ArrivalIsMorningDeparture': ArrivalisMorningSelected ? 'Yes' : 'No',
+                    'ArrivalIsNoonDeparture': ArrivalisNoonSelected ? 'Yes' : 'No',
+                    'ArrivalIsEveningDeparture': ArrivalisEveningSelected ? 'Yes' : 'No',
                     'add': 'Edit',
-                    'selectedCount':c,
+                    'selectedCount': c,
+                    'airlineCheckboxes': airlineCheckboxes,
                   });
                 },
                 child: Center(child: Text('Save')),
-                style: ElevatedButton.styleFrom(backgroundColor:Color(0xFF00ADEE),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Color(0xFF00ADEE),
                   minimumSize: Size(double.infinity, 50),
                 ),
               ),
+
 
             ],
           ),

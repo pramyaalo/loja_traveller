@@ -270,7 +270,7 @@ class _OneWayBookingState extends State<HotelAddChildrenscreen> {
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.BOTTOM,
               backgroundColor: Colors.green,
-              textColor:  Color(0xFF152238),
+              textColor:  Color(0xFF00ADEE),
             );
             print("Updated data: $updatedAdult");
           }
@@ -283,7 +283,7 @@ class _OneWayBookingState extends State<HotelAddChildrenscreen> {
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.green,
-          textColor:  Color(0xFF152238),
+          textColor:  Color(0xFF00ADEE),
         );
       }
 
@@ -298,7 +298,7 @@ class _OneWayBookingState extends State<HotelAddChildrenscreen> {
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
-        textColor:  Color(0xFF152238),
+        textColor:  Color(0xFF00ADEE),
       );
     }
   }
@@ -476,7 +476,7 @@ class _OneWayBookingState extends State<HotelAddChildrenscreen> {
           ),
 
         ],
-        backgroundColor: Color(0xFF152238),
+        backgroundColor: Color(0xFF00ADEE),
       ),
       resizeToAvoidBottomInset: true,
       body: isLoading
@@ -700,7 +700,7 @@ class _OneWayBookingState extends State<HotelAddChildrenscreen> {
                               borderRadius: BorderRadius.circular(5.0),
                             ),
                             child: DropdownButton(
-                              dropdownColor:  Color(0xFF152238),
+                              dropdownColor:  Color(0xFF00ADEE),
                               underline: SizedBox(),
                               value: selectedCountryCode,
                               iconSize: 0.0,
@@ -814,7 +814,7 @@ class _OneWayBookingState extends State<HotelAddChildrenscreen> {
                         width: double.infinity, // Makes the button take full width
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:  Color(0xFF152238), // Button background color
+                            backgroundColor:  Color(0xFF00ADEE), // Button background color
                             fixedSize: const Size.fromHeight(47), // Set button height to 45
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10), // Rounded corners

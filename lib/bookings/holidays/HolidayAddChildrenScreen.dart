@@ -465,14 +465,14 @@ class _OneWayBookingState extends State<HolidayAddChildrenScreen> {
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-           width: 100,
-              height: 50,
+            width: 150,
+            height: 50,
           ),
           SizedBox(
             width: 10,
           )
         ],
-        backgroundColor:Color(0xFF00ADEE),
+        backgroundColor: Colors.white,
       ),
       resizeToAvoidBottomInset: true,
       body: isLoading
@@ -551,9 +551,9 @@ class _OneWayBookingState extends State<HolidayAddChildrenScreen> {
                                 setState(() {
                                   adultFname_controller.text = selectedOption.name;
                                   AdultName1 = selectedOption.name;
-                                  AdultTravellerId1 = selectedOption.id.toString();
+                                  AdultTravellerId1 = selectedOption.id;
                                   print('Selected name: ' + AdultName1);
-                                  callSecondApi(selectedOption.id.toString());
+                                  callSecondApi(selectedOption.id);
                                 });
                               }
                             },
@@ -810,7 +810,7 @@ class _OneWayBookingState extends State<HolidayAddChildrenScreen> {
                         width: double.infinity, // Makes the button take full width
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:Color(0xFF00ADEE), // Button background color
+                            backgroundColor: Color(0xFF152238), // Button background color
                             fixedSize: const Size.fromHeight(47), // Set button height to 45
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10), // Rounded corners

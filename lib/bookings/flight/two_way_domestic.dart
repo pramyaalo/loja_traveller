@@ -7,7 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
- import '../../utils/commonutils.dart';
+import '../../utils/commonutils.dart';
 import '../../utils/response_handler.dart';
 import '../../utils/shared_preferences.dart';
 import 'FilterPage.dart';
@@ -26,15 +26,15 @@ class TwoWayDomestic extends StatefulWidget {
 
   const TwoWayDomestic(
       {super.key,
-      required this.adult,
-      required this.children,
-      required this.infants,
-      required this.orgin,
-      required this.originCountry,
-      required this.destinationCourntry,
-      required this.destination,
-      required this.departDate,
-      required this.returnDate});
+        required this.adult,
+        required this.children,
+        required this.infants,
+        required this.orgin,
+        required this.originCountry,
+        required this.destinationCourntry,
+        required this.destination,
+        required this.departDate,
+        required this.returnDate});
 
   @override
   State<TwoWayDomestic> createState() => _TwoWayDomesticState();
@@ -504,7 +504,7 @@ class _TwoWayDomesticState extends State<TwoWayDomestic> {
             fullResultList =
                 departFlightList;
             ReturnFullFlightList=returnFlightList;
-             print('Extracted flights: $fullResultList');
+            print('Extracted flights: $fullResultList');
             print('Extracted flights: $ReturnFullFlightList');
             _applyFiltersToResult(
                 departFlightList, filters);
@@ -893,7 +893,7 @@ class _TwoWayDomesticState extends State<TwoWayDomestic> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
+        backgroundColor: Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
@@ -966,1016 +966,999 @@ class _TwoWayDomesticState extends State<TwoWayDomestic> {
           })
 
           : Stack(
+        children: [
+          Column(
             children: [
-              Column(
-                children: [
-                  Expanded(
-                    child: Container(
-                        padding: EdgeInsets.only(top: 10, bottom: 10),
-                        child: Column(
-                          children: [
-                            departFlightSelected && returnFlightSelected
-                                ?
-                                    Container(
-                                      padding: EdgeInsets.only(left: 10,right: 10),
-                                      width: MediaQuery.of(context).size.width - 0,
-                                      child: Container(
-                                        child: Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.only(top: 10, bottom: 10),
+                  child: Column(
+                    children: [
+                      departFlightSelected && returnFlightSelected
+                          ?
+                      Container(
+                        padding: EdgeInsets.only(left: 10,right: 10),
+                        width: MediaQuery.of(context).size.width - 0,
+                        child: Container(
+                          child: Row(
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
+                            children: [
 
-                                            Text(
-                                              'INR ${double.parse(departFlight.TotalPrice) + double.parse(returnFlight.TotalPrice)}',
-                                              style: TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 20,
-                                                  color: Colors.black),
-                                            ),
-                                            Padding(
-                                              padding:
-                                              const EdgeInsets.only( top: 8),
-                                              child: ElevatedButton(
-                                                onPressed: () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          TwoWayBookingViewDetails(
-                                                            departflightDetails:
-                                                            departFlightList[selectedOriginIndex],
-                                                            resultIndex:departFlightList[selectedOriginIndex]['ResultIndexID'],
-                                                            arriavlresultindex:returnFlightList[selectedReturnIndex]['ResultIndexID'],
-                                                            departItemId:departFlightList[selectedOriginIndex]['ItemId'],
-                                                            arriavlItemId:returnFlightList[selectedReturnIndex]['ItemId'],
-                                                            arrivalflightDetails:returnFlightList[selectedReturnIndex],
-                                                            adultCount:widget.adult,
-                                                            childrenCount:
-                                                            widget.children,
-                                                            infantCount:
-                                                            widget.infants,
-                                                            departdate:
-                                                            widget.departDate,
-                                                            stopCount: departFlightList[
-                                                            selectedOriginIndex][
-                                                            "StopCount"],
-                                                            arrivalStopCount:returnFlightList[
-                                                            selectedReturnIndex][
-                                                            "StopCount"],
-                                                            /* departCity: departFlightList[
+                              Text(
+                                'INR ${double.parse(departFlight.TotalPrice) + double.parse(returnFlight.TotalPrice)}',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    color: Colors.black),
+                              ),
+                              Padding(
+                                padding:
+                                const EdgeInsets.only( top: 8),
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            TwoWayBookingViewDetails(
+                                              departflightDetails:
+                                              departFlightList[selectedOriginIndex],
+                                              resultIndex:departFlightList[selectedOriginIndex]['ResultIndexID'],
+                                              arriavlresultindex:returnFlightList[selectedReturnIndex]['ResultIndexID'],
+                                              departItemId:departFlightList[selectedOriginIndex]['ItemId'],
+                                              arriavlItemId:returnFlightList[selectedReturnIndex]['ItemId'],
+                                              arrivalflightDetails:returnFlightList[selectedReturnIndex],
+                                              adultCount:widget.adult,
+                                              childrenCount:
+                                              widget.children,
+                                              infantCount:
+                                              widget.infants,
+                                              departdate:
+                                              widget.departDate,
+                                              stopCount: departFlightList[
+                                              selectedOriginIndex][
+                                              "StopCount"],
+                                              arrivalStopCount:returnFlightList[
+                                              selectedReturnIndex][
+                                              "StopCount"],
+                                              /* departCity: departFlightList[
                                                         selectedOriginIndex][
                                                         "DepartCityName"],*/
-                                                            TotalPrice:
-                                                            departFlightList[selectedOriginIndex]
-                                                            ["TotalPrice"],
+                                              TotalPrice:
+                                              departFlightList[selectedOriginIndex]
+                                              ["TotalPrice"],
+                                            ),
+                                      ),
+                                    );
+                                  } ,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Color(0xFF00ADEE),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(10.0),
+                                    ),
+                                  ),
+                                  child: Container(
+                                    width: 100,
+                                    height: 50,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      'View Details',
+                                      style: TextStyle(
+                                          fontSize: 17,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ),
+                                ),
+                              ),
+
+                            ],
+                          ),
+                        ),
+                      )
+
+                          : Container(),
+                      Expanded(
+                        flex: 2,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                SizedBox(
+                                  height: 18,
+                                ),
+                                Container(
+                                  margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                                  width: MediaQuery.of(context).size.width / 2.01,
+                                  height:
+                                  1, // Slightly thicker for shadow visibility
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        // Shadow color
+                                        offset: Offset(0, 2),
+                                        // Horizontal and vertical shadow offset
+                                        blurRadius: 4,
+                                        // Blur radius for shadow spread
+                                        spreadRadius:
+                                        1, // Optional: spread radius to make the shadow more prominent
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                    margin: EdgeInsets.symmetric(horizontal: 4),
+                                    child: Text(
+                                      'Boarding Flight',
+                                      style: TextStyle(
+                                          color: Colors.black,
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold),
+                                    )),
+                                Container(
+                                  margin: EdgeInsets.fromLTRB(0, 15, 0, 0),
+                                  width: MediaQuery.of(context).size.width / 2.01,
+                                  height:
+                                  1, // Slightly thicker for shadow visibility
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        // Shadow color
+                                        offset: Offset(0, 2),
+                                        // Horizontal and vertical shadow offset
+                                        blurRadius: 4,
+                                        // Blur radius for shadow spread
+                                        spreadRadius:
+                                        1, // Optional: spread radius to make the shadow more prominent
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Expanded(
+                                  child: Container(
+                                    width: MediaQuery.of(context).size.width / 2.01,
+                                    child: ListView.builder(
+                                      controller: _scrollController,
+                                      itemCount: departFlightList.isNotEmpty ? (departFlightList.length * 2 - 1) : 0,
+                                      // Double the item count minus one for dividers
+                                      itemBuilder: (BuildContext context, index) {
+                                        if (index.isEven) {
+                                          // Even indices will correspond to flight items
+                                          index = index ~/
+                                              2; // Get the original flight index
+
+                                          return InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                selectedOriginIndex = index;
+                                                departFlight = SelectedFlightModel(
+                                                  DepartCityCode:
+                                                  departFlightList[index]
+                                                  ['DepartCityCode'],
+                                                  ArriveCityCode:
+                                                  departFlightList[index]
+                                                  ['ArriveCityCode'],
+                                                  TotalPrice:
+                                                  departFlightList[index]
+                                                  ['TotalPrice'],
+                                                );
+                                                departFlightSelected = true;
+                                              });
+                                            },
+                                            child: Container(
+                                              color: selectedOriginIndex == index
+                                                  ? Colors.amber
+                                                  : Colors.white,
+                                              padding: EdgeInsets.all(10),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius:
+                                                        BorderRadius.circular(
+                                                            25),
+                                                        child: Image.asset(
+                                                          'assets/images/img.png',
+                                                          height: 30,
+                                                          width: 30,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 5),
+                                                      Expanded(
+                                                        child: Text(
+                                                          departFlightList[
+                                                          index]
+                                                          ['CarrierName'],
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                            FontWeight.w500,
+                                                            color: Colors.black54,
                                                           ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 4),
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      // Departure Info
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils
+                                                                .convertToFormattedTime(
+                                                              departFlightList[
+                                                              index]
+                                                              ['DepartureDate'],
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            departFlightList[
+                                                            index]
+                                                            ['DepartCityCode'],
+                                                            style: TextStyle(
+                                                              color: Colors.black45,
+                                                              fontWeight:
+                                                              FontWeight.w800,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      // Travel Time and Stops
+                                                      Column(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils
+                                                                .convertMinutesToHoursMinutes(
+                                                              departFlightList[
+                                                              index]
+                                                              ['TravelTime'],
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                                left: 0,
+                                                                bottom: 0),
+                                                            child: Image.asset(
+                                                              (departFlightList[
+                                                              index]
+                                                              [
+                                                              'StopCount'] ==
+                                                                  '0')
+                                                                  ? "assets/images/NonStop.png"
+                                                                  : (departFlightList[
+                                                              index]
+                                                              [
+                                                              'StopCount'] ==
+                                                                  '1')
+                                                                  ? "assets/images/oneStop.png"
+                                                                  : "assets/images/TwoStop.png",
+                                                              width: 50,
+                                                              fit: BoxFit.fitWidth,
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                            EdgeInsets.only(
+                                                                left: 10),
+                                                            child: Text(
+                                                              departFlightList[
+                                                              index]
+                                                              [
+                                                              'StopCount'] ==
+                                                                  '0'
+                                                                  ? 'Non-Stop'
+                                                                  : '${departFlightList[index]['StopCount']} stops',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                FontWeight.w400,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      // Arrival Info
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils
+                                                                .convertToFormattedTime(
+                                                              departFlightList[
+                                                              index]
+                                                              ['ArrivalDate'],
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            departFlightList[
+                                                            index]
+                                                            ['ArriveCityCode'],
+                                                            style: TextStyle(
+                                                              color: Colors.black45,
+                                                              fontWeight:
+                                                              FontWeight.w800,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 8),
+                                                  Align(
+                                                    alignment:
+                                                    Alignment.centerRight,
+                                                    child: Text(
+                                                      '${departFlightList[index]['Currency']} ${departFlightList[index]['TotalPrice']}',
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 18,
+                                                      ),
                                                     ),
-                                                  );
-                                                } ,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:Color(0xFF00ADEE),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(10.0),
                                                   ),
-                                                ),
-                                                child: Container(
-                                                  width: 100,
-                                                  height: 50,
-                                                  alignment: Alignment.center,
-                                                  child: Text(
-                                                    'View Details',
-                                                    style: TextStyle(
-                                                        fontSize: 17,
-                                                        fontWeight: FontWeight.w500),
-                                                  ),
-                                                ),
+                                                ],
                                               ),
                                             ),
-
-                                          ],
-                                        ),
+                                          );
+                                        } else {
+                                          // Odd indices will be dividers
+                                          return Divider(
+                                            height: 1,
+                                            // Control the height of the divider
+                                            thickness: 1,
+                                            // Control the thickness of the divider
+                                            color: Colors.grey
+                                                .shade500, // Color of the divider
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                )
+                              ],
+                            ),
+                            Container(
+                              width: 1, // Width of the vertical line
+                              height: MediaQuery.of(context).size.height *
+                                  0.9, // Increase to 0.9 for more height
+                              color: Colors.grey, // Color of the vertical line
+                              margin: EdgeInsets.only(
+                                  top: MediaQuery.of(context).size.height *
+                                      0.05), // Adjust this for the starting position
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  height: 18,
+                                ),
+                                Container(
+                                  margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
+                                  width: MediaQuery.of(context).size.width / 2.01,
+                                  height:
+                                  1, // Slightly thicker for shadow visibility
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black26,
+                                        // Shadow color
+                                        offset: Offset(0, 2),
+                                        // Horizontal and vertical shadow offset
+                                        blurRadius: 4,
+                                        // Blur radius for shadow spread
+                                        spreadRadius:
+                                        1, // Optional: spread radius to make the shadow more prominent
                                       ),
-                                    )
-
-                                : Container(),
-                            Expanded(
-                              flex: 2,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      SizedBox(
-                                        height: 18,
-                                      ),
-                                      Container(
-                                        margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                                        width: MediaQuery.of(context).size.width / 2.01,
-                                        height:
-                                            1, // Slightly thicker for shadow visibility
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              // Shadow color
-                                              offset: Offset(0, 2),
-                                              // Horizontal and vertical shadow offset
-                                              blurRadius: 4,
-                                              // Blur radius for shadow spread
-                                              spreadRadius:
-                                                  1, // Optional: spread radius to make the shadow more prominent
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      SizedBox(
-                                        height: 10,
-                                      ),
-                                      Container(
-                                          margin: EdgeInsets.symmetric(horizontal: 4),
-                                          child: Text(
-                                            'Boarding Flight',
-                                            style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 15,
-                                                fontWeight: FontWeight.bold),
-                                          )),
-                                      Container(
-                                        margin: EdgeInsets.fromLTRB(0, 15, 0, 0),
-                                        width: MediaQuery.of(context).size.width / 2.01,
-                                        height:
-                                            1, // Slightly thicker for shadow visibility
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              // Shadow color
-                                              offset: Offset(0, 2),
-                                              // Horizontal and vertical shadow offset
-                                              blurRadius: 4,
-                                              // Blur radius for shadow spread
-                                              spreadRadius:
-                                                  1, // Optional: spread radius to make the shadow more prominent
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          width: MediaQuery.of(context).size.width / 2.01,
-                                          child: ListView.builder(
-                                            controller: _scrollController,
-                                            itemCount: departFlightList.isNotEmpty ? (departFlightList.length * 2 - 1) : 0,
-                                            // Double the item count minus one for dividers
-                                            itemBuilder: (BuildContext context, index) {
-                                              if (index.isEven) {
-                                                // Even indices will correspond to flight items
-                                                  index = index ~/
-                                                    2; // Get the original flight index
-
-                                                return InkWell(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      selectedOriginIndex = index;
-                                                      departFlight = SelectedFlightModel(
-                                                        DepartCityCode:
-                                                            departFlightList[index]
-                                                                ['DepartCityCode'],
-                                                        ArriveCityCode:
-                                                            departFlightList[index]
-                                                                ['ArriveCityCode'],
-                                                        TotalPrice:
-                                                            departFlightList[index]
-                                                                ['TotalPrice'],
-                                                      );
-                                                      departFlightSelected = true;
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    color: selectedOriginIndex == index
-                                                        ? Colors.amber
-                                                        : Colors.white,
-                                                    padding: EdgeInsets.all(10),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment.stretch,
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            ClipRRect(
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      25),
-                                                              child: Image.asset(
-                                                                'assets/images/img.png',
-                                                                height: 30,
-                                                                width: 30,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 5),
-                                                            Expanded(
-                                                              child: Text(
-                                                                departFlightList[
-                                                                        index]
-                                                                    ['CarrierName'],
-                                                                style: TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight.w500,
-                                                                  color: Colors.black54,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 4),
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            // Departure Info
-                                                            Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  CommonUtils
-                                                                      .convertToFormattedTime(
-                                                                    departFlightList[
-                                                                            index]
-                                                                        ['DepartureDate'],
-                                                                  ),
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w400,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                                Text(
-                                                                  departFlightList[
-                                                                          index]
-                                                                      ['DepartCityCode'],
-                                                                  style: TextStyle(
-                                                                    color: Colors.black45,
-                                                                    fontWeight:
-                                                                        FontWeight.w800,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-
-                                                            // Travel Time and Stops
-                                                            Column(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  CommonUtils
-                                                                      .convertMinutesToHoursMinutes(
-                                                                    departFlightList[
-                                                                            index]
-                                                                        ['TravelTime'],
-                                                                  ),
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w400,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .only(
-                                                                          left: 0,
-                                                                          bottom: 0),
-                                                                  child: Image.asset(
-                                                                    (departFlightList[
-                                                                                    index]
-                                                                                [
-                                                                                'StopCount'] ==
-                                                                            '0')
-                                                                        ? "assets/images/NonStop.png"
-                                                                        : (departFlightList[
-                                                                                        index]
-                                                                                    [
-                                                                                    'StopCount'] ==
-                                                                                '1')
-                                                                            ? "assets/images/oneStop.png"
-                                                                            : "assets/images/TwoStop.png",
-                                                                    width: 50,
-                                                                    fit: BoxFit.fitWidth,
-                                                                  ),
-                                                                ),
-                                                                Padding(
-                                                                  padding:
-                                                                      EdgeInsets.only(
-                                                                          left: 10),
-                                                                  child: Text(
-                                                                    departFlightList[
-                                                                                    index]
-                                                                                [
-                                                                                'StopCount'] ==
-                                                                            '0'
-                                                                        ? 'Non-Stop'
-                                                                        : '${departFlightList[index]['StopCount']} stops',
-                                                                    style: TextStyle(
-                                                                      fontSize: 11,
-                                                                      fontWeight:
-                                                                          FontWeight.w400,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-
-                                                            // Arrival Info
-                                                            Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  CommonUtils
-                                                                      .convertToFormattedTime(
-                                                                    departFlightList[
-                                                                            index]
-                                                                        ['ArrivalDate'],
-                                                                  ),
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w400,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                                Text(
-                                                                  departFlightList[
-                                                                          index]
-                                                                      ['ArriveCityCode'],
-                                                                  style: TextStyle(
-                                                                    color: Colors.black45,
-                                                                    fontWeight:
-                                                                        FontWeight.w800,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        Align(
-                                                          alignment:
-                                                              Alignment.centerRight,
-                                                          child: Text(
-                                                            '${departFlightList[index]['Currency']} ${departFlightList[index]['TotalPrice']}',
-                                                            style: TextStyle(
-                                                              fontWeight: FontWeight.bold,
-                                                              fontSize: 18,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              } else {
-                                                // Odd indices will be dividers
-                                                return Divider(
-                                                  height: 1,
-                                                  // Control the height of the divider
-                                                  thickness: 1,
-                                                  // Control the thickness of the divider
-                                                  color: Colors.grey
-                                                      .shade500, // Color of the divider
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      )
                                     ],
                                   ),
-                                  Container(
-                                    width: 1, // Width of the vertical line
-                                    height: MediaQuery.of(context).size.height *
-                                        0.9, // Increase to 0.9 for more height
-                                    color: Colors.grey, // Color of the vertical line
-                                    margin: EdgeInsets.only(
-                                        top: MediaQuery.of(context).size.height *
-                                            0.05), // Adjust this for the starting position
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Container(
+                                  margin: EdgeInsets.symmetric(horizontal: 4),
+                                  child: Text(
+                                    'Return Flight',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        height: 18,
+                                ),
+                                Container(
+                                  margin: EdgeInsets.fromLTRB(0, 15, 0, 0),
+                                  width: MediaQuery.of(context).size.width / 2.01,
+                                  height: 1, // Thickness of the line
+                                  decoration: BoxDecoration(
+                                    color: Colors.grey,
+                                    // Color of the line
+                                    borderRadius: BorderRadius.circular(4),
+                                    // Softly rounded corners
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black38,
+                                        // Shadow color with transparency
+                                        offset: Offset(0, 8),
+                                        // Creates a downward offset for a 3D look
+                                        blurRadius: 15,
+                                        // High blur for soft shadow edges
+                                        spreadRadius:
+                                        2, // Makes the shadow more prominent
                                       ),
-                                      Container(
-                                        margin: EdgeInsets.fromLTRB(0, 20, 0, 0),
-                                        width: MediaQuery.of(context).size.width / 2.01,
-                                        height:
-                                            1, // Slightly thicker for shadow visibility
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey,
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black26,
-                                              // Shadow color
-                                              offset: Offset(0, 2),
-                                              // Horizontal and vertical shadow offset
-                                              blurRadius: 4,
-                                              // Blur radius for shadow spread
-                                              spreadRadius:
-                                                  1, // Optional: spread radius to make the shadow more prominent
-                                            ),
-                                          ],
-                                        ),
+                                      BoxShadow(
+                                        color: Colors.black12,
+                                        // Slight secondary shadow for extra depth
+                                        offset: Offset(0, 4),
+                                        // Smaller offset to add layering effect
+                                        blurRadius: 10,
                                       ),
-                                      SizedBox(
-                                        height: 10,
-                                      ),
-                                      Container(
-                                        margin: EdgeInsets.symmetric(horizontal: 4),
-                                        child: Text(
-                                          'Return Flight',
-                                          style: TextStyle(
-                                            color: Colors.black,
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: EdgeInsets.fromLTRB(0, 15, 0, 0),
-                                        width: MediaQuery.of(context).size.width / 2.01,
-                                        height: 1, // Thickness of the line
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey,
-                                          // Color of the line
-                                          borderRadius: BorderRadius.circular(4),
-                                          // Softly rounded corners
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black38,
-                                              // Shadow color with transparency
-                                              offset: Offset(0, 8),
-                                              // Creates a downward offset for a 3D look
-                                              blurRadius: 15,
-                                              // High blur for soft shadow edges
-                                              spreadRadius:
-                                                  2, // Makes the shadow more prominent
-                                            ),
-                                            BoxShadow(
-                                              color: Colors.black12,
-                                              // Slight secondary shadow for extra depth
-                                              offset: Offset(0, 4),
-                                              // Smaller offset to add layering effect
-                                              blurRadius: 10,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Expanded(
-                                        child: Container(
-                                          width: ((MediaQuery.of(context).size.width) /
-                                              2.01),
-                                          child: ListView.builder(
-                                            controller: _scrollController1,
-                                            itemCount: returnFlightList.isNotEmpty ? (returnFlightList.length * 2 - 1) : 0,
-                                            // Double the item count minus one for dividers
-                                            itemBuilder: (BuildContext context, index) {
-                                              if (index.isEven) {
-                                                // Even indices will correspond to flight items
-                                                  index = index ~/
-                                                    2; // Get the original flight index
-
-                                                return InkWell(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      selectedReturnIndex = index;
-                                                      returnFlight = SelectedFlightModel(
-                                                          DepartCityCode:
-                                                              returnFlightList[index]
-                                                                  ['DepartCityCode'],
-                                                          ArriveCityCode:
-                                                              returnFlightList[index]
-                                                                  ['ArriveCityCode'],
-                                                          TotalPrice:
-                                                              returnFlightList[index]
-                                                                  ['TotalPrice']);
-                                                      returnFlightSelected = true;
-                                                    });
-                                                  },
-                                                  child: Container(
-                                                    color: selectedReturnIndex == index
-                                                        ? Colors.amber
-                                                        : Colors.white,
-                                                    padding: EdgeInsets.all(10),
-                                                    child: Column(
-                                                      crossAxisAlignment:
-                                                          CrossAxisAlignment.stretch,
-                                                      children: [
-                                                        Row(
-                                                          children: [
-                                                            ClipRRect(
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                      25),
-                                                              child: Image.asset(
-                                                                'assets/images/img.png',
-                                                                height: 30,
-                                                                width: 30,
-                                                              ),
-                                                            ),
-                                                            SizedBox(width: 5),
-                                                            Expanded(
-                                                              child: Text(
-                                                                returnFlightList[
-                                                                        index]
-                                                                    ['CarrierName'],
-                                                                style: TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight.w500,
-                                                                  color: Colors.black54,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 4),
-                                                        Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .spaceBetween,
-                                                          children: [
-                                                            // Departure Info
-                                                            Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  CommonUtils
-                                                                      .convertToFormattedTime(
-                                                                    returnFlightList[
-                                                                            index]
-                                                                        ['DepartureDate'],
-                                                                  ),
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w400,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                                Text(
-                                                                  returnFlightList[
-                                                                          index]
-                                                                      ['DepartCityCode'],
-                                                                  style: TextStyle(
-                                                                    color: Colors.black45,
-                                                                    fontWeight:
-                                                                        FontWeight.w800,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-
-                                                            // Travel Time and Stops
-                                                            Column(
-                                                              mainAxisAlignment:
-                                                                  MainAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  CommonUtils
-                                                                      .convertMinutesToHoursMinutes(
-                                                                    returnFlightList[
-                                                                            index]
-                                                                        ['TravelTime'],
-                                                                  ),
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w400,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                                Padding(
-                                                                  padding:
-                                                                      const EdgeInsets
-                                                                          .only(
-                                                                          left: 0,
-                                                                          bottom: 0),
-                                                                  child: Image.asset(
-                                                                    (returnFlightList[
-                                                                                    index]
-                                                                                [
-                                                                                'StopCount'] ==
-                                                                            '0')
-                                                                        ? "assets/images/NonStop.png"
-                                                                        : (returnFlightList[
-                                                                                        index]
-                                                                                    [
-                                                                                    'StopCount'] ==
-                                                                                '1')
-                                                                            ? "assets/images/oneStop.png"
-                                                                            : "assets/images/TwoStop.png",
-                                                                    width: 50,
-                                                                    fit: BoxFit.fitWidth,
-                                                                  ),
-                                                                ),
-                                                                Padding(
-                                                                  padding:
-                                                                      EdgeInsets.only(
-                                                                          left: 10),
-                                                                  child: Text(
-                                                                    returnFlightList[
-                                                                                    index]
-                                                                                [
-                                                                                'StopCount'] ==
-                                                                            '0'
-                                                                        ? 'Non-Stop'
-                                                                        : '${returnFlightList[index]['StopCount']} stops',
-                                                                    style: TextStyle(
-                                                                      fontSize: 11,
-                                                                      fontWeight:
-                                                                          FontWeight.w400,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-
-                                                            // Arrival Info
-                                                            Column(
-                                                              crossAxisAlignment:
-                                                                  CrossAxisAlignment
-                                                                      .center,
-                                                              children: [
-                                                                Text(
-                                                                  CommonUtils
-                                                                      .convertToFormattedTime(
-                                                                    returnFlightList[
-                                                                            index]
-                                                                        ['ArrivalDate'],
-                                                                  ),
-                                                                  style: TextStyle(
-                                                                    fontWeight:
-                                                                        FontWeight.w400,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                                Text(
-                                                                  returnFlightList[
-                                                                          index]
-                                                                      ['ArriveCityCode'],
-                                                                  style: TextStyle(
-                                                                    color: Colors.black45,
-                                                                    fontWeight:
-                                                                        FontWeight.w800,
-                                                                    fontSize: 12,
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ],
-                                                        ),
-                                                        SizedBox(height: 8),
-                                                        Align(
-                                                          alignment:
-                                                              Alignment.centerRight,
-                                                          child: Text(
-                                                            '${returnFlightList[index]['Currency']} ${returnFlightList[index]['TotalPrice']}',
-                                                            style: TextStyle(
-                                                              fontWeight: FontWeight.bold,
-                                                              fontSize: 18,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                );
-                                              } else {
-                                                // Odd indices will be dividers
-                                                return Divider(
-                                                  height: 1,
-                                                  // Control the height of the divider
-                                                  thickness: 1,
-                                                  // Control the thickness of the divider
-                                                  color: Colors.grey
-                                                      .shade500, // Color of the divider
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      )
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                                Expanded(
+                                  child: Container(
+                                    width: ((MediaQuery.of(context).size.width) /
+                                        2.01),
+                                    child: ListView.builder(
+                                      controller: _scrollController1,
+                                      itemCount: returnFlightList.isNotEmpty ? (returnFlightList.length * 2 - 1) : 0,
+                                      // Double the item count minus one for dividers
+                                      itemBuilder: (BuildContext context, index) {
+                                        if (index.isEven) {
+                                          // Even indices will correspond to flight items
+                                          index = index ~/
+                                              2; // Get the original flight index
+
+                                          return InkWell(
+                                            onTap: () {
+                                              setState(() {
+                                                selectedReturnIndex = index;
+                                                returnFlight = SelectedFlightModel(
+                                                    DepartCityCode:
+                                                    returnFlightList[index]
+                                                    ['DepartCityCode'],
+                                                    ArriveCityCode:
+                                                    returnFlightList[index]
+                                                    ['ArriveCityCode'],
+                                                    TotalPrice:
+                                                    returnFlightList[index]
+                                                    ['TotalPrice']);
+                                                returnFlightSelected = true;
+                                              });
+                                            },
+                                            child: Container(
+                                              color: selectedReturnIndex == index
+                                                  ? Colors.amber
+                                                  : Colors.white,
+                                              padding: EdgeInsets.all(10),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      ClipRRect(
+                                                        borderRadius:
+                                                        BorderRadius.circular(
+                                                            25),
+                                                        child: Image.asset(
+                                                          'assets/images/img.png',
+                                                          height: 30,
+                                                          width: 30,
+                                                        ),
+                                                      ),
+                                                      SizedBox(width: 5),
+                                                      Expanded(
+                                                        child: Text(
+                                                          returnFlightList[
+                                                          index]
+                                                          ['CarrierName'],
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                            FontWeight.w500,
+                                                            color: Colors.black54,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 4),
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      // Departure Info
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils
+                                                                .convertToFormattedTime(
+                                                              returnFlightList[
+                                                              index]
+                                                              ['DepartureDate'],
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            returnFlightList[
+                                                            index]
+                                                            ['DepartCityCode'],
+                                                            style: TextStyle(
+                                                              color: Colors.black45,
+                                                              fontWeight:
+                                                              FontWeight.w800,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      // Travel Time and Stops
+                                                      Column(
+                                                        mainAxisAlignment:
+                                                        MainAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils
+                                                                .convertMinutesToHoursMinutes(
+                                                              returnFlightList[
+                                                              index]
+                                                              ['TravelTime'],
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                            const EdgeInsets
+                                                                .only(
+                                                                left: 0,
+                                                                bottom: 0),
+                                                            child: Image.asset(
+                                                              (returnFlightList[
+                                                              index]
+                                                              [
+                                                              'StopCount'] ==
+                                                                  '0')
+                                                                  ? "assets/images/NonStop.png"
+                                                                  : (returnFlightList[
+                                                              index]
+                                                              [
+                                                              'StopCount'] ==
+                                                                  '1')
+                                                                  ? "assets/images/oneStop.png"
+                                                                  : "assets/images/TwoStop.png",
+                                                              width: 50,
+                                                              fit: BoxFit.fitWidth,
+                                                            ),
+                                                          ),
+                                                          Padding(
+                                                            padding:
+                                                            EdgeInsets.only(
+                                                                left: 10),
+                                                            child: Text(
+                                                              returnFlightList[
+                                                              index]
+                                                              [
+                                                              'StopCount'] ==
+                                                                  '0'
+                                                                  ? 'Non-Stop'
+                                                                  : '${returnFlightList[index]['StopCount']} stops',
+                                                              style: TextStyle(
+                                                                fontSize: 11,
+                                                                fontWeight:
+                                                                FontWeight.w400,
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+
+                                                      // Arrival Info
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .center,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils
+                                                                .convertToFormattedTime(
+                                                              returnFlightList[
+                                                              index]
+                                                              ['ArrivalDate'],
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                              FontWeight.w400,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            returnFlightList[
+                                                            index]
+                                                            ['ArriveCityCode'],
+                                                            style: TextStyle(
+                                                              color: Colors.black45,
+                                                              fontWeight:
+                                                              FontWeight.w800,
+                                                              fontSize: 12,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  SizedBox(height: 8),
+                                                  Align(
+                                                    alignment:
+                                                    Alignment.centerRight,
+                                                    child: Text(
+                                                      '${returnFlightList[index]['Currency']} ${returnFlightList[index]['TotalPrice']}',
+                                                      style: TextStyle(
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 18,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        } else {
+                                          // Odd indices will be dividers
+                                          return Divider(
+                                            height: 1,
+                                            // Control the height of the divider
+                                            thickness: 1,
+                                            // Control the thickness of the divider
+                                            color: Colors.grey
+                                                .shade500, // Color of the divider
+                                          );
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                )
+                              ],
                             ),
                           ],
                         ),
                       ),
-                  ),
-                ],
-              ),
-              if (_isBottomBarVisible)
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: Container(
-                    color: Colors.white,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          // Filter Icon and Text
-
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () async {
-                                  // Navigate to FilterPage and pass the current 'add' state
-                                  final result = await Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                        builder: (context) => FilterPage(
-                                          Refundable:isRefundable,
-                                          NonRefundable:isNonRefundable,
-                                          NonStop:isNonStop,
-                                          oneStop:isOneStop,
-                                          twoStop:isTwoPlusStops,
-                                          AirIndia:isAirIndia,
-                                          AirIndiaExpress:isAirIndiaExpress,
-                                          isBimanBangladesh:isBimanBangladesh,
-                                          isBritishAirways:isBritishAirways,
-                                          isEmirates:isEmirates,
-                                          isEtihad:isEtihad,
-                                          isGulfAir:isGulfAir,
-                                          isIndigo:isIndigo,
-                                          isLufthansa:isLufthansa,
-                                          isOmanAviation:isOmanAviation,
-                                          isQatarAirways:isQatarAirways,
-                                          isSalamAir:isSalamAir,
-                                          isSingaporeAirlines:isSingaporeAirlines,
-                                          isSpiceJet:isSpiceJet,
-                                          isSriLankanAirlines:isSriLankanAirlines,
-                                          isTurkishAirlines:isTurkishAirlines,
-                                          isVistara:isVistara,
-                                          DepartisEarlySelected:DepartisEarlySelected,
-                                          DepartisMorningSelected:DepartisMorningSelected,
-                                          DepartisNoonSelected:DepartisNoonSelected,
-                                          DepartisEveningSelected:DepartisEveningSelected,
-                                          ArrivalisEarlySelected:ArrivalisEarlySelected,
-                                          ArrivalisMorningSelected:ArrivalisMorningSelected,
-                                          ArrivalisNoonSelected:ArrivalisNoonSelected,
-                                          ArrivalisEveningSelected:ArrivalisEveningSelected,
-                                          add: '',
-
-                                        )),
-                                  );
-
-                                  // If we received any result from the filter page
-                                  if (result != null) {
-                                    setState(() {
-                                      selectedCount = result['selectedCount'] ?? 0;
-                                      print('Selected filter count: $selectedCount');
-                                      isRefundable = result['isRefundable'] == 'Refundable';
-                                      isNonRefundable = result['isNonRefundable'] == 'Non-Refundable';
-                                      isNonStop = result['isNonStop'] == 'Yes';
-                                      isOneStop = result['isOneStop'] == 'Yes';
-                                      isTwoPlusStops = result['isTwoPlusStops'] == 'Yes';
-                                      isAirIndia = result['isAirIndia'] == 'Yes';
-                                      isAirIndiaExpress = result['isAirIndiaExpress'] == 'Yes';
-                                      isBimanBangladesh = result['isBimanBangladesh'] == 'Yes';
-                                      isBritishAirways = result['isBritishAirways'] == 'Yes';
-                                      isEmirates = result['isEmirates'] == 'Yes';
-                                      isEtihad = result['isEtihad'] == 'Yes';
-                                      isGulfAir = result['isGulfAir'] == 'Yes';
-                                      isIndigo = result['isIndigo'] == 'Yes';
-                                      isLufthansa = result['isLufthansa'] == 'Yes';
-                                      isOmanAviation = result['isOmanAviation'] == 'Yes';
-                                      isQatarAirways = result['isQatarAirways'] == 'Yes';
-                                      isSalamAir = result['isSalamAir'] == 'Yes';
-                                      isSingaporeAirlines = result['isSingaporeAirlines'] == 'Yes';
-                                      isSpiceJet = result['isSpiceJet'] == 'Yes';
-                                      isSriLankanAirlines = result['isSriLankanAirlines'] == 'Yes';
-                                      isTurkishAirlines = result['isTurkishAirlines'] == 'Yes';
-                                      isVistara = result['isVistara'] == 'Yes';
-                                      DepartisEarlySelected = result['isEarlyDeparture'] == 'Yes';
-                                      DepartisMorningSelected = result['isMorningDeparture'] == 'Yes';
-                                      DepartisNoonSelected = result['isNoonDeparture'] == 'Yes';
-                                      DepartisEveningSelected = result['isEveningDeparture'] == 'Yes';
-                                      ArrivalisEarlySelected = result['ArrivalIsEarlyDeparture'] == 'Yes';
-                                      ArrivalisMorningSelected = result['ArrivalIsMorningDeparture'] == 'Yes';
-                                      ArrivalisNoonSelected = result['ArrivalIsNoonDeparture'] == 'Yes';
-                                      ArrivalisEveningSelected = result['ArrivalIsEveningDeparture'] == 'Yes';
-                                      String add = 'Edit'; // Assuming this remains constant
-
-                                      // Step 3: Print all filter values
-                                      print('Selected filter count: $selectedCount');
-                                      print('isRefundable: $isRefundable');
-                                      print('isNonRefundable: $isNonRefundable');
-                                      print('isNonStop: $isNonStop');
-                                      print('isOneStop: $isOneStop');
-                                      print('isTwoPlusStops: $isTwoPlusStops');
-                                      print('isAirIndia: $isAirIndia');
-                                      print('isAirIndiaExpress: $isAirIndiaExpress');
-                                      print('isBimanBangladesh: $isBimanBangladesh');
-                                      print('isBritishAirways: $isBritishAirways');
-                                      print('isEmirates: $isEmirates');
-                                      print('isEtihad: $isEtihad');
-                                      print('isGulfAir: $isGulfAir');
-                                      print('isIndigo: $isIndigo');
-                                      print('isLufthansa: $isLufthansa');
-                                      print('isOmanAviation: $isOmanAviation');
-                                      print('isQatarAirways: $isQatarAirways');
-                                      print('isSalamAir: $isSalamAir');
-                                      print('isSingaporeAirlines: $isSingaporeAirlines');
-                                      print('isSpiceJet: $isSpiceJet');
-                                      print('isSriLankanAirlines: $isSriLankanAirlines');
-                                      print('isTurkishAirlines: $isTurkishAirlines');
-                                      print('isVistara: $isVistara');
-                                      print('isEarlyDeparture: $DepartisEarlySelected');
-                                      print('isMorningDeparture: $DepartisMorningSelected');
-                                      print('isNoonDeparture: $DepartisNoonSelected');
-                                      print('isEveningDeparture: $DepartisEveningSelected');
-                                      print('arrivalIsEarlyDeparture: $ArrivalisEarlySelected');
-                                      print('arrivalIsMorningDeparture: $ArrivalisMorningSelected');
-                                      print('arrivalIsNoonDeparture: $ArrivalisNoonSelected');
-                                      print('arrivalIsEveningDeparture: $ArrivalisEveningSelected');
-                                      print('add: $add');
-                                      sendFlightSearchRequest(result);
-                                    });
-                                  }
-                                },
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min, // Ensures the row only takes necessary space
-                                  children: [
-                                    Icon(
-                                      Icons.filter_alt_outlined,
-                                      size: 20, // Adjust the icon size as needed
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    SizedBox(height: 7), // Optional: Adjust this for spacing between icon and text
-                                    Text(
-                                      "Filter",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          // Time Icon and Text
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  _showTimeBottomSheet(context);
-                                },
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min, // Ensures the row only takes necessary space
-                                  children: [
-                                    Icon(
-                                      Icons.schedule,
-                                      size: 20, // Adjust the size of the icon as needed
-                                      color: Colors.grey.shade600, // Match the icon color with the text
-                                    ),
-                                    SizedBox(height: 7), // Optional: Add a tiny width for spacing
-                                    Text(
-                                      "Time",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-
-                          // NonStop Icon and Text
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    isNonStopSelected = !isNonStopSelected; // Toggle switch state
-                                    // Call filter function if necessary
-                                    Map<String, dynamic> filters = {
-                                      'isNonStop': isNonStopSelected, // Non-stop filter
-                                    };
-                                    _applyStopCountFilter(fullResultList, filters);
-                                    _applyStopCountReturnFlightFilter(ReturnFullFlightList,filters);
-                                  });
-                                },
-                                child: Container(
-                                  width: 35, // Adjusted width
-                                  height: 20, // Adjusted height
-                                  decoration: BoxDecoration(
-                                    color: isNonStopSelected ? Colors.pink.shade200 : Colors.grey, // Change color based on state
-                                    borderRadius: BorderRadius.circular(30),
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      // White circle
-                                      AnimatedAlign(
-                                        alignment: isNonStopSelected ? Alignment.centerRight : Alignment.centerLeft,
-                                        duration: Duration(milliseconds: 200),
-                                        child: Container(
-                                          width: 15, // Adjusted width for the white circle
-                                          height: 15, // Adjusted height for the white circle
-                                          decoration: BoxDecoration(
-                                            color: Colors.white,
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Center(
-                                            child: Icon(
-                                              isNonStopSelected ? Icons.check : Icons.close, // Display tick or close icon
-                                              size: 14, // Adjusted icon size
-                                              color: isNonStopSelected ? Colors.pink.shade200 : Colors.red,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: 7,),
-                              Text(
-                                "NonStop",
-                                style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500),
-                              ),
-                            ],
-                          ),
-
-                          // Sort Icon and Text
-                          Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              GestureDetector(
-                                onTap: () {
-                                  _showSortBottomSheet(context);
-                                  print("Sort tapped");
-                                },
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min, // Ensure no extra space is taken
-                                  children: [
-                                    Icon(
-                                      Icons.sort,
-                                      size: 20, // Adjust the size as needed
-                                      color: Colors.grey.shade600,
-                                    ),
-                                    SizedBox(height: 7,),
-                                    Text(
-                                      "Sort",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-
-
-                        ],
-                      ),
-                    ),
+                    ],
                   ),
                 ),
+              ),
             ],
           ),
+          if (_isBottomBarVisible)
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                color: Colors.white,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      // Filter Icon and Text
+
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              // Navigate to FilterPage and pass the current 'add' state
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => FilterPage(airlineCheckboxes: {},
+                                      Refundable:isRefundable,
+                                      NonRefundable:isNonRefundable,
+                                      NonStop:isNonStop,
+                                      oneStop:isOneStop,
+                                      twoStop:isTwoPlusStops,
+                                      DepartisEarlySelected:DepartisEarlySelected,
+                                      DepartisMorningSelected:DepartisMorningSelected,
+                                      DepartisNoonSelected:DepartisNoonSelected,
+                                      DepartisEveningSelected:DepartisEveningSelected,
+                                      ArrivalisEarlySelected:ArrivalisEarlySelected,
+                                      ArrivalisMorningSelected:ArrivalisMorningSelected,
+                                      ArrivalisNoonSelected:ArrivalisNoonSelected,
+                                      ArrivalisEveningSelected:ArrivalisEveningSelected,
+                                      add: '',
+
+                                    )),
+                              );
+
+                              // If we received any result from the filter page
+                              if (result != null) {
+                                setState(() {
+                                  selectedCount = result['selectedCount'] ?? 0;
+                                  print('Selected filter count: $selectedCount');
+                                  isRefundable = result['isRefundable'] == 'Refundable';
+                                  isNonRefundable = result['isNonRefundable'] == 'Non-Refundable';
+                                  isNonStop = result['isNonStop'] == 'Yes';
+                                  isOneStop = result['isOneStop'] == 'Yes';
+                                  isTwoPlusStops = result['isTwoPlusStops'] == 'Yes';
+                                  isAirIndia = result['isAirIndia'] == 'Yes';
+                                  isAirIndiaExpress = result['isAirIndiaExpress'] == 'Yes';
+                                  isBimanBangladesh = result['isBimanBangladesh'] == 'Yes';
+                                  isBritishAirways = result['isBritishAirways'] == 'Yes';
+                                  isEmirates = result['isEmirates'] == 'Yes';
+                                  isEtihad = result['isEtihad'] == 'Yes';
+                                  isGulfAir = result['isGulfAir'] == 'Yes';
+                                  isIndigo = result['isIndigo'] == 'Yes';
+                                  isLufthansa = result['isLufthansa'] == 'Yes';
+                                  isOmanAviation = result['isOmanAviation'] == 'Yes';
+                                  isQatarAirways = result['isQatarAirways'] == 'Yes';
+                                  isSalamAir = result['isSalamAir'] == 'Yes';
+                                  isSingaporeAirlines = result['isSingaporeAirlines'] == 'Yes';
+                                  isSpiceJet = result['isSpiceJet'] == 'Yes';
+                                  isSriLankanAirlines = result['isSriLankanAirlines'] == 'Yes';
+                                  isTurkishAirlines = result['isTurkishAirlines'] == 'Yes';
+                                  isVistara = result['isVistara'] == 'Yes';
+                                  DepartisEarlySelected = result['isEarlyDeparture'] == 'Yes';
+                                  DepartisMorningSelected = result['isMorningDeparture'] == 'Yes';
+                                  DepartisNoonSelected = result['isNoonDeparture'] == 'Yes';
+                                  DepartisEveningSelected = result['isEveningDeparture'] == 'Yes';
+                                  ArrivalisEarlySelected = result['ArrivalIsEarlyDeparture'] == 'Yes';
+                                  ArrivalisMorningSelected = result['ArrivalIsMorningDeparture'] == 'Yes';
+                                  ArrivalisNoonSelected = result['ArrivalIsNoonDeparture'] == 'Yes';
+                                  ArrivalisEveningSelected = result['ArrivalIsEveningDeparture'] == 'Yes';
+                                  String add = 'Edit'; // Assuming this remains constant
+
+                                  // Step 3: Print all filter values
+                                  print('Selected filter count: $selectedCount');
+                                  print('isRefundable: $isRefundable');
+                                  print('isNonRefundable: $isNonRefundable');
+                                  print('isNonStop: $isNonStop');
+                                  print('isOneStop: $isOneStop');
+                                  print('isTwoPlusStops: $isTwoPlusStops');
+                                  print('isAirIndia: $isAirIndia');
+                                  print('isAirIndiaExpress: $isAirIndiaExpress');
+                                  print('isBimanBangladesh: $isBimanBangladesh');
+                                  print('isBritishAirways: $isBritishAirways');
+                                  print('isEmirates: $isEmirates');
+                                  print('isEtihad: $isEtihad');
+                                  print('isGulfAir: $isGulfAir');
+                                  print('isIndigo: $isIndigo');
+                                  print('isLufthansa: $isLufthansa');
+                                  print('isOmanAviation: $isOmanAviation');
+                                  print('isQatarAirways: $isQatarAirways');
+                                  print('isSalamAir: $isSalamAir');
+                                  print('isSingaporeAirlines: $isSingaporeAirlines');
+                                  print('isSpiceJet: $isSpiceJet');
+                                  print('isSriLankanAirlines: $isSriLankanAirlines');
+                                  print('isTurkishAirlines: $isTurkishAirlines');
+                                  print('isVistara: $isVistara');
+                                  print('isEarlyDeparture: $DepartisEarlySelected');
+                                  print('isMorningDeparture: $DepartisMorningSelected');
+                                  print('isNoonDeparture: $DepartisNoonSelected');
+                                  print('isEveningDeparture: $DepartisEveningSelected');
+                                  print('arrivalIsEarlyDeparture: $ArrivalisEarlySelected');
+                                  print('arrivalIsMorningDeparture: $ArrivalisMorningSelected');
+                                  print('arrivalIsNoonDeparture: $ArrivalisNoonSelected');
+                                  print('arrivalIsEveningDeparture: $ArrivalisEveningSelected');
+                                  print('add: $add');
+                                  sendFlightSearchRequest(result);
+                                });
+                              }
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min, // Ensures the row only takes necessary space
+                              children: [
+                                Icon(
+                                  Icons.filter_alt_outlined,
+                                  size: 20, // Adjust the icon size as needed
+                                  color: Colors.grey.shade600,
+                                ),
+                                SizedBox(height: 7), // Optional: Adjust this for spacing between icon and text
+                                Text(
+                                  "Filter",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Time Icon and Text
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              _showTimeBottomSheet(context);
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min, // Ensures the row only takes necessary space
+                              children: [
+                                Icon(
+                                  Icons.schedule,
+                                  size: 20, // Adjust the size of the icon as needed
+                                  color: Colors.grey.shade600, // Match the icon color with the text
+                                ),
+                                SizedBox(height: 7), // Optional: Add a tiny width for spacing
+                                Text(
+                                  "Time",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+
+                      // NonStop Icon and Text
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                isNonStopSelected = !isNonStopSelected; // Toggle switch state
+                                // Call filter function if necessary
+                                Map<String, dynamic> filters = {
+                                  'isNonStop': isNonStopSelected, // Non-stop filter
+                                };
+                                _applyStopCountFilter(fullResultList, filters);
+                                _applyStopCountReturnFlightFilter(ReturnFullFlightList,filters);
+                              });
+                            },
+                            child: Container(
+                              width: 35, // Adjusted width
+                              height: 20, // Adjusted height
+                              decoration: BoxDecoration(
+                                color: isNonStopSelected ? Colors.pink.shade200 : Colors.grey, // Change color based on state
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              child: Stack(
+                                children: [
+                                  // White circle
+                                  AnimatedAlign(
+                                    alignment: isNonStopSelected ? Alignment.centerRight : Alignment.centerLeft,
+                                    duration: Duration(milliseconds: 200),
+                                    child: Container(
+                                      width: 15, // Adjusted width for the white circle
+                                      height: 15, // Adjusted height for the white circle
+                                      decoration: BoxDecoration(
+                                        color: Colors.white,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Center(
+                                        child: Icon(
+                                          isNonStopSelected ? Icons.check : Icons.close, // Display tick or close icon
+                                          size: 14, // Adjusted icon size
+                                          color: isNonStopSelected ? Colors.pink.shade200 : Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 7,),
+                          Text(
+                            "NonStop",
+                            style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+
+                      // Sort Icon and Text
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              _showSortBottomSheet(context);
+                              print("Sort tapped");
+                            },
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min, // Ensure no extra space is taken
+                              children: [
+                                Icon(
+                                  Icons.sort,
+                                  size: 20, // Adjust the size as needed
+                                  color: Colors.grey.shade600,
+                                ),
+                                SizedBox(height: 7,),
+                                Text(
+                                  "Sort",
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+
+
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
   void _showTimeBottomSheet(BuildContext context) {
@@ -2371,8 +2354,8 @@ class SelectedFlightModel {
 
   SelectedFlightModel(
       {required this.DepartCityCode,
-      required this.ArriveCityCode,
-      required this.TotalPrice});
+        required this.ArriveCityCode,
+        required this.TotalPrice});
 }
 class CustomCheckbox extends StatelessWidget {
   final String title;

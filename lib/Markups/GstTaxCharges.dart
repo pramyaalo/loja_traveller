@@ -766,7 +766,7 @@ class _MyRechargePageState extends State<GstTaxCharges> {
                           height: 50, // Button height
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue, // Dark blue color
+                              backgroundColor: Color(0xFF00ADEE), // Dark blue color
                             ),
                             onPressed: () {
                               final String gstAmount =

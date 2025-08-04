@@ -907,14 +907,14 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-           width: 100,
-              height: 50,
+            width: 150,
+            height: 50,
           ),
           SizedBox(
             width: 10,
           )
         ],
-        backgroundColor:Color(0xFF00ADEE),
+        backgroundColor: Colors.white,
       ),
       body: isLoading
           ? Center(
@@ -1097,7 +1097,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                               children: [
                                                 Icon(
                                                   Icons.shopping_bag,
-                                                  color: Color(0xFF00ADEE),
+                                                  color: Color(0xFF152238),
                                                 ),
                                                 SizedBox(
                                                   height: 5,
@@ -1124,7 +1124,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                               children: [
                                                 Icon(
                                                   Icons.shopping_bag,
-                                                  color: Color(0xFF00ADEE),
+                                                  color: Color(0xFF152238),
                                                 ),
                                                 SizedBox(
                                                   height: 5,
@@ -1151,7 +1151,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                               children: [
                                                 Icon(
                                                   Icons.shopping_bag,
-                                                  color: Color(0xFF00ADEE),
+                                                  color: Color(0xFF152238),
                                                 ),
                                                 SizedBox(
                                                   height: 5,
@@ -1357,7 +1357,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                       children: [
                                         Icon(
                                           Icons.shopping_bag,
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                         ),
                                         SizedBox(
                                           height: 5,
@@ -1382,7 +1382,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                       children: [
                                         Icon(
                                           Icons.shopping_bag,
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                         ),
                                         SizedBox(
                                           height: 5,
@@ -1407,7 +1407,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                       children: [
                                         Icon(
                                           Icons.shopping_bag,
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                         ),
                                         SizedBox(
                                           height: 5,
@@ -1604,7 +1604,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                               children: [
                                                 Icon(
                                                   Icons.shopping_bag,
-                                                  color: Color(0xFF00ADEE),
+                                                  color: Color(0xFF152238),
                                                 ),
                                                 SizedBox(
                                                   height: 5,
@@ -1631,7 +1631,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                               children: [
                                                 Icon(
                                                   Icons.shopping_bag,
-                                                  color: Color(0xFF00ADEE),
+                                                  color: Color(0xFF152238),
                                                 ),
                                                 SizedBox(
                                                   height: 5,
@@ -1658,7 +1658,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                               children: [
                                                 Icon(
                                                   Icons.shopping_bag,
-                                                  color: Color(0xFF00ADEE),
+                                                  color: Color(0xFF152238),
                                                 ),
                                                 SizedBox(
                                                   height: 5,
@@ -1864,7 +1864,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                       children: [
                                         Icon(
                                           Icons.shopping_bag,
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                         ),
                                         SizedBox(
                                           height: 5,
@@ -1889,7 +1889,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                       children: [
                                         Icon(
                                           Icons.shopping_bag,
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                         ),
                                         SizedBox(
                                           height: 5,
@@ -1914,7 +1914,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                       children: [
                                         Icon(
                                           Icons.shopping_bag,
-                                          color: Color(0xFF00ADEE),
+                                          color: Color(0xFF152238),
                                         ),
                                         SizedBox(
                                           height: 5,
@@ -2079,7 +2079,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                             children: [
                                               Icon(
                                                 Icons.shopping_bag,
-                                                color: Color(0xFF00ADEE),
+                                                color: Color(0xFF152238),
                                               ),
                                               SizedBox(
                                                 height: 5,
@@ -2105,7 +2105,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                             children: [
                                               Icon(
                                                 Icons.shopping_bag,
-                                                color: Color(0xFF00ADEE),
+                                                color: Color(0xFF152238),
                                               ),
                                               SizedBox(
                                                 height: 5,
@@ -2132,7 +2132,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                             children: [
                                               Icon(
                                                 Icons.shopping_bag,
-                                                color: Color(0xFF00ADEE),
+                                                color: Color(0xFF152238),
                                               ),
                                               SizedBox(
                                                 height: 5,
@@ -2267,12 +2267,12 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                                 'Selected: ${selectedOption.name}');
                                             setState(() async {
                                               await callSecondApi(
-                                                  selectedOption.id.toString());
+                                                  selectedOption.id);
                                               setState(() {
                                                 AdultName1 =
                                                     selectedOption.name;
                                                 AdultTravellerId1 =
-                                                    selectedOption.id.toString();
+                                                    selectedOption.id;
                                               });
                                             });
                                           }
@@ -7486,7 +7486,7 @@ class _OneWayBookingState extends State<RoundTripDoesticBookNowFlight> {
                                 Text(
                                   'View Full Breakup',
                                   style: TextStyle(
-                                    color: Color(0xFF00ADEE),
+                                    color: Color(0xFF152238),
                                     fontWeight: FontWeight.bold,
                                     fontSize: 14,
                                   ),

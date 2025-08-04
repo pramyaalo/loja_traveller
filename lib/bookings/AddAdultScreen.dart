@@ -13,12 +13,9 @@ import 'package:xml/xml.dart' as xml;
 
 import 'package:get/get.dart';
 
-import '../AdultDatabaseHelperCass.dart';
 import '../DatabseHelper.dart';
 import '../utils/shared_preferences.dart';
 import 'flight/TravellerDetailsModel.dart';
-
-
 
 class AddAdultScreen extends StatefulWidget {
   final flightDetails,
@@ -104,7 +101,7 @@ class _OneWayBookingState extends State<AddAdultScreen> {
 
   TextEditingController adultFname_controller = new TextEditingController();
   TextEditingController adultLname_controller = new TextEditingController();
-TextEditingController adultMname_controller=new TextEditingController();
+
   TextEditingController adult1_Fname_controller = new TextEditingController();
   TextEditingController adult1_Lname_controller = new TextEditingController();
 
@@ -115,21 +112,6 @@ TextEditingController adultMname_controller=new TextEditingController();
   TextEditingController _CountryController = new TextEditingController();
   TextEditingController Documentype_controller = new TextEditingController();
   TextEditingController Documentnumber_controller = new TextEditingController();
-TextEditingController genderController=new TextEditingController();
-TextEditingController IssueDateController=new TextEditingController();
-  Future<void> _selectIssueDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2101),
-    );
-    if (picked != null) {
-      setState(() {
-        IssueDateController.text = DateFormat('yyyy-MM-dd').format(picked);
-      });
-    }
-  }
 
   @override
   void dispose() {
@@ -141,9 +123,6 @@ TextEditingController IssueDateController=new TextEditingController();
   var selectedDate = DateTime.now().obs;
   TextEditingController ExpiryDateController = TextEditingController();
   TextEditingController dateControllerAdult1 = TextEditingController();
-  String? selectedGender = 'Male';
-  String? selectedDocumentType = 'Passport'; // Default value
-
   TextEditingController dateControllerAdult2 = TextEditingController();
   TextEditingController dateControllerAdult3 = TextEditingController();
   TextEditingController dateControllerAdult4 = TextEditingController();
@@ -169,10 +148,9 @@ TextEditingController IssueDateController=new TextEditingController();
       firstDate: DateTime(1900),
       lastDate: DateTime(2101),
     );
-
-    if (picked != null) {
+    if (picked != null && picked != ExpiryDateController) {
       setState(() {
-        ExpiryDateController.text = DateFormat('yyyy-MM-dd').format(picked); // Correct format
+        ExpiryDateController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
@@ -199,13 +177,9 @@ TextEditingController IssueDateController=new TextEditingController();
   @override
   void initState() {
     super.initState();
-   /* AdultDatabaseHelper.instance.deleteDatabaseFile();
-    print("Database deleted successfully");*/
-    _retrieveSavedValues();
     mutableAdultsList = List.from(widget.adultsList);
-
+    _retrieveSavedValues();
     adultFname_controller = TextEditingController();
-
     adultLname_controller = TextEditingController();
     dateControllerAdult1 = TextEditingController();
     Documentype_controller = TextEditingController();
@@ -218,72 +192,56 @@ TextEditingController IssueDateController=new TextEditingController();
 
       adultFname_controller.text = adult['firstName'];
       print('object' + adultFname_controller.text);
-      adultMname_controller.text=adult['middleName'];
       adultLname_controller.text = adult['surname'];
       dateControllerAdult1.text = adult['dob']; // Keep DOB as is
-      selectedDocumentType =
-          adult['documentType'] ?? ''; // Handle null va  lues
+      Documentype_controller.text =
+          adult['documentType'] ?? ''; // Handle null values
       Documentnumber_controller.text = adult['documentNumber'] ?? '';
       ExpiryDateController.text = adult['expiryDate'] ?? '';
       selectedTitleAdult1 = adult['title'] ?? '';
-      selectedGender = adult['gender'] ?? '';
     }
   }
 
   void _saveAdult() async {
-    final dbHelper = AdultDatabaseHelper.instance;
-
-    // Ensure the DB is open before continuing
-    final db = await dbHelper.database;
-    if (!db.isOpen) {
-      print("DB was closed. Reopening...");
-      await dbHelper.reopenDatabase();
-    }
-
     try {
-      final dbCheck = await dbHelper.database;
-      print("After reopen, DB open? ${dbCheck.isOpen}");
-
-      // Step 1: Retrieve input values
-      String title = selectedTitleAdult1?.toString() ?? '';
+      // Retrieve input values and trim whitespace
+      String title = selectedTitleAdult1.toString();
       String firstName = adultFname_controller.text.trim();
-      String middleName = adultMname_controller.text.trim();
       String surname = adultLname_controller.text.trim();
       String dob = dateControllerAdult1.text.trim();
-      String gender = selectedGender ?? '';
-      String documentType = selectedDocumentType ?? '';
+      String documentType = Documentype_controller.text.trim();
       String documentNumber = Documentnumber_controller.text.trim();
-      String issueDate = IssueDateController.text.trim();
       String expiryDate = ExpiryDateController.text.trim();
 
-      // Step 2: Validate required fields
-      if ([title, firstName, surname, dob, gender, documentType, documentNumber, issueDate, expiryDate]
-          .any((e) => e.isEmpty)) {
+      // Check if any of the fields are empty
+      if (title.isEmpty ||
+          firstName.isEmpty ||
+          surname.isEmpty ||
+          dob.isEmpty
+        ) {
+        // Display an error message
         Fluttertoast.showToast(
-          msg: "Please fill all required fields",
+          msg: "Please add Adult",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.red,
           textColor: Colors.white,
         );
-        return;
+        return; // Exit the function early if any field is empty
       }
 
-      // Step 3: Prepare data
       Map<String, dynamic> adultData = {
         'title': title,
         'firstName': firstName,
-        'middleName': middleName,
         'surname': surname,
         'dob': dob,
-        'gender': gender,
         'documentType': documentType,
         'documentNumber': documentNumber,
-        'issueDate': issueDate,
         'expiryDate': expiryDate,
       };
+      final dbHelper = DatabaseHelper.instance;
 
-      // Step 4: Check for duplicate name
+      // Check if the name already exists in the list
       bool nameExists = mutableAdultsList.any((adult) {
         return adult['firstName'] == firstName &&
             adult['surname'] == surname &&
@@ -292,41 +250,53 @@ TextEditingController IssueDateController=new TextEditingController();
       });
 
       if (nameExists) {
+        // Show a snackbar to inform the user
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text("Name Already Exists. Please select another name"),
-            duration: Duration(seconds: 2),
+            content: Text("Name Already Exists. Please Select another Name"),
+            duration: Duration(seconds: 2), // Duration the snackbar is shown
           ),
         );
-        return;
+        return; // Exit the function early
       }
 
-      // Step 5: Save (Add or Edit)
+      // Check if we are editing an existing entry
       if (widget.isEdit == 'Edit' &&
           widget.adultIndex >= 0 &&
           widget.adultIndex < mutableAdultsList.length) {
+        // Retrieve the ID of the adult we are updating
         int? adultId = mutableAdultsList[widget.adultIndex]['id'];
         if (adultId != null) {
+          // Update existing adult using the correct ID
           await dbHelper.updateAdults(adultId, adultData);
-          Map<String, dynamic>? updatedAdult = await dbHelper.fetchAdultData(adultId);
+          print("Updated adult data for ID: $adultId");
+
+          // Fetch updated data after the update
+          Map<String, dynamic>? updatedAdult =
+          await dbHelper.fetchAdultData(adultId);
+          print("Updated adult: $updatedAdult");
 
           if (updatedAdult != null) {
             setState(() {
+              // Update the specific child in the mutable list
               mutableAdultsList[widget.adultIndex] = updatedAdult;
             });
+            // Show a success message
             Fluttertoast.showToast(
-              msg: "Adult data updated successfully",
+              msg: "Child data updated successfully",
               toastLength: Toast.LENGTH_SHORT,
               gravity: ToastGravity.BOTTOM,
               backgroundColor: Colors.green,
               textColor: Colors.white,
             );
+            print("Updated data: $updatedAdult");
           }
         }
       } else if (widget.isEdit == 'Add') {
+        // Handle the case for adding new children
         await dbHelper.insertAdults(adultData);
         Fluttertoast.showToast(
-          msg: "Adult added successfully",
+          msg: "Child added successfully",
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.BOTTOM,
           backgroundColor: Colors.green,
@@ -334,12 +304,14 @@ TextEditingController IssueDateController=new TextEditingController();
         );
       }
 
-      // Step 6: Return to previous screen
-      Navigator.pop(context, mutableAdultsList);
+      // Navigate back and pass the updated list back to the previous page
+      Navigator.pop(context, mutableAdultsList); // Pass the updated list back
     } catch (e) {
-      print("Error saving adult data: $e");
+      // Log or display the error for debugging
+      print("Error saving child data: $e");
+      // Optionally show an error message
       Fluttertoast.showToast(
-        msg: "Error saving adult data: $e",
+        msg: "Error saving child data: $e",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         backgroundColor: Colors.red,
@@ -349,27 +321,22 @@ TextEditingController IssueDateController=new TextEditingController();
   }
 
 
-
-
-
-
   Future<void> _retrieveSavedValues() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
       userTypeID = prefs.getString(Prefs.PREFS_USER_TYPE_ID) ?? '';
       userID = prefs.getString(Prefs.PREFS_USER_ID) ?? '';
       Currency = prefs.getString(Prefs.PREFS_CURRENCY) ?? '';
-      print('userIDuserID: $userID');
+      print('Currency: $Currency');
     });
   }
 
   Future<List<TravellerDetailsModel>> fetchAutocompleteData(
-      String empName) async
-  {
+      String empName) async {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellers?UserId=1108&UserTypeId=2&SearchFilter=$empName&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
-    print('usssderID' + userID);
-    print('userTyfdfpeID' + userTypeID);
+        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellers?UserId=2611&UserTypeId=8&SearchFilter=$empName&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
+    print('userID' + widget.userid);
+    print('userTypeID' + widget.usertypeid);
     print('empName' + empName);
     print(widget.departdate);
 
@@ -390,16 +357,20 @@ TextEditingController IssueDateController=new TextEditingController();
     }
   }
 
+  String convertDate(String inputDate) {
+    // Parse the input date string
+    DateTime date = DateFormat('dd MMM yyyy').parse(inputDate);
 
+    // Format the date in the desired format
+    formattedDate = DateFormat('yyyy-MM-dd').format(date);
 
-
-
-
+    return formattedDate;
+  }
 
   Future<void> callSecondApi(String id) async {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
-    print('objasdfaffect' + id);
+        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
+    print('object' + id);
 
     final response = await http.get(Uri.parse(url));
 
@@ -429,32 +400,27 @@ TextEditingController IssueDateController=new TextEditingController();
             table1Data[0]; // Assuming there's only one entry in Table1
 
         setState(() {
-          adultFname_controller.text = traveller['UDFirstName'] ?? '';
-
-          adultMname_controller.text=traveller['UDMiddName'];
+          String _firstNameController = traveller['UDFirstName'];
           adultLname_controller.text = traveller['UDLastName'];
           dateControllerAdult1.text = traveller['UDDOB'];
           String inputDate = dateControllerAdult1.text;
-          String cleanedDate = inputDate.split("at").first.trim(); // Gets "13 January 1983"
-          formattedDate = convertDate(cleanedDate);
+          formattedDate = convertDate(inputDate);
+          print("formattedDate" + formattedDate);
 
-          print('formattedDate' + formattedDate);
-          if (traveller['GenderId'] == 1) {
-            selectedGender = "Male";
-            Gendar = '1';
-          } else if (traveller['GenderId'] == 2) {
-            selectedGender = "Female";
-            Gendar = "2";
-          } else {
-            selectedGender = "Other";
-            Gendar = "3";
+          print('finDate' + dateControllerAdult1.text.toString());
+          if (traveller['GenderId'] == 0) {
+            selectedGendarContactDetail = "Male";
+            Gendar = '0';
+          } else if (traveller['GenderId'] == 1) {
+            selectedGendarContactDetail = "Female";
+            Gendar = "1";
           }
-
+          print("Gendar" + Gendar);
           // Get data from Table1
           Documentnumber_controller.text = passportInfo['PDPassportNo'];
 
           String dateOfBirth = passportInfo['PDDateofBirth'];
-          selectedDocumentType = table1Data['PDDocument'] ?? 'Passport';
+          Documentype_controller.text = passportInfo['PDDocument'];
           String issuingCountry = passportInfo['PDIssuingCountry'];
           ExpiryDateController.text = passportInfo['PDDateofExpiry'];
           DateTime checkinDateTime = DateTime.parse(ExpiryDateController.text);
@@ -467,20 +433,6 @@ TextEditingController IssueDateController=new TextEditingController();
       } else {
         throw Exception('Failed to load traveller details');
       }
-    }
-  }
-  String convertDate(String inputDate) {
-    try {
-      // Match the format: 13 January 1983
-      DateFormat inputFormat = DateFormat("d MMMM yyyy");
-      DateTime parsedDate = inputFormat.parse(inputDate);
-
-      // Output format: 1983-01-13 (or whatever you want)
-      DateFormat outputFormat = DateFormat("yyyy-MM-dd");
-      return outputFormat.format(parsedDate);
-    } catch (e) {
-      print("Date parsing error: $e");
-      return inputDate; // fallback in case parsing fails
     }
   }
 
@@ -568,11 +520,380 @@ TextEditingController IssueDateController=new TextEditingController();
     }
   }
 
+  Future<void> _selectDateChildren3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren3) {
+      setState(() {
+        dateControllerChildren3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateChildren4(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren4) {
+      setState(() {
+        dateControllerChildren4.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateChildren5(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren5) {
+      setState(() {
+        dateControllerChildren5.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateInfant1(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant1) {
+      setState(() {
+        dateControllerInfant1.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateInfant2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant2) {
+      setState(() {
+        dateControllerInfant2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
 
+  Future<void> _selectDateInfant3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant3) {
+      setState(() {
+        dateControllerInfant3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  var resultFlightData = [];
+
+  Future<void> submitAdivahaFlightBooking() async {
+    final url = Uri.parse(
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightBooking');
+    final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+
+    String resultIndex = widget.flightDetails['ResultIndexID'];
+    String traceId = widget.flightDetails['ItemId'];
+
+    DateTime date = DateFormat('yyyy/MM/dd').parse(widget.departdate);
+
+    // Format the date string with dashes
+    formattedFromDate = DateFormat('yyyy-MM-dd').format(date);
+
+    print(formattedFromDate);
+    var reqBody = {
+      'ResultIndex': resultFlightData[0]['ResultIndexID'].toString(),
+      'TraceId': resultFlightData[0]['ItemId'].toString(),
+      'LCC': resultFlightData[0]['IsLCC'].toString(),
+      'TripType': 'OneWay',
+      'UserId': userID.toString(),
+      'UserTypeId': userTypeID.toString(),
+      'DefaultCurrency': resultFlightData[0]['BookingCurrency'].toString(),
+      'FromDate': formattedFromDate.toString(),
+      'AdultCount': widget.adultCount.toString(),
+      'ChildCount': widget.childrenCount.toString(),
+      'InfantCount': widget.infantCount.toString(),
+      'BookingCurrency': Currency.toString(),
+      'BookingBaseFare': resultFlightData[0]['BookingBaseFare'].toString(),
+      'BookingTax': resultFlightData[0]['BookingTax'].toString(),
+      'BookingYQTax': resultFlightData[0]['BookingYQTax'].toString(),
+      'BookingAdditionalTxnFeePub':
+          resultFlightData[0]['BookingAdditionalTxnFeePub'].toString(),
+      'BookingAdditionalTxnFeeOfrd':
+          resultFlightData[0]['BookingAdditionalTxnFeeOfrd'].toString(),
+      'BookingOtherCharges':
+          resultFlightData[0]['BookingOtherCharges'].toString(),
+      'BookingDiscount': resultFlightData[0]['BookingDiscount'].toString(),
+      'BookingPublishedFare':
+          resultFlightData[0]['BookingPublishedFare'].toString(),
+      'BookingOfferedFare':
+          resultFlightData[0]['BookingOfferedFare'].toString(),
+      'BookingTdsOnCommission':
+          resultFlightData[0]['BookingTdsOnCommission'].toString(),
+      'BookingTdsOnPLB': resultFlightData[0]['BookingTdsOnPLB'].toString(),
+      'BookingTdsOnIncentive':
+          resultFlightData[0]['BookingTdsOnIncentive'].toString(),
+      'BookingServiceFee': resultFlightData[0]['BookingServiceFee'].toString(),
+      'GSTCompanyAddress': '',
+      'GSTCompanyContactNumber': '',
+      'GSTCompanyName': '',
+      'GSTNumber': '',
+      'GSTCompanyEmail': '',
+      'TitleAdult1': selectedTitleAdult1.toString(),
+      'FNameAdult1': AdultName1.toString(),
+      'LNameAdult1': adultLname_controller.text.toString(),
+      'LDOBAdult1': formattedDate.toString(),
+      'GenderAdult1': Gendar.toString(),
+      'DocNumAdult1': Documentnumber_controller.text.toString(),
+      'ExpDateAdult1': ExpiryDateController.text.toString(),
+      'TitleAdult2': '',
+      'FNameAdult2': '',
+      'LNameAdult2': '',
+      'LDOBAdult2': '',
+      'GenderAdult2': '',
+      'DocNumAdult2': '',
+      'ExpDateAdult2': '',
+      'TitleAdult3': '',
+      'FNameAdult3': '',
+      'LNameAdult3': '',
+      'LDOBAdult3': '',
+      'GenderAdult3': '',
+      'DocNumAdult3': '',
+      'ExpDateAdult3': '',
+      'TitleAdult4': '',
+      'FNameAdult4': '',
+      'LNameAdult4': '',
+      'LDOBAdult4': '',
+      'GenderAdult4': '',
+      'DocNumAdult4': '',
+      'ExpDateAdult4': '',
+      'TitleAdult5': '',
+      'FNameAdult5': '',
+      'LNameAdult5': '',
+      'LDOBAdult5': '',
+      'GenderAdult5': '',
+      'DocNumAdult5': '',
+      'ExpDateAdult5': '',
+      'TitleAdult6': '',
+      'FNameAdult6': '',
+      'LNameAdult6': '',
+      'LDOBAdult6': '',
+      'GenderAdult6': '',
+      'DocNumAdult6': '',
+      'ExpDateAdult6': '',
+      'TitleAdult7': '',
+      'FNameAdult7': '',
+      'LNameAdult7': '',
+      'LDOBAdult7': '',
+      'GenderAdult7': '',
+      'DocNumAdult7': '',
+      'ExpDateAdult7': '',
+      'TitleAdult8': '',
+      'FNameAdult8': '',
+      'LNameAdult8': '',
+      'LDOBAdult8': '',
+      'GenderAdult8': '',
+      'DocNumAdult8': '',
+      'ExpDateAdult8': '',
+      'TitleAdult9': '',
+      'FNameAdult9': '',
+      'LNameAdult9': '',
+      'LDOBAdult9': '',
+      'GenderAdult9': '',
+      'DocNumAdult9': '',
+      'ExpDateAdult9': '',
+      'TitleAdult10': '',
+      'FNameAdult10': '',
+      'LNameAdult10': '',
+      'LDOBAdult10': '',
+      'GenderAdult10': '',
+      'DocNumAdult10': '',
+      'ExpDateAdult10': '',
+      'TitleChild1': '',
+      'FNameChild1': '',
+      'LNameChild1': '',
+      'LDOBChild1': '',
+      'GenderChild1': '',
+      'DocNumChild1': '',
+      'ExpDateChild1': '',
+      'TitleChild2': '',
+      'FNameChild2': '',
+      'LNameChild2': '',
+      'LDOBChild2': '',
+      'GenderChild2': '',
+      'DocNumChild2': '',
+      'ExpDateChild2': '',
+      'TitleChild3': '',
+      'FNameChild3': '',
+      'LNameChild3': '',
+      'LDOBChild3': '',
+      'GenderChild3': '',
+      'DocNumChild3': '',
+      'ExpDateChild3': '',
+      'TitleChild4': '',
+      'FNameChild4': '',
+      'LNameChild4': '',
+      'LDOBChild4': '',
+      'GenderChild4': '',
+      'DocNumChild4': '',
+      'ExpDateChild4': '',
+      'TitleChild5': '',
+      'FNameChild5': '',
+      'LNameChild5': '',
+      'LDOBChild5': '',
+      'GenderChild5': '',
+      'DocNumChild5': '',
+      'ExpDateChild5': '',
+      'TitleInfant1': '',
+      'FNameInfant1': '',
+      'LNameInfant1': '',
+      'LDOBInfant1': '',
+      'GenderInfant1': '',
+      'DocNumInfant1': '',
+      'ExpDateInfant1': '',
+      'TitleInfant2': '',
+      'FNameInfant2': '',
+      'LNameInfant2': '',
+      'LDOBInfant2': '',
+      'GenderInfant2': '',
+      'DocNumInfant2': '',
+      'ExpDateInfant2': '',
+      'TitleInfant3': '',
+      'FNameInfant3': '',
+      'LNameInfant3': '',
+      'LDOBInfant3': '',
+      'GenderInfant3': '',
+      'DocNumInfant3': '',
+      'ExpDateInfant3': '',
+      'TitleInfant4': '',
+      'FNameInfant4': '',
+      'LNameInfant4': '',
+      'LDOBInfant4': '',
+      'GenderInfant4': '',
+      'DocNumInfant4': '',
+      'ExpDateInfant4': '',
+      'TitleInfant5': '',
+      'FNameInfant5': '',
+      'LNameInfant5': '',
+      'LDOBInfant5': '',
+      'GenderInfant5': '',
+      'DocNumInfant5': '',
+      'ExpDateInfant5': '',
+      'Address': contactAddressController.text.toString(),
+      'City': contactCityController.text.toString(),
+      'CountryCode': 'IN',
+      'CountryName': _CountryController.text.toString(),
+      'MobileNumber': contactMobileController.text.toString(),
+      'Email': contactEmailController.text.toString(),
+      'IsPassportRequired': 'True',
+      'AdultTravellerID1': AdultTravellerId1.toString(),
+      'AdultTravellerID2': '',
+      'AdultTravellerID3': '',
+      'AdultTravellerID4': '',
+      'AdultTravellerID5': '',
+      'AdultTravellerID6': '',
+      'AdultTravellerID7': '',
+      'AdultTravellerID8': '',
+      'AdultTravellerID9': '',
+      'AdultTravellerID10': ''
+    };
+    developer.log('ResultIndex: $resultIndex');
+    print('TraceId: $traceId');
+    print('LCC: True');
+    print('TripType: OneWay');
+    print('UserId: $userID');
+    print('UserTypeId: $userTypeID');
+    print('DefaultCurrency: $Currency');
+    print('FromDate: ${formattedFromDate.toString()}');
+    print('AdultCount: ${widget.adultCount}');
+    print('ChildCount: ${widget.childrenCount}');
+    print('InfantCount: ${widget.infantCount}');
+    print('BookingCurrency: ${resultFlightData[0]['BookingCurrency']}');
+    print('BookingBaseFare: ${resultFlightData[0]['BookingBaseFare']}');
+    print('BookingTax: ${resultFlightData[0]['BookingTax']}');
+    print('BookingYQTax: ${resultFlightData[0]['BookingYQTax']}');
+    print(
+        'BookingAdditionalTxnFeePub: ${resultFlightData[0]['BookingAdditionalTxnFeePub']}');
+    print(
+        'BookingAdditionalTxnFeeOfrd: ${resultFlightData[0]['BookingAdditionalTxnFeeOfrd']}');
+    print('BookingOtherCharges: ${resultFlightData[0]['BookingOtherCharges']}');
+    print('BookingDiscount: ${resultFlightData[0]['BookingDiscount']}');
+    print(
+        'BookingPublishedFare: ${resultFlightData[0]['BookingPublishedFare']}');
+    print('BookingOfferedFare: ${resultFlightData[0]['BookingOfferedFare']}');
+    print(
+        'BookingTdsOnCommission: ${resultFlightData[0]['BookingTdsOnCommission']}');
+    print('BookingTdsOnPLB: ${resultFlightData[0]['BookingTdsOnPLB']}');
+    print(
+        'BookingTdsOnIncentive: ${resultFlightData[0]['BookingTdsOnIncentive']}');
+    print('BookingServiceFee: ${resultFlightData[0]['BookingServiceFee']}');
+    print('GSTCompanyAddress: ');
+    print('GSTCompanyContactNumber: ');
+    print('GSTCompanyName: ');
+    print('GSTNumber: ');
+    print('GSTCompanyEmail: ');
+    print('TitleAdult1: $selectedTitleAdult1');
+    print('FNameAdult1: $AdultName1');
+    print(
+        'LNameAdult1: ${adultLname_controller.text.isEmpty ? 'A' : adultLname_controller.text}');
+    print('LDOBAdult1: ${formattedDate.toString()}');
+    print('GenderAdult1: $Gendar');
+    print('DocNumAdult1: ${Documentnumber_controller.text}');
+    print('ExpDateAdult1: ${ExpiryDateController.text}');
+// Repeat this pattern for all other fields
+
+    print('Address: ${contactAddressController.text}');
+    print('City: ${contactCityController.text}');
+    print('CountryCode: IN');
+    print('CountryName: India');
+    print('MobileNumber: ${contactMobileController.text}');
+    print('Email: ${contactEmailController.text}');
+    print('AdultTravellerID1:${AdultTravellerId1}');
+
+    try {
+      setState(() {
+        isBookingLoading = true;
+      });
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: reqBody,
+      );
+
+      setState(() {
+        isBookingLoading = false;
+      });
+      if (response.statusCode == 200) {
+        print('Response: ${response.body}');
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+
+        // Handle the failure scenario
+      }
+    } catch (error) {
+      print('Error sending request: $error');
+    }
+  }
 
   List<Map<String, dynamic>> extractJsonFromXml(String xmlString) {
     var document = xml.XmlDocument.parse(xmlString);
@@ -585,6 +906,56 @@ TextEditingController IssueDateController=new TextEditingController();
     return jsonList;
   }
 
+  Future<void> getAdivahaFlightDetails() async {
+    final url = Uri.parse(
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightDetailsGet');
+    final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+
+    String resultIndex = widget.flightDetails['ResultIndexID'].toString();
+    String traceId = widget.flightDetails['ItemId'].toString();
+
+    print(resultIndex);
+    print(traceId);
+    try {
+      setState(() {
+        isLoading = true;
+      });
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: {
+          'ResultIndex': resultIndex.toString(),
+          'TraceId': traceId.toString(),
+          'TripType': 'OneWay'
+        },
+      );
+      setState(() {
+        isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        //var jsonresp = ResponseHandler.parseData(response.body);
+        //var tmp_resultFlightData = json.decode(extractJsonFromXml(response.body).toString());
+
+        print('newww - jsonResulttt:');
+        developer.log(extractJsonFromXml(response.body).toString());
+        //developer.log(tmp_resultFlightData);
+        setState(() {
+          resultFlightData = extractJsonFromXml(response.body).toList();
+          print('DepartCode : ${resultFlightData[0]['DepartCityCode']}');
+        });
+
+        //print('Request successful! Response: ${response.body}');
+        // Handle the response data here
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+        // Handle the failure scenario
+      }
+    } catch (error) {
+      print('Error sending request: $error');
+      // Handle any exceptions or errors that occurred during the request
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -592,23 +963,25 @@ TextEditingController IssueDateController=new TextEditingController();
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor:Color(0xFF00ADEE), // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Add Adult",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.white, fontFamily: "Montserrat",
+                  fontSize: 18),
             ),
           ],
         ),
@@ -620,6 +993,7 @@ TextEditingController IssueDateController=new TextEditingController();
           ),
 
         ],
+        backgroundColor:Color(0xFF00ADEE),
       ),
       resizeToAvoidBottomInset: true,
       body: isLoading
@@ -701,10 +1075,9 @@ TextEditingController IssueDateController=new TextEditingController();
                                       adultFname_controller.text =
                                           selectedOption.name;
                                       AdultName1 = selectedOption.name;
-                                      AdultTravellerId1 = selectedOption.id.toString();
-
+                                      AdultTravellerId1 = selectedOption.id;
                                       print('Selected name: ' + AdultName1);
-                                      callSecondApi(selectedOption.id.toString());
+                                      callSecondApi(selectedOption.id);
                                     });
                                   }
                                 },
@@ -735,7 +1108,7 @@ TextEditingController IssueDateController=new TextEditingController();
                                     },
                                     readOnly: widget.isEdit == 'Edit',
                                     decoration: InputDecoration(
-                                      label: const Text('First Name'),
+                                      label: const Text('First & Middle Name'),
                                       hintText: 'Enter First Name',
                                       enabledBorder: OutlineInputBorder(
                                         borderSide:
@@ -763,39 +1136,6 @@ TextEditingController IssueDateController=new TextEditingController();
                           SizedBox(
                             height: 20,
                           ),
-
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10, left: 10),
-                            child: Container(
-                              width: double.infinity,
-                              height: 50,
-                              child: TextFormField(
-                                style: TextStyle(fontWeight: FontWeight.w500),
-                                controller: adultMname_controller, // ✅ Your middle name controller
-                                readOnly: widget.isEdit == 'Edit',
-                                decoration: InputDecoration(
-                                  label: const Text('Middle Name'),
-                                  hintText: 'Middle Name',
-                                  enabledBorder: OutlineInputBorder(
-                                    borderSide: const BorderSide(color: Colors.grey),
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderSide: const BorderSide(color: Colors.black, width: 1.5),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  labelStyle: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  errorBorder: OutlineInputBorder(
-                                    borderSide: const BorderSide(color: Colors.red, width: 2),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 20),
                           Padding(
                             padding: const EdgeInsets.only(right: 10, left: 10),
                             child: Container(
@@ -805,8 +1145,8 @@ TextEditingController IssueDateController=new TextEditingController();
                                 controller: adultLname_controller,
                                 readOnly: widget.isEdit == 'Edit',
                                 decoration: InputDecoration(
-                                  label: const Text('Last Name'),
-                                  hintText: 'Last Name',
+                                  label: const Text('SurName'),
+                                  hintText: 'SurName',
                                   enabledBorder: OutlineInputBorder(
                                     borderSide: const BorderSide(color: Colors.grey),
                                     borderRadius: BorderRadius.circular(5),
@@ -831,7 +1171,6 @@ TextEditingController IssueDateController=new TextEditingController();
                           SizedBox(
                             height: 20,
                           ),
-
                           Padding(
                             padding: const EdgeInsets.only(right: 10, left: 10),
                             child: Container(
@@ -880,40 +1219,6 @@ TextEditingController IssueDateController=new TextEditingController();
                           SizedBox(
                             height: 20,
                           ),
-
-                          Padding(
-                            padding: const EdgeInsets.only(right: 10, left: 10),
-                            child: Container(
-                              height: 50, // Set height here
-                              child: DropdownButtonFormField<String>(
-                                decoration: InputDecoration(
-                                  labelText: 'Gender',
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(5),
-                                  ),
-                                  labelStyle: TextStyle(fontWeight: FontWeight.bold),
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                ),
-                                value: selectedGender,
-                                items: ['Male', 'Female', 'Other'].map((gender) {
-                                  return DropdownMenuItem<String>(
-                                    value: gender,
-                                    child: Text(gender),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedGender = value;
-                                  });
-                                },
-                              ),
-                            ),
-                          ),
-
-
-                          SizedBox(
-                            height: 20,
-                          ),
                           Visibility(
                             visible: Status == 2, // Show or hide based on status
                             child: Column(
@@ -923,43 +1228,35 @@ TextEditingController IssueDateController=new TextEditingController();
                                 Padding(
                                   padding: const EdgeInsets.only(left: 10, right: 10),
                                   child: Container(
-                                    height: 50, // 🔹 Set the height here
-                                    child: DropdownButtonFormField<String>(
-                                      value: selectedDocumentType ?? 'Passport', // Default to Passport
+                                    height: 50,
+                                    child: TextFormField(
+                                      controller: Documentype_controller,
+                                      style: TextStyle(fontWeight: FontWeight.w500),
                                       decoration: InputDecoration(
                                         label: const Text('Document Type'),
-                                        hintText: 'Select Document Type',
-                                        contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 0), // 🔹 Adjust vertical padding to fit in 50 height
+                                        hintText: 'Document Type',
                                         enabledBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.grey),
+                                          borderSide:
+                                              const BorderSide(color: Colors.grey),
                                           borderRadius: BorderRadius.circular(5),
                                         ),
                                         focusedBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.black, width: 1.5),
+                                          borderSide: const BorderSide(
+                                              color: Colors.black, width: 1.5),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
-                                        labelStyle: TextStyle(fontWeight: FontWeight.bold),
+                                        labelStyle: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                         errorBorder: OutlineInputBorder(
-                                          borderSide: const BorderSide(color: Colors.red, width: 2),
+                                          borderSide: const BorderSide(
+                                              color: Colors.red, width: 2),
                                           borderRadius: BorderRadius.circular(10),
                                         ),
                                       ),
-                                      items: ['Passport', 'Iqama', 'National ID'].map((String value) {
-                                        return DropdownMenuItem<String>(
-                                          value: value,
-                                          child: Text(value),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          selectedDocumentType = value!;
-                                        });
-                                      },
                                     ),
                                   ),
                                 ),
-
-
                                 SizedBox(
                                   height: 20,
                                 ),
@@ -990,31 +1287,6 @@ TextEditingController IssueDateController=new TextEditingController();
                                           borderSide: const BorderSide(
                                               color: Colors.red, width: 2),
                                           borderRadius: BorderRadius.circular(10),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(
-                                  height: 20,
-                                ),
-                                Padding(
-                                  padding: const EdgeInsets.only(left: 10, right: 10),
-                                  child: Container(
-                                    height: 50,
-                                    child: TextField(
-                                      onTap: () {
-                                        _selectIssueDate(context);
-                                      },
-                                      controller: IssueDateController,
-                                      readOnly: true,
-                                      style: TextStyle(fontWeight: FontWeight.w500),
-                                      decoration: inputDecoration('Issue Date', 'Issue Date').copyWith(
-                                        prefixIcon: GestureDetector(
-                                          onTap: () {
-                                            _selectIssueDate(context);
-                                          },
-                                          child: Icon(Icons.calendar_today),
                                         ),
                                       ),
                                     ),
@@ -1090,7 +1362,7 @@ TextEditingController IssueDateController=new TextEditingController();
                             // Makes the button take full width
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:Color(0xFF00ADEE),
+                                backgroundColor: Color(0xFF00ADEE),
                                 // Button background color
                                 fixedSize: const Size.fromHeight(47),
                                 // Set button height to 45
@@ -1118,24 +1390,4 @@ TextEditingController IssueDateController=new TextEditingController();
             ]),
     );
   }
-  InputDecoration inputDecoration(String label, String hint) {
-    return InputDecoration(
-      label: Text(label),
-      hintText: hint,
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.grey),
-        borderRadius: BorderRadius.circular(5),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.black, width: 1.5),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      labelStyle: TextStyle(fontWeight: FontWeight.bold),
-      errorBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.red, width: 2),
-        borderRadius: BorderRadius.circular(10),
-      ),
-    );
-  }
-
 }

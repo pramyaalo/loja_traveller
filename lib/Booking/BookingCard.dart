@@ -307,7 +307,7 @@ class _BookingCardsState extends State<BookingCard> {
                                                       padding: const EdgeInsets.fromLTRB(5, 3, 5, 3),
                                                       decoration: BoxDecoration(
                                                         color: getBookingStatusColor(snapshot.data![index].bookingStatus),
-                                                        border: Border.all(width: 0.1, color: Colors.blue),
+                                                        border: Border.all(width: 0.1, color: Color(0xFF00ADEE)),
                                                         borderRadius: BorderRadius.circular(5.0),
                                                       ),
                                                       child: Text(

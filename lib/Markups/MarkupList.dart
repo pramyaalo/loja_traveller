@@ -436,7 +436,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                           controller: _tabController,
                           indicator: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.blue, width: 1),
+                            border: Border.all(color: Color(0xFF00ADEE), width: 1),
                             color: Colors.blue.shade100,
                           ),
                           labelColor: Colors.black,
@@ -578,7 +578,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -721,7 +721,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -864,7 +864,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -1007,7 +1007,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -1158,7 +1158,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -1291,7 +1291,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -1434,7 +1434,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -1567,7 +1567,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                     : Colors.red,
                                                 border: Border.all(
                                                     width: 0.1,
-                                                    color: Colors.blue),
+                                                    color: Color(0xFF00ADEE)),
                                                 borderRadius:
                                                     BorderRadius.circular(5.0),
                                               ),
@@ -1715,7 +1715,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                   : Colors.red,
                                               border: Border.all(
                                                   width: 0.1,
-                                                  color: Colors.blue),
+                                                  color: Color(0xFF00ADEE)),
                                               borderRadius:
                                                   BorderRadius.circular(5.0),
                                             ),
@@ -1848,7 +1848,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                   : Colors.red,
                                               border: Border.all(
                                                   width: 0.1,
-                                                  color: Colors.blue),
+                                                  color: Color(0xFF00ADEE)),
                                               borderRadius:
                                                   BorderRadius.circular(5.0),
                                             ),
@@ -1991,7 +1991,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                                   : Colors.red,
                                               border: Border.all(
                                                   width: 0.1,
-                                                  color: Colors.blue),
+                                                  color: Color(0xFF00ADEE)),
                                               borderRadius:
                                                   BorderRadius.circular(5.0),
                                             ),
@@ -2143,7 +2143,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                         : Colors.red,
                                     border: Border.all(
                                         width: 0.1,
-                                        color: Colors.blue),
+                                        color: Color(0xFF00ADEE)),
                                     borderRadius:
                                     BorderRadius.circular(5.0),
                                   ),
@@ -2276,7 +2276,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                         : Colors.red,
                                     border: Border.all(
                                         width: 0.1,
-                                        color: Colors.blue),
+                                        color: Color(0xFF00ADEE)),
                                     borderRadius:
                                     BorderRadius.circular(5.0),
                                   ),
@@ -2419,7 +2419,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                         : Colors.red,
                                     border: Border.all(
                                         width: 0.1,
-                                        color: Colors.blue),
+                                        color: Color(0xFF00ADEE)),
                                     borderRadius:
                                     BorderRadius.circular(5.0),
                                   ),
@@ -2571,7 +2571,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                         : Colors.red,
                                     border: Border.all(
                                         width: 0.1,
-                                        color: Colors.blue),
+                                        color: Color(0xFF00ADEE)),
                                     borderRadius:
                                     BorderRadius.circular(5.0),
                                   ),
@@ -2714,7 +2714,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                         : Colors.red,
                                     border: Border.all(
                                         width: 0.1,
-                                        color: Colors.blue),
+                                        color: Color(0xFF00ADEE)),
                                     borderRadius:
                                     BorderRadius.circular(5.0),
                                   ),
@@ -2857,7 +2857,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                                         : Colors.red,
                                     border: Border.all(
                                         width: 0.1,
-                                        color: Colors.blue),
+                                        color: Color(0xFF00ADEE)),
                                     borderRadius:
                                     BorderRadius.circular(5.0),
                                   ),

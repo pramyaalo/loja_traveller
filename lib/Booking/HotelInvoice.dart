@@ -946,10 +946,10 @@ class _BookingCardGeneralDetailsState extends State<HotelInvoice> {
                                     2: IntrinsicColumnWidth(), // Value Column
                                   },
                                   children: [
-                                    _buildTableRow('Total Net Amount', m10.Currency, m10.totalFare),
+                                    _buildTableRow('Total Net Amount', m10.currency, m10.totalFare),
                                     _buildTableRow(
                                       '	Service Charge and Tax',
-                                      m10.Currency,
+                                      m10.currency,
                                       (double.tryParse(m10.serviceTaxAmount
                                           .toString()) ??
                                           0) +
@@ -958,7 +958,7 @@ class _BookingCardGeneralDetailsState extends State<HotelInvoice> {
                                               0),
                                     ),
 
-                                    _buildTableRow('Total Price', m10.Currency, m10.grandTotal, isBold: true),
+                                    _buildTableRow('Total Price', m10.currency, m10.grandTotal, isBold: true),
                                   ],
                                 ),
 

@@ -1,6 +1,6 @@
 class Table16FlightInvoiceMode {
   String totalFare;
-  String Currency;
+  String currency;
   String gstPercent;
   String gstAmount;
   String serviceTaxPercent;
@@ -10,7 +10,7 @@ class Table16FlightInvoiceMode {
 
   Table16FlightInvoiceMode({
     required this.totalFare,
-    required this.Currency,
+    required this.currency,
     required this.gstPercent,
     required this.gstAmount,
     required this.serviceTaxPercent,
@@ -23,7 +23,7 @@ class Table16FlightInvoiceMode {
   factory Table16FlightInvoiceMode.fromJson(Map<String, dynamic> json) {
     return Table16FlightInvoiceMode(
       totalFare: json['TotalFare'].toString(),
-        Currency:json["Currency"].toString(),
+      currency: json['Currency'].toString(),
       gstPercent: json['GSTPercent'].toString(),
       gstAmount: json['GSTAmount'].toString(),
       serviceTaxPercent: json['ServiceTaxPercent'].toString(),
