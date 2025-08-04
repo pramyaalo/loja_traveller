@@ -1706,9 +1706,10 @@ class _CorDashboardState extends State<Dashboard> {
                                                                 sections: [
                                                                   PieChartSectionData(
                                                                     color:
-                                                                    Color(0xFF00ADEE),
+                                                                    Colors
+                                                                        .blue,
                                                                     value: 70,
-                                                                    title: '',
+                                                                    title: '40',
                                                                     radius: 30,
                                                                     titleStyle:
                                                                     TextStyle(
