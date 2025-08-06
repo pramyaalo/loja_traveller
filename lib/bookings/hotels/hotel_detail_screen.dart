@@ -20,7 +20,7 @@ import '../flight/FilterPage.dart';
 import 'hotel_description.dart';
 
 class HotelDetail extends StatefulWidget {
-  final regionID,checkinDate,
+  final checkinDate,
       checkoutDate,
       RoomCount,
       AdultCountRoom1,
@@ -32,32 +32,23 @@ class HotelDetail extends StatefulWidget {
       AdultCountRoom4,
       ChildrenCountRoom4,
       cityid,
-      Cityname,
-      countrycode,
-      TotalAdultCount,
-      TotalChildrenCOunt,
-      NoOfnights;
+      countrycode;
 
   const HotelDetail(
       {super.key,
-        required this.regionID,
-        required this.checkinDate,
-        required this.checkoutDate,
-        required this.RoomCount,
-        required this.AdultCountRoom1,
-        required this.ChildrenCountRoom1,
-        required this.AdultCountRoom2,
-        required this.ChildrenCountRoom2,
-        required this.AdultCountRoom3,
-        required this.ChildrenCountRoom3,
-        required this.AdultCountRoom4,
-        required this.ChildrenCountRoom4,
-        required this.cityid,
-        required this.Cityname,
-        required this.countrycode,
-        required this.TotalAdultCount,
-        required this.TotalChildrenCOunt,
-        required this.NoOfnights});
+      required this.checkinDate,
+      required this.checkoutDate,
+      required this.RoomCount,
+      required this.AdultCountRoom1,
+      required this.ChildrenCountRoom1,
+      required this.AdultCountRoom2,
+      required this.ChildrenCountRoom2,
+      required this.AdultCountRoom3,
+      required this.ChildrenCountRoom3,
+      required this.AdultCountRoom4,
+      required this.ChildrenCountRoom4,
+      required this.cityid,
+      required this.countrycode});
 
   @override
   State<HotelDetail> createState() => _HotelDetailState();
@@ -86,7 +77,7 @@ class _HotelDetailState extends State<HotelDetail> {
   bool isSelected9500To15000 = false;
   bool isSelected15000To30000 = false;
   bool isSelected30000Plus = false;
-  List<int> selectedStarRatings=[];
+    List<int> selectedStarRatings=[];
   String? selectedSortOption = "Low to High";
   late String userID = '';
   late String Currency = '';
@@ -146,21 +137,12 @@ class _HotelDetailState extends State<HotelDetail> {
       '15000To30000': selected15000To30000,
       '30000Plus': selected30000Plus,
     };
-    _initializeSearch();
 
-
+    // Call getHotelList after filters are set
+    await getHotelList(filters);
   }
 
-  void _initializeSearch() async {
-    String? token = await fetchAndStoreToken(); // 🔐 Get the token
 
-    if (token != null) {
-      Map<String, dynamic> filters = {}; // or pass actual filters
-      getHotelList(filters); // ✅ Now call API
-    } else {
-      print("Failed to fetch token");
-    }
-  }
   void _showPriceFilterBottomSheet(BuildContext context) {
     // Create a local copy of the checkbox states
     bool localSelected0To3000 = isSelected0To3000;
@@ -321,18 +303,18 @@ class _HotelDetailState extends State<HotelDetail> {
                         },
                       ),
 
-                      Padding(
-                        padding: const EdgeInsets.only(left: 80),
-                        child: Center(
-                          child: Text(
-                            "Sort",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                        Padding(
+                          padding: const EdgeInsets.only(left: 80),
+                          child: Center(
+                            child: Text(
+                              "Sort",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
-                      ),
 
                     ],
                   ),
@@ -464,11 +446,11 @@ class _HotelDetailState extends State<HotelDetail> {
     print('Sorted hotels: $results');
   }
 
-  double _parsePrice(dynamic price) {
+   double _parsePrice(dynamic price) {
     if (price is String) {
-      return double.tryParse(price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
+       return double.tryParse(price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
     } else if (price is num) {
-      return price.toDouble();
+       return price.toDouble();
     } else {
       return 0.0; // Fallback if it's neither string nor number
     }
@@ -684,102 +666,7 @@ class _HotelDetailState extends State<HotelDetail> {
         return false;
     }
   }
-  String? tpToken;
-  Future<String?> getValidToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('TPToken');
-    final savedTime = prefs.getString('TokenSavedTime');
 
-    if (token != null && savedTime != null) {
-      final savedDateTime = DateTime.tryParse(savedTime);
-      if (savedDateTime != null) {
-        final now = DateTime.now();
-        final diff = now.difference(savedDateTime).inHours;
-
-        if (diff < 24) {
-          print('✅ Existing token is still valid (${24 - diff} hours left)');
-          return token;
-        } else {
-          print('⌛ Token expired after $diff hours. Fetching new token...');
-        }
-      } else {
-        print('⚠️ Invalid saved token time. Fetching new token...');
-      }
-    } else {
-      print('ℹ️ No token found. Fetching new token...');
-    }
-
-    // Delete old token data
-    await prefs.remove('TPToken');
-    await prefs.remove('TokenSavedTime');
-
-    // Fetch and save new token
-    return await fetchAndStoreToken();
-  }
-  Future<String?> fetchAndStoreToken() async {
-    final url = Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx');
-
-    final envelope = '''<?xml version="1.0" encoding="utf-8"?>
-    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-                   xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-      <soap:Body>
-        <TravelPort_GetToken xmlns="http://tempuri.org/" />
-      </soap:Body>
-    </soap:Envelope>''';
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          'SOAPAction': 'http://tempuri.org/TravelPort_GetToken',
-        },
-        body: envelope,
-      );
-
-      print('🔃 Status Code: ${response.statusCode}');
-      print('📥 Raw Response: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final rawXml = response.body;
-
-        // ✅ Corrected: Extract token from <TravelPort_GetTokenResult>
-        final token = RegExp(
-            r'<TravelPort_GetTokenResult>(.*?)</TravelPort_GetTokenResult>',
-            dotAll: true)
-            .firstMatch(rawXml)
-            ?.group(1);
-
-        if (token != null && token.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('TPToken', token);
-          await prefs.setString(
-              'TokenSavedTime', DateTime.now().toIso8601String());
-
-          printFullString('✅ Token saved: $token');
-          return token;
-        } else {
-          print('⚠️ Token not found in XML');
-        }
-      } else {
-        print('❌ HTTP Error: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Exception occurred: $e');
-    }
-
-    return null;
-  }
-  void printFullString(String text) {
-    const int chunkSize = 800;
-    for (int i = 0; i < text.length; i += chunkSize) {
-      int endIndex = i + chunkSize;
-      if (endIndex > text.length) endIndex = text.length;
-      debugPrint(
-          text.substring(i, endIndex)); // Automatically handles long logs
-    }
-  }
   void _setCheckboxValue(int starCount, bool value) {
     switch (starCount) {
       case 0:
@@ -822,18 +709,16 @@ class _HotelDetailState extends State<HotelDetail> {
     print('finDate1: ${finDate1 ?? 'N/A'}'); // Updated print statement
 
     final url = Uri.parse(
-        'https://boqoltravel.com/app/b2badminapi.asmx/TPHotelSearchGet');
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaHotelGetList');
 
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
-    tpToken = await getValidToken(); // Call token
-    if (tpToken == null) {
-      print('❌ Failed to retrieve TPToken');
-      return;
-    }
     final requestBody = {
-      'RegionID':widget.regionID,
-      'CityName': widget.Cityname.toString(),
+      'CityId': widget.cityid.toString(),
       'CountryCode': widget.countrycode.toString(),
+      'APICurrencyCode': 'INR',
+      'DefaultCurrency': 'KES',
+      'UserID': userID.toString(),
+      'UserTypeID': userTypeID.toString(),
       'CheckIn': finDate,
       'CheckOut': finDate1,
       'Rooms': widget.RoomCount.toString(),
@@ -849,16 +734,8 @@ class _HotelDetailState extends State<HotelDetail> {
       'ChildrenCountRoom3': '',
       'Child1AgeRoom3': '',
       'Child2AgeRoom3': '',
-      'AdultCountRoom4': '',
-      'ChildrenCountRoom4': '',
-      'Child1AgeRoom4': '',
-      'Child2AgeRoom4': '',
-      'token':tpToken,
-      'DefaultCurrency':'ETB',
-      'DefaultCurrencyValue':'1'
     };
-    print('CityId: ${widget.regionID.toString()}');
-    print('CityName: ${widget.Cityname.toString()}');
+    print('CityId: ${widget.cityid.toString()}');
     print('CountryCode: ${widget.countrycode.toString()}');
     print('APICurrencyCode: INR');
     print('DefaultCurrency: ${Currency.toString()}');
@@ -903,7 +780,7 @@ class _HotelDetailState extends State<HotelDetail> {
               hotelResult; // Assuming 'flights' is the key for the flight data
           print('Extracted flights: $fullResultList');
         });
-        _applyHotelFiltersToResult(hotelResult, filters);
+          _applyHotelFiltersToResult(hotelResult, filters);
 
         // Apply the filter based on the search text
       } else {
@@ -922,16 +799,16 @@ class _HotelDetailState extends State<HotelDetail> {
     List<dynamic> filteredResults = [];
 
     // Extract filter values
-    isSelected0To3000 = filters['0To3000'] ?? false;
-    isSelected3000To5000 = filters['3000To5000'] ?? false;
-    isSelected5000To7500 = filters['5000To7500'] ?? false;
-    isSelected7500To9500 = filters['7500To9500'] ?? false;
-    isSelected9500To15000 = filters['9500To15000'] ?? false;
-    isSelected15000To30000 = filters['15000To30000'] ?? false;
-    isSelected30000Plus = filters['30000Plus'] ?? false;
+      isSelected0To3000 = filters['0To3000'] ?? false;
+      isSelected3000To5000 = filters['3000To5000'] ?? false;
+      isSelected5000To7500 = filters['5000To7500'] ?? false;
+      isSelected7500To9500 = filters['7500To9500'] ?? false;
+      isSelected9500To15000 = filters['9500To15000'] ?? false;
+      isSelected15000To30000 = filters['15000To30000'] ?? false;
+      isSelected30000Plus = filters['30000Plus'] ?? false;
 
-    selectedStarRatings = filters['selectedStarRatings'] ?? [];
-    searchText = filters['searchText'] ?? "";
+     selectedStarRatings = filters['selectedStarRatings'] ?? [];
+      searchText = filters['searchText'] ?? "";
     // Check if any filters are selected
     bool anyFilterSelected = isSelected0To3000 ||
         isSelected3000To5000 ||
@@ -946,12 +823,12 @@ class _HotelDetailState extends State<HotelDetail> {
     if (!anyFilterSelected) {
       filteredResults = List.from(hotelResult);
     } else {
-      for (var hotel in hotelResult) {
+       for (var hotel in hotelResult) {
         double hotelPrice =
             double.tryParse(hotel['TotalPrice'].toString()) ?? 0.0;
         int hotelStars = int.tryParse(hotel['StarCategory'].toString()) ?? 0;
         String hotelName = hotel['HotelName'] ?? "";
-        bool isInSelectedPriceRange = false;
+         bool isInSelectedPriceRange = false;
 
         if (isSelected0To3000 && hotelPrice >= 0 && hotelPrice <= 3000) {
           isInSelectedPriceRange = true;
@@ -1019,27 +896,30 @@ class _HotelDetailState extends State<HotelDetail> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
           titleSpacing: 1,
-          backgroundColor: Color(0xFF00ADEE), // Custom dark color
           title: Row(
             children: [
               IconButton(
-                icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Colors.white,
+                  size: 27,
+                ),
                 onPressed: () {
                   Navigator.pop(context);
                 },
               ),
-              SizedBox(width: 1),
+
+              SizedBox(width: 1), // Set the desired width
               Text(
-                "Hotels",
+                "Available Hotels",
                 style: TextStyle(
-                  color: Colors.white,
-                  fontFamily: "Montserrat",
-                  fontSize: 19,
-                ),
+                    color: Colors.white, fontFamily: "Montserrat",
+                    fontSize: 18),
               ),
             ],
           ),
@@ -1051,170 +931,165 @@ class _HotelDetailState extends State<HotelDetail> {
             ),
 
           ],
+          backgroundColor:Color(0xFF00ADEE),
         ),
         body: isLoading
             ? ListView.builder(
-            itemCount: 10, // Number of skeleton items
-            itemBuilder: (context, index) {
-              return Shimmer.fromColors(
-                baseColor: Colors.grey[300]!,
-                highlightColor: Colors.grey[100]!,
-                child: ListTile(
-                  leading: Container(
-                    width: 64.0,
-                    height: 64.0,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
+                itemCount: 10, // Number of skeleton items
+                itemBuilder: (context, index) {
+                  return Shimmer.fromColors(
+                    baseColor: Colors.grey[300]!,
+                    highlightColor: Colors.grey[100]!,
+                    child: ListTile(
+                      leading: Container(
+                        width: 64.0,
+                        height: 64.0,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                        ),
+                      ),
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            height: 16.0,
+                            margin: EdgeInsets.symmetric(vertical: 4.0),
+                            color: Colors.white,
+                          ),
+                          Container(
+                            width: double.infinity,
+                            height: 12.0,
+                            margin: EdgeInsets.symmetric(vertical: 4.0),
+                            color: Colors.white,
+                          ),
+                          Container(
+                            width: double.infinity,
+                            height: 12.0,
+                            margin: EdgeInsets.symmetric(vertical: 4.0),
+                            color: Colors.white,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  title: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 16.0,
-                        margin: EdgeInsets.symmetric(vertical: 4.0),
-                        color: Colors.white,
-                      ),
-                      Container(
-                        width: double.infinity,
-                        height: 12.0,
-                        margin: EdgeInsets.symmetric(vertical: 4.0),
-                        color: Colors.white,
-                      ),
-                      Container(
-                        width: double.infinity,
-                        height: 12.0,
-                        margin: EdgeInsets.symmetric(vertical: 4.0),
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            })
+                  );
+                })
             : Stack(
-          children: [
-            Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    controller: _scrollController,
-                    itemCount: hotelResult.length,
-                    itemBuilder: (context, index) {
-                      //return Text(snapshot.data?[index].LabelName ?? "got null");
-                      return InkWell(
-                        child: Container(
-                          margin: const EdgeInsets.only(
-                              right: 10, left: 10, top: 5),
-                          child: Material(
-                            elevation: 10,
-                            child: Container(
-                              padding: const EdgeInsets.all(10.0),
-                              child: Column(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(2),
-                                    decoration: BoxDecoration(
-                                      borderRadius:
-                                      BorderRadius.circular(15),
-                                      color: const Color(0xFFFAE8FA),
-                                    ),
-                                    child: Row(
+                children: [
+                  Column(
+                    children: [
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _scrollController,
+                          itemCount: hotelResult.length,
+                          itemBuilder: (context, index) {
+                            String star = hotelResult[index]['StarCategory']?.toString() ?? '';
+                            String displayStar = '';
+                            if (star.isEmpty || star == '0') {
+                              displayStar = '1 Star Hotel';
+                            } else {
+                              displayStar = '$star Star Hotel';
+                            }
+                            String refund = hotelResult[index]['RefundString']?.toString().toLowerCase() ?? '';
+                            //return Text(snapshot.data?[index].LabelName ?? "got null");
+                            return InkWell(
+                              child: Container(
+                                margin: const EdgeInsets.only(
+                                    right: 10, left: 10, top: 5),
+                                child: Material(
+                                  elevation: 10,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(10.0),
+                                    child: Column(
                                       children: [
                                         Container(
-                                          padding:
-                                          const EdgeInsets.all(5),
+                                          padding: const EdgeInsets.all(2),
                                           decoration: BoxDecoration(
                                             borderRadius:
-                                            BorderRadius.circular(15),
-                                            color:
-                                            const Color(0xFF870987),
+                                                BorderRadius.circular(15),
+                                            color: const Color(0xFFFAE8FA),
                                           ),
                                           child: Row(
                                             children: [
-                                              Icon(
-                                                Icons.local_offer,
-                                                color: Colors.white,
-                                                size: 16,
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.all(5),
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(15),
+                                                  color:
+                                                      const Color(0xFF870987),
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    Icon(
+                                                      Icons.local_offer,
+                                                      color: Colors.white,
+                                                      size: 16,
+                                                    ),
+                                                    Text(
+                                                        displayStar,
+                                                      style: TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 10),
+                                                    )
+                                                  ],
+                                                ),
                                               ),
-                                              Text(
-                                                (hotelResult[index][
-                                                'StarCategory'] ==
-                                                    '0')
-                                                    ? '1' +
-                                                    " " +
-                                                    "Star Hotel"
-                                                    : hotelResult[index][
-                                                'StarCategory'] +
-                                                    " " +
-                                                    "Star Hotel",
-                                                style: TextStyle(
-                                                    color: Colors.white,
-                                                    fontSize: 10),
+                                              const SizedBox(
+                                                width: 10,
+                                              ),
+                                              RatingBar.builder(
+                                                initialRating: _getInitialRating(
+                                                    int.tryParse(hotelResult[index]['StarCategory']?.toString() ?? '') ?? 1
+                                                ),
+                                                minRating: 1,
+                                                direction: Axis.horizontal,
+                                                allowHalfRating: true,
+                                                itemCount: 5,
+                                                itemSize: 15,
+                                                itemPadding: const EdgeInsets.symmetric(horizontal: 0),
+                                                itemBuilder: (context, _) => const Icon(
+                                                  Icons.star,
+                                                  color: Colors.amber,
+                                                ),
+                                                onRatingUpdate: (rating) {
+                                                  print(rating);
+                                                },
                                               )
+
                                             ],
                                           ),
                                         ),
                                         const SizedBox(
-                                          width: 10,
+                                          height: 10,
                                         ),
-                                        RatingBar.builder(
-                                          initialRating:
-                                          _getInitialRating(int.parse(
-                                              hotelResult[index]
-                                              ['StarCategory'])),
-                                          minRating: 1,
-                                          direction: Axis.horizontal,
-                                          allowHalfRating: true,
-                                          itemCount: 5,
-                                          itemSize: 15,
-                                          itemPadding:
-                                          const EdgeInsets.symmetric(
-                                              horizontal: 0),
-                                          itemBuilder: (context, _) =>
-                                          const Icon(
-                                            Icons.star,
-                                            color: Colors.amber,
-                                          ),
-                                          onRatingUpdate: (rating) {
-                                            print(rating);
-                                          },
-                                        )
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                  Container(
-                                    child: Row(
-                                      crossAxisAlignment:
-                                      CrossAxisAlignment.start,
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.start,
-                                      children: [
-                                        SizedBox(
-                                          width: 100,
-                                          height: 115,
-                                          child: CachedNetworkImage(
-                                            imageUrl: hotelResult[index]
-                                            ['ImageUrl'],
-                                            placeholder: (context, url) =>
-                                            const Center(
-                                                child: SizedBox(
-                                                    height: 30,
-                                                    width: 35,
-                                                    child:
-                                                    CircularProgressIndicator())),
-                                            errorWidget: (context, url,
-                                                error) =>
-                                            const Icon(Icons.error),
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                        /*Image(
+                                        Container(
+                                          child: Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.start,
+                                            children: [
+                                              SizedBox(
+                                                width: 100,
+                                                height: 115,
+                                                child: CachedNetworkImage(
+                                                  imageUrl: hotelResult[index]['ImageUrl']?.toString() ?? '',
+                                                  placeholder: (context, url) => const Center(
+                                                    child: SizedBox(
+                                                      height: 30,
+                                                      width: 35,
+                                                      child: CircularProgressIndicator(),
+                                                    ),
+                                                  ),
+                                                  errorWidget: (context, url, error) => const Icon(Icons.error),
+                                                  fit: BoxFit.cover,
+                                                ),
+                                              ),
+
+                                              /*Image(
                                                 //image: AssetImage('assets/images/hotel_list_1.jpg'),
                                                 image: NetworkImage(snapshot.data![index].ImageUrl, ),
                                                 width: 150,
@@ -1222,472 +1097,451 @@ class _HotelDetailState extends State<HotelDetail> {
                                                 fit: BoxFit.cover,
                                               ),*/
 
-                                        const SizedBox(
-                                          width: 10,
-                                        ),
-                                        Expanded(
-                                          child: Column(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                            children: [
-                                              Column(
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment
-                                                    .start,
-                                                children: [
-                                                  SizedBox(
-                                                      width: 200,
-                                                      child: Text(
-                                                        hotelResult[index]
-                                                        ['HotelName'],
-                                                        overflow:
-                                                        TextOverflow
-                                                            .ellipsis,
-                                                        maxLines: 1,
-                                                        softWrap: false,
-                                                        style: const TextStyle(
-                                                            fontSize: 18,
-                                                            fontWeight:
-                                                            FontWeight
-                                                                .bold),
-                                                      )),
-                                                  const SizedBox(
-                                                    height: 5,
-                                                  ),
-                                                  Row(
-                                                    children: [
-                                                      const Icon(
-                                                        IconData(0xf053c,
-                                                            fontFamily:
-                                                            'MaterialIcons'),
-                                                        size: 15,
-                                                      ),
-                                                      const SizedBox(
-                                                        width: 3,
-                                                      ),
-                                                      SizedBox(
-                                                          width: 150,
-                                                          child: Text(
-                                                            hotelResult[
-                                                            index]
-                                                            [
-                                                            'Address'],
-                                                            overflow:
-                                                            TextOverflow
-                                                                .ellipsis,
-                                                            maxLines: 1,
-                                                            softWrap:
-                                                            false,
-                                                            style: const TextStyle(
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .w500,
-                                                                fontSize:
-                                                                12),
-                                                          )),
-                                                    ],
-                                                  ),
-                                                ],
-                                              ),
                                               const SizedBox(
-                                                height: 5,
+                                                width: 10,
                                               ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment
-                                                    .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    '${hotelResult[index]['RoomCount'] + " " + "Room For"} ${hotelResult[index]['TotalDays'] + " " + "Days"}',
-                                                    style:
-                                                    const TextStyle(
-                                                        color: Colors
-                                                            .black,
-                                                        fontWeight:
-                                                        FontWeight
-                                                            .w500,
-                                                        fontSize:
-                                                        12.5),
-                                                  ),
-                                                  /* Text(
-                                                          '${Currency} ${hotelResult[index]['TotalPrice']}',
+                                              Expanded(
+                                                child: Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        SizedBox(
+                                                            width: 200,
+                                                            child: Text(
+                                                              hotelResult[index]
+                                                                  ['HotelName'],
+                                                              overflow:
+                                                                  TextOverflow
+                                                                      .ellipsis,
+                                                              maxLines: 1,
+                                                              softWrap: false,
+                                                              style: const TextStyle(
+                                                                  fontSize: 18,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold),
+                                                            )),
+                                                        const SizedBox(
+                                                          height: 5,
+                                                        ),
+                                                        Row(
+                                                          children: [
+                                                            const Icon(
+                                                              IconData(0xf053c,
+                                                                  fontFamily:
+                                                                      'MaterialIcons'),
+                                                              size: 15,
+                                                            ),
+                                                            const SizedBox(
+                                                              width: 3,
+                                                            ),
+                                                            Expanded(
+                                                              child: Text(
+                                                                hotelResult[index]['Address']?.toString() ?? '',
+                                                                overflow: TextOverflow.ellipsis,
+                                                                maxLines: 1,
+                                                                softWrap: false,
+                                                                style: const TextStyle(
+                                                                  fontWeight: FontWeight.w500,
+                                                                  fontSize: 12,
+                                                                ),
+                                                              ),
+                                                            )
+
+                                                          ],
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 5,
+                                                    ),
+                                                    Row(
+                                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          '${(hotelResult[index]['RoomCount'] ?? "").toString()} Room For ${(hotelResult[index]['TotalDays'] ?? "").toString()} Days',
+                                                          style: const TextStyle(
+                                                            color: Colors.black,
+                                                            fontWeight: FontWeight.w500,
+                                                            fontSize: 12.5,
+                                                          ),
+                                                        ),
+                                                        Text(
+                                                          '${hotelResult[index]['DefaultCurrency'] ?? ""} ${hotelResult[index]['TotalPrice'] ?? ""}',
+                                                          style: const TextStyle(
+                                                            color: Colors.red,
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 15,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+
+                                                    const SizedBox(
+                                                      height: 5,
+                                                    ),
+                                                    Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          'Hotel ID: ${hotelResult[index]['ItemID']}',
                                                           style:
                                                               const TextStyle(
                                                                   color: Colors
-                                                                      .red,
+                                                                      .black,
                                                                   fontWeight:
                                                                       FontWeight
-                                                                          .bold,
-                                                                  fontSize: 15),
-                                                        ),*/
-                                                ],
-                                              ),
-                                              const SizedBox(
-                                                height: 5,
-                                              ),
-                                              Row(
-                                                mainAxisAlignment:
-                                                MainAxisAlignment
-                                                    .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    'Hotel ID: ${hotelResult[index]['ItemID']}',
-                                                    style:
-                                                    const TextStyle(
-                                                        color: Colors
-                                                            .black,
-                                                        fontWeight:
-                                                        FontWeight
-                                                            .w500,
-                                                        fontSize: 14),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(
-                                                height: 5,
-                                              ),
-                                              SizedBox(
-                                                width: 250,
-                                                height: 1,
-                                                child: DecoratedBox(
-                                                  decoration:
-                                                  const BoxDecoration(
-                                                      color: Color(
-                                                          0xffededed)),
+                                                                          .w500,
+                                                                  fontSize: 14),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 5,
+                                                    ),
+                                                    SizedBox(
+                                                      width: 250,
+                                                      height: 1,
+                                                      child: DecoratedBox(
+                                                        decoration:
+                                                            const BoxDecoration(
+                                                                color: Color(
+                                                                    0xffededed)),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 5,
+                                                    ),
+                                                    Row(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .center,
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment
+                                                              .spaceBetween,
+                                                      children: [
+                                                        Text(
+                                                          hotelResult[index]['RefundString']?.toString() ?? '',
+                                                          style: TextStyle(
+                                                            color: refund.contains('non') ? Colors.red : const Color(0xFF00AF80),
+                                                            fontWeight: FontWeight.bold,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+
+                                                        GestureDetector(
+                                                          onTap: () {
+                                                            String
+                                                                StarCategory =
+                                                                hotelResult[
+                                                                        index][
+                                                                    'StarCategory'];
+                                                            String HotelId =
+                                                                hotelResult[
+                                                                        index]
+                                                                    ['ItemID'];
+                                                            String ResultIndex =
+                                                                hotelResult[index]
+                                                                        [
+                                                                        'ResultIndex']
+                                                                    .toString();
+                                                            print('traceid:' +
+                                                                hotelResult[index]
+                                                                        [
+                                                                        'TraceId']
+                                                                    .toString());
+                                                            String Hotelname =
+                                                                hotelResult[index]
+                                                                        [
+                                                                        'HotelName']
+                                                                    .toString();
+                                                            String
+                                                                Hoteladdress =
+                                                                hotelResult[index]
+                                                                        [
+                                                                        'Address']
+                                                                    .toString();
+                                                            navigate(HotelDescription(
+                                                                hotelDetail:
+                                                                    hotelResult[
+                                                                        index],
+                                                                hotelid:
+                                                                    HotelId,
+                                                                resultindex:
+                                                                    ResultIndex,
+                                                                traceid: hotelResult[index]['TraceId']
+                                                                    .toString(),
+                                                                Starcategory:
+                                                                    StarCategory,
+                                                                RoomCount: widget
+                                                                    .RoomCount,
+                                                                adultCount: widget
+                                                                    .AdultCountRoom1,
+                                                                childrenCount: widget
+                                                                    .ChildrenCountRoom1,
+                                                                Checkindate: widget
+                                                                    .checkinDate,
+                                                                CheckoutDate: widget
+                                                                    .checkoutDate,
+                                                                hotelname:
+                                                                    Hotelname,
+                                                                hoteladdress:
+                                                                    Hoteladdress,
+                                                                imageurl: hotelResult[
+                                                                            index]
+                                                                        [
+                                                                        'ImageUrl']
+                                                                    .toString(),
+                                                                Refundable: hotelResult[index]['RefundString'],
+                                                                totaldays: hotelResult[
+                                                                            index]
+                                                                        ['TotalDays']
+                                                                    .toString()));
+
+                                                          },
+                                                          child: Text(
+                                                            'View Details',
+                                                            style: TextStyle(
+                                                                color: Color(
+                                                                    0xFF00AF80),
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold,
+                                                                fontSize: 14),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    )
+                                                  ],
                                                 ),
                                               ),
-                                              const SizedBox(
-                                                height: 5,
-                                              ),
-                                              Row(
-                                                crossAxisAlignment:
-                                                CrossAxisAlignment
-                                                    .center,
-                                                mainAxisAlignment:
-                                                MainAxisAlignment
-                                                    .spaceBetween,
-                                                children: [
-                                                  Text(
-                                                    hotelResult[index]
-                                                    ['RefundString'],
-                                                    style: TextStyle(
-                                                        color: Color(
-                                                            0xFF00AF80),
-                                                        fontWeight:
-                                                        FontWeight
-                                                            .w500,
-                                                        fontSize: 12),
-                                                  ),
-                                                  GestureDetector(
-                                                    onTap: () {
-                                                      String
-                                                      StarCategory =
-                                                      hotelResult[
-                                                      index][
-                                                      'StarCategory'];
-                                                      String HotelId =
-                                                      hotelResult[
-                                                      index]
-                                                      ['ItemID'];
-                                                      String ResultIndex =
-                                                      hotelResult[index]
-                                                      [
-                                                      'ResultIndex']
-                                                          .toString();
-                                                      print('traceid:' +
-                                                          hotelResult[index]
-                                                          [
-                                                          'TraceId']
-                                                              .toString());
-                                                      String Hotelname =
-                                                      hotelResult[index]
-                                                      [
-                                                      'HotelName']
-                                                          .toString();
-                                                      String
-                                                      Hoteladdress =
-                                                      hotelResult[index]
-                                                      [
-                                                      'Address']
-                                                          .toString();
-                                                      navigate(HotelDescription(
-                                                          Propertycode:hotelResult[index]['PropertyCode'],
-                                                          chainCode:hotelResult[index]['ChainCode'],
-                                                          token:tpToken,
-                                                          hotelDetail:
-                                                          hotelResult[
-                                                          index],
-                                                          hotelid:
-                                                          HotelId,
-                                                          resultindex:
-                                                          ResultIndex,
-                                                          traceid: hotelResult[index]['TraceId']
-                                                              .toString(),
-                                                          Starcategory:
-                                                          StarCategory,
-                                                          RoomCount: widget
-                                                              .RoomCount,
-                                                          adultCount: widget
-                                                              .AdultCountRoom1,
-                                                          childrenCount: widget
-                                                              .ChildrenCountRoom1,
-                                                          Checkindate: widget
-                                                              .checkinDate,
-                                                          CheckoutDate: widget
-                                                              .checkoutDate,
-                                                          hotelname:
-                                                          Hotelname,
-                                                          hoteladdress:
-                                                          Hoteladdress,
-                                                          imageurl: hotelResult[
-                                                          index]
-                                                          [
-                                                          'ImageUrl']
-                                                              .toString(),
-                                                          totaldays: hotelResult[
-                                                          index]
-                                                          ['TotalDays']
-                                                              .toString(),
-                                                          regionID:widget.regionID,
-                                                          TotalAdultCount:widget.TotalAdultCount,
-                                                          TotalChildrenCount:widget.TotalChildrenCOunt));
-                                                    },
-                                                    child: Text(
-                                                      'View Details',
-                                                      style: TextStyle(
-                                                          color: Color(
-                                                              0xFF00AF80),
-                                                          fontWeight:
-                                                          FontWeight
-                                                              .w500,
-                                                          fontSize: 14),
-                                                    ),
-                                                  ),
-                                                ],
-                                              )
                                             ],
                                           ),
+                                        ),
+                                        const SizedBox(
+                                          height: 10,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const SizedBox(
-                                    height: 10,
-                                  ),
-                                ],
+                                ),
                               ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                    if (_isBottomBarVisible)
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: Container(
+                          color: Colors.white,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceAround,
+                              children: [
+
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () async {
+                                        print('Search Text: $searchText');
+                                        print('isSelected0To3000: $isSelected0To3000');
+                                        print('isSelected3000To5000: $isSelected3000To5000');
+                                        print('isSelected5000To7500: $isSelected5000To7500');
+                                        print('isSelected7500To9500: $isSelected7500To9500');
+                                        print('isSelected9500To15000: $isSelected9500To15000');
+                                        print('isSelected15000To30000: $isSelected15000To30000');
+                                        print('isSelected30000Plus: $isSelected30000Plus');
+                                         final result = await
+                                         Navigator.push(
+                                           context,
+                                           MaterialPageRoute(
+                                             builder: (context) => HotelFilterPage(
+                                               add: '', // Pass your value for `add`
+                                               searchText:searchText ,// Pass the searchText from result
+                                               selectedStarRatings: selectedStarRatings, // Pass star ratings
+                                               isSelected0To3000:isSelected0To3000, // Pass isSelected0To3000
+                                               isSelected3000To5000: isSelected3000To5000, // Pass isSelected3000To5000
+                                               isSelected5000To7500:isSelected5000To7500, // Pass isSelected5000To7500
+                                               isSelected7500To9500:isSelected7500To9500, // Pass isSelected7500To9500
+                                               isSelected9500To15000: isSelected9500To15000, // Pass isSelected9500To15000
+                                               isSelected15000To30000: isSelected15000To30000, // Pass isSelected15000To30000
+                                               isSelected30000Plus:isSelected30000Plus, // Pass isSelected30000Plus
+                                               //selectedCount: result['selectedCount'], // Pass selectedCount
+                                             ),
+                                           ),
+                                         );
+
+
+                                         if (result != null) {
+                                          setState(() {
+                                            isSelected30000Plus=result['30000Plus'];
+                                            print('Selected filter count:'+isSelected30000Plus.toString());
+                                            getHotelList(result);
+                                          });
+                                        }
+                                      },
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        // Ensures the row only takes necessary space
+                                        children: [
+                                          Icon(
+                                            Icons.filter_alt_outlined,
+                                            size:
+                                                20, // Adjust the icon size as needed
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          SizedBox(height: 7),
+                                          // Optional: Adjust this for spacing between icon and text
+                                          Text(
+                                            "Filter",
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Time Icon and Text
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        _showStarRatingBottomSheet(context);
+                                      },
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        // Ensures the row only takes necessary space
+                                        children: [
+                                          Icon(
+                                            Icons.schedule,
+                                            size: 20,
+                                            // Adjust the size of the icon as needed
+                                            color: Colors.grey
+                                                .shade600, // Match the icon color with the text
+                                          ),
+                                          SizedBox(height: 7),
+                                          // Optional: Add a tiny width for spacing
+                                          GestureDetector(onTap: () {
+                                            _showStarRatingBottomSheet(context);
+                                          },
+                                            child: Text(
+                                              "Rating",
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        _showPriceFilterBottomSheet(context);
+                                        print("Price tapped");
+                                      },
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        // Ensure no extra space is taken
+                                        children: [
+                                          Icon(
+                                            Icons.currency_rupee_outlined,
+                                            size: 20, // Adjust the size as needed
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          SizedBox(
+                                            height: 7,
+                                          ),
+                                          GestureDetector(onTap: () {
+                                            _showPriceFilterBottomSheet(context);
+                                            print("Price tapped");
+                                          },
+                                            child: Text(
+                                              "Price",
+                                              style: TextStyle(
+                                                color: Colors.grey.shade600,
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Sort Icon and Text
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () {
+                                        _showSortBottomSheet(context);
+                                        print("Sort tapped");
+                                      },
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        // Ensure no extra space is taken
+                                        children: [
+                                          Icon(
+                                            Icons.sort,
+                                            size: 20, // Adjust the size as needed
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          SizedBox(
+                                            height: 7,
+                                          ),
+                                          Text(
+                                            "Sort",
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            if (_isBottomBarVisible)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  color: Colors.white,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () async {
-                                print('Search Text: $searchText');
-                                print('isSelected0To3000: $isSelected0To3000');
-                                print('isSelected3000To5000: $isSelected3000To5000');
-                                print('isSelected5000To7500: $isSelected5000To7500');
-                                print('isSelected7500To9500: $isSelected7500To9500');
-                                print('isSelected9500To15000: $isSelected9500To15000');
-                                print('isSelected15000To30000: $isSelected15000To30000');
-                                print('isSelected30000Plus: $isSelected30000Plus');
-                                final result = await
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => HotelFilterPage(
-                                      add: '', // Pass your value for `add`
-                                      searchText:searchText ,// Pass the searchText from result
-                                      selectedStarRatings: selectedStarRatings, // Pass star ratings
-                                      isSelected0To3000:isSelected0To3000, // Pass isSelected0To3000
-                                      isSelected3000To5000: isSelected3000To5000, // Pass isSelected3000To5000
-                                      isSelected5000To7500:isSelected5000To7500, // Pass isSelected5000To7500
-                                      isSelected7500To9500:isSelected7500To9500, // Pass isSelected7500To9500
-                                      isSelected9500To15000: isSelected9500To15000, // Pass isSelected9500To15000
-                                      isSelected15000To30000: isSelected15000To30000, // Pass isSelected15000To30000
-                                      isSelected30000Plus:isSelected30000Plus, // Pass isSelected30000Plus
-                                      //selectedCount: result['selectedCount'], // Pass selectedCount
-                                    ),
-                                  ),
-                                );
-
-
-                                if (result != null) {
-                                  setState(() {
-                                    isSelected30000Plus=result['30000Plus'];
-                                    print('Selected filter count:'+isSelected30000Plus.toString());
-                                    getHotelList(result);
-                                  });
-                                }
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                // Ensures the row only takes necessary space
-                                children: [
-                                  Icon(
-                                    Icons.filter_alt_outlined,
-                                    size:
-                                    20, // Adjust the icon size as needed
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  SizedBox(height: 7),
-                                  // Optional: Adjust this for spacing between icon and text
-                                  Text(
-                                    "Filter",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Time Icon and Text
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                _showStarRatingBottomSheet(context);
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                // Ensures the row only takes necessary space
-                                children: [
-                                  Icon(
-                                    Icons.schedule,
-                                    size: 20,
-                                    // Adjust the size of the icon as needed
-                                    color: Colors.grey
-                                        .shade600, // Match the icon color with the text
-                                  ),
-                                  SizedBox(height: 7),
-                                  // Optional: Add a tiny width for spacing
-                                  GestureDetector(onTap: () {
-                                    _showStarRatingBottomSheet(context);
-                                  },
-                                    child: Text(
-                                      "Rating",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                _showPriceFilterBottomSheet(context);
-                                print("Price tapped");
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                // Ensure no extra space is taken
-                                children: [
-                                  Icon(
-                                    Icons.currency_rupee_outlined,
-                                    size: 20, // Adjust the size as needed
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  SizedBox(
-                                    height: 7,
-                                  ),
-                                  GestureDetector(onTap: () {
-                                    _showPriceFilterBottomSheet(context);
-                                    print("Price tapped");
-                                  },
-                                    child: Text(
-                                      "Price",
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        // Sort Icon and Text
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                _showSortBottomSheet(context);
-                                print("Sort tapped");
-                              },
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                // Ensure no extra space is taken
-                                children: [
-                                  Icon(
-                                    Icons.sort,
-                                    size: 20, // Adjust the size as needed
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  SizedBox(
-                                    height: 7,
-                                  ),
-                                  Text(
-                                    "Sort",
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12.5,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ));
+                      ),
+                ],
+              ));
   }
 }
 

@@ -15,10 +15,10 @@ class _PolicyScreenState extends State<PolicyScreen> {
         iconTheme: IconThemeData(size: 35, weight: 800.0, color: Theme.of(context).primaryColor),
         titleSpacing: 0,
         title: const Text("Package Details", style: TextStyle(fontSize: 23, fontWeight: FontWeight.bold),),
-        //title: Image.asset('assets/images/lojologo.png', width: 150, height: 30,),
+        //title: Image.asset('assets/images/logo.png', width: 150, height: 30,),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/logo.png',
             width: 150,
             height: 30,
           ),

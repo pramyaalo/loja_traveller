@@ -19,19 +19,14 @@ import 'package:xml/xml.dart' as xml;
 
 import '../../utils/shared_preferences.dart';
 import '../AddAdultScreen.dart';
+import '../HotelCOnfirmationPage.dart';
 import '../flight/AddChildScreen.dart';
 import '../flight/Children_DatabaseHelper.dart';
 import '../flight/TravellerDetailsModel.dart';
-import 'HotelCOnfirmationPage.dart';
 
 class HotelReviewBooking extends StatefulWidget {
-  final List<dynamic> bedConfigs;
-  final dynamic propertyName,
-      address,
-      city,
-      postalCode,
-      RoomDetail,
-      Roomtypename,
+  final dynamic RoomDetail,
+      Roomtypename  ,
       Roomprice,
       adultCount,
       RoomCount,
@@ -47,49 +42,29 @@ class HotelReviewBooking extends StatefulWidget {
       roomindex,
       roomtypecode,
       imageurl,
-      totaldays,
-      token,
-      bookingCode,
-      totalPrice,
-      Propertycode,
-      chainCode,
-      regionID,
-      TotalAdultCount,
-      TotalChildrenCount;
+      totaldays;
 
-  const HotelReviewBooking(
-      {super.key,
-        required this.bedConfigs,
-        required this.propertyName,
-        required this.address,
-        required this.city,
-        required this.postalCode,
-        required this.RoomDetail,
-        required this.Roomtypename,
-        required this.Roomprice,
-        required this.adultCount,
-        required this.RoomCount,
-        required this.Starcategory,
-        required this.childrenCount,
-        required this.Checkindate,
-        required this.CheckoutDate,
-        required this.hotelname,
-        required this.hoteladdress,
-        required this.hotelid,
-        required this.resultindex,
-        required this.traceid,
-        required this.roomindex,
-        required this.roomtypecode,
-        required this.imageurl,
-        required this.totaldays,
-        required this.token,
-        required this.bookingCode,
-        required this.totalPrice,
-        required this.Propertycode,
-        required this.chainCode,
-        required this.regionID,
-        required this.TotalAdultCount,
-        required this.TotalChildrenCount});
+  const HotelReviewBooking({
+    super.key,
+    required this.RoomDetail,
+    required this.Roomtypename,
+    required this.Roomprice,
+    required this.adultCount,
+    required this.RoomCount,
+    required this.Starcategory,
+    required this.childrenCount,
+    required this.Checkindate,
+    required this.CheckoutDate,
+    required this.hotelname,
+    required this.hoteladdress,
+    required this.hotelid,
+    required this.resultindex,
+    required this.traceid,
+    required this.roomindex,
+    required this.roomtypecode,
+    required this.imageurl,
+    required this.totaldays,
+  });
 
   /* final dynamic hotelDetail,
       RoomDetail,
@@ -430,94 +405,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
 
   List<String> cancellationPolicies = [];
 
-  Future<void> fetchHotelRoomDetails() async {
-    final String apiUrl =
-        "https://boqoltravel.com/app/b2badminapi.asmx/TPHotelRoomDetailsGetByBookingCode";
 
-    final String checkInDate = widget.Checkindate is DateTime
-        ? (widget.Checkindate as DateTime).toIso8601String().substring(0, 10)
-        : widget.Checkindate.toString();
-
-    final String checkOutDate = widget.CheckoutDate is DateTime
-        ? (widget.CheckoutDate as DateTime).toIso8601String().substring(0, 10)
-        : widget.CheckoutDate.toString();
-
-    final Map<String, String> params = {
-      "token": widget.token,
-      "BookingCode": widget.bookingCode,
-      "RequestedCurrencyCode": "ETB",
-      "CheckInDate": checkInDate,
-      "CheckOutDate": checkOutDate,
-      "AdultCount": widget.adultCount.toString(),
-      "ChildCount": "1",
-      "Price": widget.totalPrice.toString(),
-      "StoredCurrencyCode": "ETB",
-      "ChainCode": widget.chainCode,
-      "PropertyCode": widget.Propertycode,
-      "OnlineCurrencyValue": "1",
-      "FrontCurrencyCode": "ETB",
-      "MainCurrencyCode": "ETB",
-      "INRCurrencyValue": "1",
-      "DefaultCurrencyValue": "1",
-      "FrontCurrencyValue": "1",
-      "HotelMarkup": "0",
-      "StarCategory": widget.Starcategory.toString(),
-      "RegionID": widget.regionID,
-      "UserRoleId": userTypeID.toString(),
-      "UserId": userID.toString(),
-      "HotelImage": widget.imageurl,
-      "TotalDays": widget.totaldays.toString(),
-      "HotelName": widget.hotelname,
-      "HotelAddress": widget.hoteladdress,
-      "MainCurrencyValue": "1",
-    };
-
-    try {
-      final response = await http.post(
-        Uri.parse(apiUrl),
-        headers: {"Content-Type": "application/x-www-form-urlencoded"},
-        body: params,
-      );
-
-      if (response.statusCode == 200) {
-        final xmlDoc = xml.XmlDocument.parse(response.body);
-        final jsonString = xmlDoc.findAllElements('string').first.text;
-
-        // ✅ Split by "||"
-        List<String> parts = jsonString.split("||");
-
-        if (parts.length >= 5) {
-          var table1 = json.decode(parts[0]); // Room Details
-          var table2 = json.decode(parts[1]); // Price Breakdown
-          var table3 = json.decode(parts[2]); // Hotel Info
-          var table4 = json.decode(parts[3]); // Cancellation Details
-          var table5 = json.decode(parts[4]); // Address & Dates
-
-          setState(() {
-            roomDetails = table1;
-            priceBreakdown = table2;
-            hotelInfo = table3;
-            cancellationDetails = table4;
-            addressDetails = table5;
-            isLoading = false;
-          });
-
-          print("✅ Parsed Data Successfully:");
-          print("Room Details: $table1");
-          print("Price Breakdown: $table2");
-          print("Hotel Info: $table3");
-          print("Cancellation: $table4");
-          print("Address Details: $table5");
-        } else {
-          print("Unexpected data format!");
-        }
-      } else {
-        print("Failed! Status Code: ${response.statusCode}");
-      }
-    } catch (e) {
-      print("Error: $e");
-    }
-  }
 
   String selectedTitleAdult1 = 'Mr';
   String selectedTitleAdult2 = 'Mr';
@@ -785,7 +673,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
 
       fetchCountries();
       fetchNationalities();
-      fetchHotelRoomDetails();
+
     });
   }
 
@@ -1086,7 +974,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
 
   Future<void> HotelRoomBooking() async {
     final Uri url = Uri.parse(
-        'https://boqoltravel.com/app/b2badminapi.asmx/TPHotelBooking');
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaHotelRoomBooking');
     DateTime checkinDateTime = DateTime.parse(widget.Checkindate.toString());
     String finDate = DateFormat('yyyy-MM-dd').format(checkinDateTime);
 
@@ -1103,25 +991,23 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
 
     try {
       final Map<String, String> bodyData = {
-        'token': widget.token,
-        'jsonHotelRoomDetail': json.encode(roomDetails),
-        'jsonHotelFare': json.encode(priceBreakdown),
-        'jsonHotelHead': json.encode(cancellationDetails),
-        'jsonHotelDetail': json.encode(addressDetails),
-        'jsonHotelInfo': json.encode(hotelInfo),
-        'DefaultCurrencyCode': Currency,
-        'StoredCurrencyCode': 'ETB',
-        'TotPrice': widget.totalPrice,
-        'ChainCode': widget.chainCode.toString(),
-        'PropertyCode': widget.Propertycode.toString(),
+        'UserID': userID.toString(),
+        'HotelID': widget.hotelid.toString(),
+        'HotelName': widget.hotelname.toString(),
+        'HotelAddress': widget.hoteladdress.toString(),
+        'HotelImageUrl': widget.imageurl.toString(),
+        'Nationality': 'IN',
+        'Price': widget.Roomprice.toString(),
         'CheckInDate': finDate,
         'CheckOutDate': finDate1,
-        'BookingCode': widget.bookingCode.toString(),
-        'AdultCount': widget.TotalAdultCount.toString(),
-        'ChildCount': widget.TotalChildrenCount.toString(),
-        'RoomCount': widget.RoomCount,
-        'UserTypeId': userTypeID,
-        'UserId': userID,
+        'TotalDays': widget.totaldays.toString(),
+        'TotAdultCount': widget.adultCount.toString(),
+        'TotChildCount': '1',
+        'ResultIndex': widget.resultindex.toString(),
+        'TraceId': widget.traceid.toString(),
+        'RoomIndex': widget.roomindex.toString(),
+        'RoomTypeCode': widget.roomtypecode.toString(),
+        'RoomCount': '1',
         'Room1AdultSalu1': TitleAdult1.toString(),
         'Room1AdultFName1': FNameAdult1.toString(),
         'Room1AdultLName1': LNameAdult1.toString(),
@@ -1170,6 +1056,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
         'Room2AdultLName4': '',
         'Room2AdultLDOB4': '',
         'Room2AdultTravellerId4': '',
+
         'Room2ChildSalu1': '',
         'Room2ChildFName1': '',
         'Room2ChildLName1': '',
@@ -1306,24 +1193,25 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         titleSpacing: 1,
-        backgroundColor: Color(0xFF00ADEE),
-        // Custom dark color
         title: Row(
           children: [
             IconButton(
-              icon: Icon(Icons.arrow_back, color: Colors.white, size: 27),
+              icon: Icon(
+                Icons.arrow_back,
+                color: Colors.white,
+                size: 27,
+              ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Review Booking",
               style: TextStyle(
-                color: Colors.white,
-                fontFamily: "Montserrat",
-                fontSize: 19,
-              ),
+                  color: Colors.white, fontFamily: "Montserrat",
+                  fontSize: 18),
             ),
           ],
         ),
@@ -1333,7 +1221,9 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
             width: 100,
             height: 50,
           ),
+
         ],
+        backgroundColor:Color(0xFF00ADEE),
       ),
       body: Column(
         children: [
@@ -1346,8 +1236,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                   children: [
                     Column(
                       children: [
-                        Container(
-                          color: Colors.white,
+                        Container(color: Colors.white,
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Row(
@@ -1357,107 +1246,58 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                   width: 130,
                                   height: 120,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    // Set corner radius
+                                    borderRadius: BorderRadius.circular(12), // Set corner radius
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withOpacity(0.2),
-                                        // Shadow color
-                                        spreadRadius: 2,
-                                        // Spread radius
-                                        blurRadius: 5,
-                                        // Blur radius
-                                        offset: Offset(
-                                            0, 3), // Offset for the shadow
+                                        color: Colors.black.withOpacity(0.2), // Shadow color
+                                        spreadRadius: 2, // Spread radius
+                                        blurRadius: 5, // Blur radius
+                                        offset: Offset(0, 3), // Offset for the shadow
                                       ),
                                     ],
                                   ),
                                   child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    // Ensure the image corners match the container
+                                    borderRadius: BorderRadius.circular(12), // Ensure the image corners match the container
                                     child: Image.network(
                                       widget.imageurl,
                                       fit: BoxFit.cover,
-                                      loadingBuilder: (BuildContext context,
-                                          Widget child,
-                                          ImageChunkEvent? loadingProgress) {
-                                        if (loadingProgress == null)
-                                          return child;
+                                      loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                        if (loadingProgress == null) return child;
                                         return Center(
                                           child: CircularProgressIndicator(
-                                            value: loadingProgress
-                                                .expectedTotalBytes !=
-                                                null
-                                                ? loadingProgress
-                                                .cumulativeBytesLoaded /
-                                                (loadingProgress
-                                                    .expectedTotalBytes ??
-                                                    1)
+                                            value: loadingProgress.expectedTotalBytes != null
+                                                ? loadingProgress.cumulativeBytesLoaded / (loadingProgress.expectedTotalBytes ?? 1)
                                                 : null,
                                           ),
                                         );
                                       },
-                                      errorBuilder: (BuildContext context,
-                                          Object error,
-                                          StackTrace? stackTrace) {
+                                      errorBuilder: (BuildContext context, Object error, StackTrace? stackTrace) {
                                         return const Icon(Icons.error);
                                       },
                                     ),
                                   ),
                                 ),
+
                                 SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      // ✅ Bed Types
-                                      if (widget.bedConfigs.isNotEmpty) ...[
-                                        ...widget.bedConfigs.map((bed) {
-                                          return Padding(
-                                            padding: const EdgeInsets.only(
-                                                bottom: 4),
-                                            child: Text(
-                                              bed['BedType'].toString(),
-                                              style: TextStyle(
-                                                  fontSize: 14,
-                                                  color: Colors.black87),
-                                              softWrap: true,
-                                              overflow: TextOverflow.visible,
-                                            ),
-                                          );
-                                        }).toList(),
-                                        SizedBox(height: 5),
-                                      ],
 
-                                      // ✅ Property Name
+                                      // Hotel name
                                       Text(
-                                        widget.propertyName,
+                                        widget.hotelname.toString(),
+                                        maxLines: 3,
                                         style: TextStyle(
-                                            fontSize: 15,
-                                            fontWeight: FontWeight.w500),
-                                        softWrap: true,
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 2, // Prevent overflow
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 22,
+                                        ),
                                       ),
-                                      SizedBox(height: 5),
 
-                                      // ✅ Address, City, Postal Code
-                                      Text(
-                                        '${widget.address}, ${widget.city}, ${widget.postalCode}',
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.grey[700]),
-                                        softWrap: true,
-                                        overflow: TextOverflow.ellipsis,
-                                        maxLines: 2,
-                                      ),
-                                      SizedBox(height: 5),
                                       Row(
                                         children: [
                                           RatingBar.builder(
-                                            initialRating: double.parse(
-                                                widget.Starcategory.toString()),
+                                            initialRating: double.parse(widget.Starcategory.toString()),
                                             minRating: 0,
                                             direction: Axis.horizontal,
                                             allowHalfRating: true,
@@ -1471,63 +1311,24 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                               print(rating);
                                             },
                                           ),
+
                                         ],
+                                      ),
+                                      SizedBox(height: 4),
+                                      // Hotel address
+                                      Text(
+                                        widget.hoteladdress.toString(),
+                                        style: TextStyle(fontSize: 13),
                                       ),
                                     ],
                                   ),
                                 ),
-
-                                /* Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-
-                                    // Hotel name
-                                    Text(
-                                      widget.RoomDetail['BedType'] ?? 'N/A',
-                                      maxLines: 3,
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 22,
-                                      ),
-                                    ),
-
-                                    Row(
-                                      children: [
-                                        RatingBar.builder(
-                                          initialRating: double.parse(widget.Starcategory.toString()),
-                                          minRating: 0,
-                                          direction: Axis.horizontal,
-                                          allowHalfRating: true,
-                                          itemCount: 5,
-                                          itemSize: 14,
-                                          itemBuilder: (context, _) => Icon(
-                                            Icons.star,
-                                            color: Colors.amber,
-                                          ),
-                                          onRatingUpdate: (rating) {
-                                            print(rating);
-                                          },
-                                        ),
-
-                                      ],
-                                    ),
-                                    SizedBox(height: 4),
-                                    // Hotel address
-                                    Text(
-                                      widget.hoteladdress.toString(),
-                                      style: TextStyle(fontSize: 13),
-                                    ),
-                                  ],
-                                ),
-                              ),*/
                               ],
                             ),
                           ),
                         ),
-                        SizedBox(
-                          height: 5,
-                        ),
+                        SizedBox(height: 5,),
+
                         Container(
                           color: Colors.white,
                           child: Column(
@@ -1644,87 +1445,6 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                   ],
                                 ),
                               ),
-                              Divider(),
-                              Padding(
-                                padding:
-                                const EdgeInsets.only(left: 15, right: 15),
-                                child: Text(
-                                  widget.Roomtypename.toString(),
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding:
-                                const EdgeInsets.only(right: 15, left: 15,bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'Hotel Policy',
-                                      // Remove leading and trailing spaces
-                                      style: TextStyle(
-                                          fontSize: 16, color: Colors.black,fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(right: 15, left: 15),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children:
-                                  cancellationDetails.map<Widget>((item) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 6),
-                                      child: Text(
-                                        item['Column4'] ?? 'No Policy',
-                                        style: TextStyle(
-                                            fontSize: 14, color: Colors.black),
-                                      ),
-                                    );
-                                  }).toList(),
-                                ),
-                              ),
-                              Padding(
-                                padding:
-                                const EdgeInsets.only(right: 15, left: 15,bottom: 8),
-                                child: Row(
-                                  children: [
-                                    Text(
-                                      'Hotel Norms',
-                                      // Remove leading and trailing spaces
-                                      style: TextStyle(
-                                          fontSize: 16, color: Colors.black,fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(right: 15, left: 15),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: roomDetails.map<Widget>((item) {
-                                    String norms = (item['HotelNorms'] ?? '')
-                                        .replaceAll("~", "")
-                                        .trim();
-                                    return norms.isNotEmpty
-                                        ? Padding(
-                                      padding: const EdgeInsets.only(
-                                          bottom: 6),
-                                      child: Text(
-                                        norms,
-                                        style: TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.black),
-                                      ),
-                                    )
-                                        : SizedBox
-                                        .shrink(); // Hide empty values
-                                  }).toList(),
-                                ),
-                              ),
 
                               SizedBox(
                                 height: 5,
@@ -1813,7 +1533,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                   children: [
                                     CircleAvatar(
                                       backgroundColor: hasAdultData
-                                          ? Color(0xFF00ADEE)
+                                          ? Color(0xFF1C5870)
                                           : Colors.grey,
                                     ),
                                     SizedBox(width: 10),
@@ -1862,7 +1582,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                     // Edit Button
                                     IconButton(
                                       icon: Icon(Icons.edit,
-                                          color: Color(0xFF00ADEE)),
+                                          color: Color(0xFF152238)),
                                       onPressed: hasAdultData && !isEditAdult
                                           ? () {
                                         // Navigate to edit screen if adult data exists and not in edit mode
@@ -2054,7 +1774,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                             // Edit Button
                                             IconButton(
                                               icon: Icon(Icons.edit,
-                                                  color: Color(0xFF00ADEE)),
+                                                  color: Colors.blue),
                                               onPressed: hasChildData &&
                                                   !isEditChild
                                                   ? () {
@@ -2210,7 +1930,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                   BorderRadius.circular(
                                       8.0),
                                   borderSide: BorderSide(
-                                      color: Color(0xFF00ADEE)),
+                                      color: Colors.blue),
                                 ),
                               ),
                             ),
@@ -2335,7 +2055,7 @@ class _HotelDescriptionState extends State<HotelReviewBooking> {
                                   BorderRadius.circular(
                                       8.0),
                                   borderSide: BorderSide(
-                                      color: Color(0xFF00ADEE)),
+                                      color: Colors.blue),
                                 ),
                               ),
                             ),

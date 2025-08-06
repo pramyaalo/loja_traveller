@@ -1,15 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
 
- import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
-
-import '../../AdultDatabaseHelperCass.dart';
-import '../../token_manager.dart';
+import '../../DatabseHelper.dart';
 import '../../utils/commonutils.dart';
 import 'package:http/http.dart' as http;
 import 'dart:developer' as developer;
@@ -28,10 +26,8 @@ import 'Oneway_ConfirmationScreen.dart';
 import 'TravellerDetailsModel.dart';
 
 class OneWayBooking extends StatefulWidget {
-  final List flightDetailsList;
-  final dynamic refundable,
-      TPToken,
-      flightDetails,
+  //same error
+  final dynamic flightDetails,
       adultCount,
       childrenCount,
       infantCount,
@@ -45,27 +41,21 @@ class OneWayBooking extends StatefulWidget {
       traveltime,
       totalamount;
 
-
-  const OneWayBooking({
-    super.key,
-    required this.refundable,
-    required this.TPToken,
-    required this.flightDetailsList,
-    required this.flightDetails,
-    required this.infantCount,
-    required this.childrenCount,
-    required this.adultCount,
-    required this.userid,
-    required this.currency,
-    required this.departDate,
-    required this.departcityname,
-    required this.arrivecityname,
-    required this.departureDate,
-    required this.stopcount,
-    required this.traveltime,
-    required this.totalamount,
-
-  });
+  const OneWayBooking(
+      {super.key,
+      required this.flightDetails,
+      required this.infantCount,
+      required this.childrenCount,
+      required this.adultCount,
+      required this.userid,
+      required this.currency,
+      required this.departDate,
+      required this.departcityname,
+      required this.arrivecityname,
+      required this.departureDate,
+      required this.stopcount,
+      required this.traveltime,
+      required this.totalamount});
 
   @override
   State<OneWayBooking> createState() => _OneWayBookingState();
@@ -79,12 +69,91 @@ class _OneWayBookingState extends State<OneWayBooking> {
   bool isExpanded = false;
   bool isExpanded1 = false;
   List<Map<String, dynamic>> travellers = [];
-  String? selectedPerson;
-  List<String> countries = [];
-  String? selectedCountry;
-  String? selectedCountryCode;
-  String? selectedPhoneCode;
 
+  String travellerName = 'Select Adult 1';
+  Color avatarColor = Colors.grey; // Default avatar color is grey
+
+  int Status = 2;
+  String selectedTitleAdult1 = 'Mr';
+  String selectedTitleAdult2 = 'Mr';
+  String selectedTitleAdult3 = 'Mr';
+  String selectedTitleAdult4 = 'Mr';
+  String selectedTitleAdult5 = 'Mr';
+
+  String selectedTitleChildren1 = 'Mr';
+  String selectedTitleChildren2 = 'Mr';
+  String selectedTitleChildren3 = 'Mr';
+  String selectedTitleChildren4 = 'Mr';
+  String selectedTitleChildren5 = 'Mr';
+
+  String selectedTitleInfant1 = 'Mr';
+  String selectedTitleInfant2 = 'Mr';
+  String selectedTitleInfant3 = 'Mr';
+  String selectedTitleInfant4 = 'Mr';
+  String selectedTitleInfant5 = 'Mr';
+  int activeTravellerCount = 0;
+  String selectedGendarAdult1 = 'Male';
+  String selectedGendarAdult2 = 'Male';
+  String selectedGendarAdult3 = 'Male';
+  String selectedGendarAdult4 = 'Male';
+  String selectedGendarAdult5 = 'Male';
+
+  String selectedGendarChildren1 = 'Male';
+  String selectedGendarChildren2 = 'Male';
+  String selectedGendarChildren3 = 'Male';
+  String selectedGendarChildren4 = 'Male';
+  String selectedGendarChildren5 = 'Male';
+
+  String selectedGendarInfant1 = 'Male';
+  String selectedGendarInfant2 = 'Male';
+  String selectedGendarInfant3 = 'Male';
+  String selectedGendarInfant4 = 'Male';
+  String selectedGendarInfant5 = 'Male';
+  String firstName = '', surName = '';
+  bool isEditAdult = false;
+  bool isEditChild = false;
+  List<String> nationalityList = [];
+  String? selectedNationality;
+
+  Future<void> fetchNationalities() async {
+    final response = await http.post(
+      Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx/GetCountries'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final rawXml = response.body;
+
+      try {
+        final document = xml.XmlDocument.parse(rawXml);
+        final elements = document.findAllElements('string');
+        if (elements.isNotEmpty) {
+          final result = elements.first.text;
+
+          final items = result.split(',').map((e) => e.trim()).toSet().toList();
+
+          setState(() {
+            nationalityList = items;
+          });
+        } else {
+          print('No <string> found in XML');
+        }
+      } catch (e) {
+        print('Error parsing XML: $e');
+      }
+    } else {
+      print('Failed: ${response.statusCode}');
+    }
+  }
+  TextEditingController zipCodeController = TextEditingController();
+  TextEditingController CityController = TextEditingController();
+  TextEditingController StreetNoController = TextEditingController();
+  TextEditingController HouseNoController = TextEditingController();
+  TextEditingController MobileNoController = TextEditingController();
+  TextEditingController EmailController = TextEditingController();
+  String? selectedCountry;
   Map<String, String> countryPhoneMap = {
     'Afghanistan': '+93',
     'Albania': '+355',
@@ -266,50 +335,41 @@ class _OneWayBookingState extends State<OneWayBooking> {
     'Zambia': '+260',
     'Zimbabwe': '+263',
   };
+  List<String> countries = [];
+  String? selectedCountryCode;
+  String? selectedPhoneCode;
+  bool isEditInfant = false;
+  String selectedGendarContactDetail = 'Male';
+  String Gendar = '';
+  final FocusNode _focusNode = FocusNode();
+  FocusNode _firstNameFocusNode = FocusNode();
+  FocusNode _lastNameFocusNode = FocusNode();
 
-  String? token;
+  TextEditingController adultFname_controller = new TextEditingController();
+  TextEditingController adultLname_controller = new TextEditingController();
+  var selectedDate = DateTime.now().obs;
+  TextEditingController ExpiryDateController = TextEditingController();
+  TextEditingController dateControllerAdult1 = TextEditingController();
+  TextEditingController dateControllerAdult2 = TextEditingController();
+  TextEditingController dateControllerAdult3 = TextEditingController();
+  TextEditingController dateControllerAdult4 = TextEditingController();
+  TextEditingController dateControllerAdult5 = TextEditingController();
+  TextEditingController passengerNameController = new TextEditingController();
 
-  void printFullString(String text) {
-    const int chunkSize = 800; // Prevent truncation
-    for (int i = 0; i < text.length; i += chunkSize) {
-      int end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
-      print(text.substring(i, end));
-    }
-  }
-
-
-
-  List<String> _generateDropdownItems() {
-    List<String> items = [];
-    int adultCountInt = int.tryParse(widget.adultCount.toString()) ?? 0;
-    int childCountInt = int.tryParse(widget.childrenCount.toString()) ?? 0;
-    int infantCountInt = int.tryParse(widget.infantCount.toString()) ?? 0;
-
-    for (int i = 1; i <= adultCountInt; i++) {
-      items.add("ADT-$i");
-    }
-    for (int i = 1; i <= childCountInt; i++) {
-      items.add("CHD-$i");
-    }
-    for (int i = 1; i <= infantCountInt; i++) {
-      items.add("INF-$i");
-    }
-
-    return items;
-  }
-
-  TextEditingController zipCodeController = TextEditingController();
-  TextEditingController CityController = TextEditingController();
-  TextEditingController StreetNoController = TextEditingController();
-  TextEditingController HouseNoController = TextEditingController();
-  TextEditingController MobileNoController = TextEditingController();
-  TextEditingController EmailController = TextEditingController();
-  String travellerName = 'Select Adult 1';
-  Color avatarColor = Colors.grey; // Default avatar color is grey
-
-  int Status = 2;
-
-  // Adult 1
+  TextEditingController dateControllerChildren1 = TextEditingController();
+  TextEditingController dateControllerChildren2 = TextEditingController();
+  TextEditingController dateControllerChildren3 = TextEditingController();
+  TextEditingController dateControllerChildren4 = TextEditingController();
+  TextEditingController dateControllerChildren5 = TextEditingController();
+  String AdultName1 = '', AdultTravellerId1 = '';
+  TextEditingController dateControllerInfant1 = TextEditingController();
+  TextEditingController dateControllerInfant2 = TextEditingController();
+  TextEditingController dateControllerInfant3 = TextEditingController();
+  TextEditingController dateControllerInfant4 = TextEditingController();
+  TextEditingController dateControllerInfant5 = TextEditingController();
+  List<bool> isDeleted = [];
+  String? adultName; // To hold
+  // the saved name
   String TitleAdult1 = '';
   String FNameAdult1 = '';
   String MNameAdult1 = '';
@@ -528,41 +588,6 @@ class _OneWayBookingState extends State<OneWayBooking> {
   String DocNumInfant5 = '';
   String IssueDateInfant5 = '';
   String ExpDateInfant5 = '';
-
-  int activeTravellerCount = 0;
-
-  String firstName = '', surName = '';
-  bool isEditAdult = false;
-  bool isEditChild = false;
-  bool isEditInfant = false;
-  String selectedGendarContactDetail = 'Male';
-  String Gendar = '';
-
-  TextEditingController adultFname_controller = new TextEditingController();
-  TextEditingController adultLname_controller = new TextEditingController();
-  var selectedDate = DateTime.now().obs;
-  TextEditingController ExpiryDateController = TextEditingController();
-  TextEditingController dateControllerAdult1 = TextEditingController();
-  TextEditingController dateControllerAdult2 = TextEditingController();
-  TextEditingController dateControllerAdult3 = TextEditingController();
-  TextEditingController dateControllerAdult4 = TextEditingController();
-  TextEditingController dateControllerAdult5 = TextEditingController();
-  TextEditingController passengerNameController = new TextEditingController();
-
-  TextEditingController dateControllerChildren1 = TextEditingController();
-  TextEditingController dateControllerChildren2 = TextEditingController();
-  TextEditingController dateControllerChildren3 = TextEditingController();
-  TextEditingController dateControllerChildren4 = TextEditingController();
-  TextEditingController dateControllerChildren5 = TextEditingController();
-  String AdultName1 = '', AdultTravellerId1 = '';
-  TextEditingController dateControllerInfant1 = TextEditingController();
-  TextEditingController dateControllerInfant2 = TextEditingController();
-  TextEditingController dateControllerInfant3 = TextEditingController();
-  TextEditingController dateControllerInfant4 = TextEditingController();
-  TextEditingController dateControllerInfant5 = TextEditingController();
-  List<bool> isDeleted = [];
-  String? adultName; // To hold
-  // the saved name
   List<Map<String, dynamic>> _adultsList = [];
   List<Map<String, dynamic>> _childrenList = [];
   List<Map<String, dynamic>> _infantList = [];
@@ -570,8 +595,10 @@ class _OneWayBookingState extends State<OneWayBooking> {
   TextEditingController adult1_Fname_controller = new TextEditingController();
   TextEditingController adult1_Lname_controller = new TextEditingController();
   String formattedDate = '';
+  TextEditingController contactEmailController = new TextEditingController();
   TextEditingController contactMobileController = new TextEditingController();
   TextEditingController contactAddressController = new TextEditingController();
+  TextEditingController contactCityController = new TextEditingController();
   TextEditingController _CountryController = new TextEditingController();
   TextEditingController Documentype_controller = new TextEditingController();
   TextEditingController Documentnumber_controller = new TextEditingController();
@@ -579,85 +606,13 @@ class _OneWayBookingState extends State<OneWayBooking> {
   @override
   void initState() {
     super.initState();
-    print('usefdgfgrID: ${widget.childrenCount}');
+    print('usefdgfgrID: ${widget.infantCount}');
     setState(() {
-      fetchCountries();
-      fetchNationalities();
       _fetchAdults();
       _fetchChildren();
       _fetchInfant();
       _retrieveSavedValues();
     });
-  }
-
-  Future<void> fetchCountries() async {
-    final response = await http.post(
-      Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx/GetCountries'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final rawXml = response.body;
-
-      try {
-        final document = xml.XmlDocument.parse(rawXml);
-        final elements = document.findAllElements('string');
-        if (elements.isNotEmpty) {
-          final result = elements.first.text;
-
-          // Split and remove duplicates
-          final items = result.split(',').map((e) => e.trim()).toSet().toList();
-
-          setState(() {
-            countries = items;
-          });
-        } else {
-          print('No <string> tag found');
-        }
-      } catch (e) {
-        print('XML parse error: $e');
-      }
-    } else {
-      print('Request failed: ${response.statusCode}');
-    }
-  }
-
-  List<String> nationalityList = [];
-  String? selectedNationality;
-
-  Future<void> fetchNationalities() async {
-    final response = await http.post(
-      Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx/GetCountries'),
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-    );
-
-    if (response.statusCode == 200) {
-      final rawXml = response.body;
-
-      try {
-        final document = xml.XmlDocument.parse(rawXml);
-        final elements = document.findAllElements('string');
-        if (elements.isNotEmpty) {
-          final result = elements.first.text;
-
-          final items = result.split(',').map((e) => e.trim()).toSet().toList();
-
-          setState(() {
-            nationalityList = items;
-          });
-        } else {
-          print('No <string> found in XML');
-        }
-      } catch (e) {
-        print('Error parsing XML: $e');
-      }
-    } else {
-      print('Failed: ${response.statusCode}');
-    }
   }
 
   Future<void> _fetchInfant() async {
@@ -667,18 +622,27 @@ class _OneWayBookingState extends State<OneWayBooking> {
       _infantList = adults;
     });
   }
+  String formatDate(String inputDate) {
+    try {
+      // Parse the input string (e.g., "2027/03/30")
+      DateTime parsedDate = DateFormat('yyyy/MM/dd').parse(inputDate);
 
+      // Convert to yyyy-MM-dd
+      return DateFormat('yyyy-MM-dd').format(parsedDate);
+    } catch (e) {
+      print("Date format error: $e");
+      return inputDate; // fallback if parsing fails
+    }
+  }
   Future<void> _fetchChildren() async {
     final dbHelper = ChildrenDatabaseHelper.instance;
     final adults =
-    await dbHelper.getChildrens(); // Fetch adults from the database
+        await dbHelper.getChildrens(); // Fetch adults from the database
     setState(() {
       _childrenList = adults;
       // Update the list to refresh UI
     });
   }
-
-
   String convertToApiDate(String inputDate, {String year = '2025'}) {
     try {
       // Step 1: Remove 'st', 'nd', 'rd', 'th'
@@ -697,47 +661,63 @@ class _OneWayBookingState extends State<OneWayBooking> {
       return '';
     }
   }
-  String formatDate(String inputDate) {
-    try {
-      // Parse the input string (e.g., "2027/03/30")
-      DateTime parsedDate = DateFormat('yyyy/MM/dd').parse(inputDate);
-
-      // Convert to yyyy-MM-dd
-      return DateFormat('yyyy-MM-dd').format(parsedDate);
-    } catch (e) {
-      print("Date format error: $e");
-      return inputDate; // fallback if parsing fails
-    }
-  }
   Future<void> submitAdivahaFlightBooking() async {
     final url = Uri.parse(
-        'https://boqoltravel.com/app/b2badminapi.asmx/TPFlight_AddBookingDetails');
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightBooking');
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
-    String expDate = formatDate(expDateAdult1);
-    print(expDate); // Output: 2027-03-30
-    String? token1 = await TokenManager.getStoredToken();
-    if (token1 != null) {
-      print("🌐 Using token: $token1");
-      // Proceed to call your API
-    } else {
-      print("❌ Failed to retrieve token");
-    }
 
-    /* String resultIndex = widget.flightDetails['ResultIndexID'];
+    String resultIndex = widget.flightDetails['ResultIndexID'];
     String traceId = widget.flightDetails['ItemId'];
 
     DateTime date = DateFormat('yyyy/MM/dd').parse(widget.departDate);
-
+    String expDate = formatDate(expDateAdult1);
+    print(expDate);
     // Format the date string with dashes
-    formattedFromDate = DateFormat('yyyy-MM-dd').format(date);*/
+    formattedFromDate = DateFormat('yyyy-MM-dd').format(date);
     String fullCountry = selectedCountry.toString(); // "India - IN"
     String onlyCountryName = fullCountry.split(' - ').first; // "India"
 
     String formattedDate = convertToApiDate(widget.departureDate);
     print("formattedDateformattedDate"+formattedDate.toString());
-
-
+    print(formattedFromDate);
     var reqBody = {
+      'ResultIndex': resultFlightData[0]['ResultIndexID'].toString(),
+      'TraceId': resultFlightData[0]['ItemId'].toString(),
+      'LCC': resultFlightData[0]['IsLCC'].toString(),
+      'TripType': 'OneWay',
+      'UserId': userID.toString(),
+      'UserTypeId': userTypeID.toString(),
+      'DefaultCurrency': resultFlightData[0]['BookingCurrency'].toString(),
+      'FromDate': formattedFromDate.toString(),
+      'AdultCount': widget.adultCount.toString(),
+      'ChildCount': widget.childrenCount.toString(),
+      'InfantCount': widget.infantCount.toString(),
+      'BookingCurrency': Currency.toString(),
+      'BookingBaseFare': resultFlightData[0]['BookingBaseFare'].toString(),
+      'BookingTax': resultFlightData[0]['BookingTax'].toString(),
+      'BookingYQTax': resultFlightData[0]['BookingYQTax'].toString(),
+      'BookingAdditionalTxnFeePub':
+          resultFlightData[0]['BookingAdditionalTxnFeePub'].toString(),
+      'BookingAdditionalTxnFeeOfrd':
+          resultFlightData[0]['BookingAdditionalTxnFeeOfrd'].toString(),
+      'BookingOtherCharges':
+          resultFlightData[0]['BookingOtherCharges'].toString(),
+      'BookingDiscount': resultFlightData[0]['BookingDiscount'].toString(),
+      'BookingPublishedFare':
+          resultFlightData[0]['BookingPublishedFare'].toString(),
+      'BookingOfferedFare':
+          resultFlightData[0]['BookingOfferedFare'].toString(),
+      'BookingTdsOnCommission':
+          resultFlightData[0]['BookingTdsOnCommission'].toString(),
+      'BookingTdsOnPLB': resultFlightData[0]['BookingTdsOnPLB'].toString(),
+      'BookingTdsOnIncentive':
+          resultFlightData[0]['BookingTdsOnIncentive'].toString(),
+      'BookingServiceFee': resultFlightData[0]['BookingServiceFee'].toString(),
+      'GSTCompanyAddress': '',
+      'GSTCompanyContactNumber': '',
+      'GSTCompanyName': '',
+      'GSTNumber': '',
+      'GSTCompanyEmail': '',
       'TitleAdult1': TitleAdult1.toString(),
       'FNameAdult1': FNameAdult1.toString(),
       'MNameAdult1': MNameAdult1.toString(),
@@ -918,70 +898,76 @@ class _OneWayBookingState extends State<OneWayBooking> {
       'DocNumInfant5': DocNumInfant5.toString(),
       'IssueDateInfant5': IssueDateInfant5.toString(),
       'ExpDateInfant5': ExpDateInfant5.toString(),
-      'HouseNo': HouseNoController.text.trim(),
-      'Address': StreetNoController.text.trim().toString(),
-      'City': CityController.text.trim().toString(),
-      'Zipcode': zipCodeController.text.trim(),
-      'CountryCode':selectedCountryCode.toString(),
+      'Address': contactAddressController.text.toString(),
+      'City': contactCityController.text.toString(),
+      'CountryCode': selectedCountryCode.toString(),
       'CountryName': onlyCountryName.toString(),
-      'CountryPhoneCode': selectedPhoneCode.toString(),
       'MobileNumber': MobileNoController.text.toString(),
       'Email': EmailController.text.toString(),
-      'TPToken': token1.toString(),
-      'TripType': 'Oneway',
-      'Jsonstring': json.encode(widget.flightDetailsList).toString(),
-      'AdultCount': widget.adultCount.toString(),
-      'ChildCount': widget.childrenCount.toString(),
-      'InfantCount': widget.infantCount.toString(),
-      'RoomCount': '0',
-      'Refundable': ((widget.refundable == "Refundable") ? 'true' : 'false').toString(),
-      'UserRoleId': userTypeID.toString(),
-      'UserId': userID.toString(),
-      'OnlineCurrencyValue': '1',
-      'FlightMarkup': '0',
-      'MainCurrencyCode': 'ETB',
-      'MainCurrencyValue': '1',
-      'OfferDiscount': '0',
-      'MarkupAmt': '0',
-      'GSTPercent': '0',
-      'GSTAmt': '0',
-      'ServiceChargePercent': '0',
-      'ServiceCharge': '0',
-      'GrandTotal': resultFlightData[0]["TotalPrice"].toString(),
-      'FrontCurrencyCode': 'ETB',
-      'FrontCurrencyValue': '1',
-      'Origin1': widget.departcityname.toString(),
-      'Destination1': widget.arrivecityname.toString(),
-      'DepartDate1': formattedDate.toString(),
-      'Origin2': '',
-      'Destination2': '',
-      'DepartDate2': '',
-      'Origin3': '',
-      'Destination3': '',
-      'DepartDate3': '',
-      'Origin4': '',
-      'Destination4': '',
-      'DepartDate4': '',
-      'DefaultCurrencyValue': '1',
-      'DefaultCurrencyCode':  resultFlightData[0]["Currency"].toString(),
-      'CarrierCode1': resultFlightData[0]["CarrierCode"].toString(),
-      'CarrierCode2': '',
-      'CarrierCode3': '',
-      'CarrierCode4': '',
-      'UserTypeId': userTypeID.toString(),
-      'MemberId': userID.toString()
+      'IsPassportRequired': 'True',
+      'AdultTravellerID1': AdultTravellerId1.toString(),
+      'AdultTravellerID2': '',
+      'AdultTravellerID3': '',
+      'AdultTravellerID4': '',
+      'AdultTravellerID5': '',
+      'AdultTravellerID6': '',
+      'AdultTravellerID7': '',
+      'AdultTravellerID8': '',
+      'AdultTravellerID9': '',
+      'AdultTravellerID10': ''
     };
-    printFullJson(widget.flightDetailsList);
-    printFullString('✅ sdfgfggf: $token1');
+    developer.log('ResultIndex: $resultIndex');
+    print('TraceId: $traceId');
+    print('LCC: True');
+    print('TripType: OneWay');
+    print('UserId: $userID');
+    print('UserTypeId: $userTypeID');
+    print('DefaultCurrency: $Currency');
+    print('FromDate: ${formattedFromDate.toString()}');
+    print('AdultCount: ${widget.adultCount}');
+    print('ChildCount: ${widget.childrenCount}');
+    print('InfantCount: ${widget.infantCount}');
+    print('BookingCurrency: ${resultFlightData[0]['BookingCurrency']}');
+    print('BookingBaseFare: ${resultFlightData[0]['BookingBaseFare']}');
+    print('BookingTax: ${resultFlightData[0]['BookingTax']}');
+    print('BookingYQTax: ${resultFlightData[0]['BookingYQTax']}');
+    print(
+        'BookingAdditionalTxnFeePub: ${resultFlightData[0]['BookingAdditionalTxnFeePub']}');
+    print(
+        'BookingAdditionalTxnFeeOfrd: ${resultFlightData[0]['BookingAdditionalTxnFeeOfrd']}');
+    print('BookingOtherCharges: ${resultFlightData[0]['BookingOtherCharges']}');
+    print('BookingDiscount: ${resultFlightData[0]['BookingDiscount']}');
+    print(
+        'BookingPublishedFare: ${resultFlightData[0]['BookingPublishedFare']}');
+    print('BookingOfferedFare: ${resultFlightData[0]['BookingOfferedFare']}');
+    print(
+        'BookingTdsOnCommission: ${resultFlightData[0]['BookingTdsOnCommission']}');
+    print('BookingTdsOnPLB: ${resultFlightData[0]['BookingTdsOnPLB']}');
+    print(
+        'BookingTdsOnIncentive: ${resultFlightData[0]['BookingTdsOnIncentive']}');
+    print('BookingServiceFee: ${resultFlightData[0]['BookingServiceFee']}');
+    print('GSTCompanyAddress: ');
+    print('GSTCompanyContactNumber: ');
+    print('GSTCompanyName: ');
+    print('GSTNumber: ');
+    print('GSTCompanyEmail: ');
+    print('TitleAdult1: $selectedTitleAdult1');
+    print('FNameAdult1: $AdultName1');
+    print(
+        'LNameAdult1: ${adultLname_controller.text.isEmpty ? 'A' : adultLname_controller.text}');
+    print('LDOBAdult1: ${formattedDate.toString()}');
+    print('GenderAdult1: $Gendar');
+    print('DocNumAdult1: ${Documentnumber_controller.text}');
+    print('ExpDateAdult1: ${ExpiryDateController.text}');
+// Repeat this pattern for all other fields
 
-    print("===== REQUEST BODY LOG =====");
-    reqBody.forEach((key, value) {
-      print("$key : $value");
-    });
-    print("===== END OF LOG =====");
-
-
-
+    print('Address: ${contactAddressController.text}');
+    print('City: ${contactCityController.text}');
+    print('CountryCode: IN');
+    print('CountryName: India');
+    print('MobileNumber: ${contactMobileController.text}');
+    print('Email: ${contactEmailController.text}');
+    print('AdultTravellerID1:${AdultTravellerId1}');
 
     try {
       setState(() {
@@ -997,7 +983,6 @@ class _OneWayBookingState extends State<OneWayBooking> {
       setState(() {
         isBookingLoading = false;
       });
-
       if (response.statusCode == 200) {
         print("asdfsgg${response.body}");
         handleBookingResponse(response.body);
@@ -1009,11 +994,18 @@ class _OneWayBookingState extends State<OneWayBooking> {
           ),
         );
       }
-
     } catch (error) {
-      print('⚠️ Error sending request: $error');
+      print('Error sending request: $error');
     }
+  }
 
+  Future<void> _fetchAdults() async {
+    final dbHelper = DatabaseHelper.instance;
+    final adults = await dbHelper.getAdults(); // Fetch adults from the database
+    setState(() {
+      _adultsList = adults;
+      // Update the list to refresh UI
+    });
   }
   void handleBookingResponse(String apiMessage) {
     // Simple XML strip to get the numeric ID between tags
@@ -1038,37 +1030,14 @@ class _OneWayBookingState extends State<OneWayBooking> {
       );
     }
   }
-
-  String _extractBookingId(String message) {
-    final regex = RegExp(r'TP BookingID:\s*([a-zA-Z0-9\-]+)');
-    final match = regex.firstMatch(message);
-    return match?.group(1) ?? '';
-  }
-
-
-
-
-  Future<void> _fetchAdults() async {
-    final dbHelper = AdultDatabaseHelper.instance;
-    final adults = await dbHelper.getAdults(); // Fetch adults from the database
-    setState(() {
-      _adultsList = adults;
-      // Update the list to refresh UI
-    });
-  }
-
   Future<void> _deleteAdult(int index) async {
-    final dbHelper = AdultDatabaseHelper
-        .instance; // Ensure you have a database helper instance
+    final dbHelper =
+        DatabaseHelper.instance; // Ensure you have a database helper instance
     if (_adultsList.length > index) {
       await dbHelper.deleteAdults(_adultsList[index]
-      ['id']); // Use the appropriate method to delete from your database
+          ['id']); // Use the appropriate method to delete from your database
       _fetchAdults(); // Refresh the list of adults after deletion
     }
-  }
-  void printWrapped(String text) {
-    final pattern = RegExp('.{1,800}'); // Splits into chunks of 800 chars
-    pattern.allMatches(text).forEach((match) => print(match.group(0)));
   }
 
   Future<void> _deleteChild(int index) async {
@@ -1076,7 +1045,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
         .instance; // Ensure you have a database helper instance
     if (_childrenList.length > index) {
       await dbHelper.deleteChildrens(_childrenList[index]
-      ['id']); // Use the appropriate method to delete from your database
+          ['id']); // Use the appropriate method to delete from your database
       _fetchChildren(); // Refresh the list of adults after deletion
     }
   }
@@ -1086,10 +1055,12 @@ class _OneWayBookingState extends State<OneWayBooking> {
         .instance; // Ensure you have a database helper instance
     if (_infantList.length > index) {
       await dbHelper.deleteInfant(_infantList[index]
-      ['id']); // Use the appropriate method to delete from your database
+          ['id']); // Use the appropriate method to delete from your database
       _fetchInfant(); // Refresh the list of adults after deletion
     }
   }
+
+ 
 
   Future<void> _selectExpiryDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
@@ -1122,7 +1093,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
   Future<List<TravellerDetailsModel>> fetchAutocompleteData(
       String empName) async {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellers?UserId=$userID&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
+        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellers?UserId=$userID&UserTypeId=$userTypeID&SearchFilter=$empName&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
     print('userID' + userID);
     print('userTypeID' + userTypeID);
     print('empName' + empName);
@@ -1142,6 +1113,202 @@ class _OneWayBookingState extends State<OneWayBooking> {
     } else {
       print('Failed to load autocomplete data: ${response.statusCode}');
       throw Exception('Failed to load autocomplete data');
+    }
+  }
+
+  Future<void> _selectDateAdult2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult2) {
+      setState(() {
+        dateControllerAdult2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateAdult3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult3) {
+      setState(() {
+        dateControllerAdult3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateAdult4(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult4) {
+      setState(() {
+        dateControllerAdult4.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateAdult5(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerAdult5) {
+      setState(() {
+        dateControllerAdult5.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateChildren1(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren1) {
+      setState(() {
+        dateControllerChildren1.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateChildren2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren2) {
+      setState(() {
+        dateControllerChildren2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateChildren3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren3) {
+      setState(() {
+        dateControllerChildren3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateChildren4(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren4) {
+      setState(() {
+        dateControllerChildren4.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateChildren5(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerChildren5) {
+      setState(() {
+        dateControllerChildren5.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant1(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant1) {
+      setState(() {
+        dateControllerInfant1.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant2(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant2) {
+      setState(() {
+        dateControllerInfant2.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant3(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant3) {
+      setState(() {
+        dateControllerInfant3.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant4(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant4) {
+      setState(() {
+        dateControllerInfant4.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectDateInfant5(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(1900),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != dateControllerInfant5) {
+      setState(() {
+        dateControllerInfant5.text = DateFormat('yyyy-MM-dd').format(picked);
+      });
     }
   }
 
@@ -1175,7 +1342,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
           table1Data.isNotEmpty) {
         final traveller = tableData[0];
         final passportInfo =
-        table1Data[0]; // Assuming there's only one entry in Table1
+            table1Data[0]; // Assuming there's only one entry in Table1
 
         setState(() {
           String _firstNameController = traveller['UDFirstName'];
@@ -1215,20 +1382,14 @@ class _OneWayBookingState extends State<OneWayBooking> {
   }
 
   String convertDate(String inputDate) {
-    try {
-      // Parse "16 April 1997"
-      DateTime parsedDate = DateFormat("d MMMM yyyy").parse(inputDate);
+    // Parse the input date string
+    DateTime date = DateFormat('dd MMM yyyy').parse(inputDate);
 
-      // Format to "1997-04-16" (yyyy-MM-dd)
-      String formattedDate = DateFormat("yyyy-MM-dd").format(parsedDate);
+    // Format the date in the desired format
+    formattedDate = DateFormat('yyyy-MM-dd').format(date);
 
-      return formattedDate;
-    } catch (e) {
-      print("Date parse error: $e");
-      return inputDate;
-    }
+    return formattedDate;
   }
-
 
   Future<void> _retrieveSavedValues() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -1236,9 +1397,9 @@ class _OneWayBookingState extends State<OneWayBooking> {
       userTypeID = prefs.getString(Prefs.PREFS_USER_TYPE_ID) ?? '';
       userID = prefs.getString(Prefs.PREFS_USER_ID) ?? '';
       Currency = prefs.getString(Prefs.PREFS_CURRENCY) ?? '';
-      print('userID: ${widget.infantCount}');
+      print('userID: ${Currency}');
+      // Call sendFlightSearchRequest() here after SharedPreferences values are retrieved
       getAdivahaFlightDetails();
-
     });
   }
 
@@ -1254,12 +1415,41 @@ class _OneWayBookingState extends State<OneWayBooking> {
 
     // Decode the JSON string into a list of maps
     List<Map<String, dynamic>> jsonList =
-    json.decode(jsonString).cast<Map<String, dynamic>>();
+        json.decode(jsonString).cast<Map<String, dynamic>>();
 
     return jsonList;
   }
 
   var resultFlightData = [];
+  String formatTravelTime(String travelTime) {
+    if (travelTime.startsWith('PT')) {
+      travelTime = travelTime.substring(2); // remove 'PT'
+
+      int hours = 0;
+      int minutes = 0;
+
+      final hourMatch = RegExp(r'(\d+)H').firstMatch(travelTime);
+      final minuteMatch = RegExp(r'(\d+)M').firstMatch(travelTime);
+
+      if (hourMatch != null) {
+        hours = int.parse(hourMatch.group(1)!);
+      }
+
+      if (minuteMatch != null) {
+        minutes = int.parse(minuteMatch.group(1)!);
+      }
+
+      if (hours > 0 && minutes > 0) {
+        return '${hours}h ${minutes}m';
+      } else if (hours > 0) {
+        return '${hours}h';
+      } else {
+        return '${minutes}m';
+      }
+    }
+
+    return travelTime;
+  }
 
   String formatDepartureDate(String departureDate) {
     // Parse the date string into a DateTime object
@@ -1294,74 +1484,108 @@ class _OneWayBookingState extends State<OneWayBooking> {
   }
 
   Future<void> getAdivahaFlightDetails() async {
-
-    token = await TokenManager.getStoredToken();
-    if (token != null) {
-      print("✅ Token on next page: $token");
-
-    } else {
-      print("❌ Token fetch failed on next page");
-    }
     final url = Uri.parse(
-        'https://boqoltravel.com/app/b2badminapi.asmx/Oneway_GetPriceDetails');
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightDetailsGet');
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
+
+    print("ResultIndexID: " + widget.flightDetails['ResultIndexID']);
+    print("ItemId: " + widget.flightDetails['ItemId']);
+
+    String resultIndex = widget.flightDetails['ResultIndexID'].toString();
+    String traceId = widget.flightDetails['ItemId'].toString();
+
+    print(resultIndex);
+    print(traceId);
 
     try {
       setState(() {
-        isLoading = true; // Show loader for API call
+        isLoading = true;
+      });
+      print({
+        'ResultIndex': resultIndex,
+        'TraceId': traceId,
+        'TripType': 'Oneway',
+        'UserID': widget.userid.toString(),
+        'DefaultCurrency': 'KES',
       });
 
       final response = await http.post(
         url,
         headers: headers,
         body: {
-          'OnewayFlightSegmentJson': json.encode(widget.flightDetailsList),
+          'ResultIndex': resultIndex,
+          'TraceId': traceId,
           'TripType': 'Oneway',
-          'AdultCount': widget.adultCount.toString(),
-          'ChildrenCount': widget.childrenCount.toString(),
-          'InfantCount': widget.infantCount.toString(),
-          'OnlineCurrencyValue': '1',
-          'TPToken': token.toString(), // Use saved token
+          'UserID': widget.userid.toString(),
+          'DefaultCurrency': 'KES',
         },
       );
 
-      if (response.statusCode == 200) {
-        var parsedJson = extractJsonFromXml(response.body).toList();
-        developer.log("Full Response: $parsedJson");
+// print status code and response body
+      print('Status code : ${response.statusCode}');
+      print('Response body : ${response.body}');
 
+
+      setState(() {
+        isLoading = false;
+      });
+
+      if (response.statusCode == 200) {
+        print('Request successful! Parsing response...');
+
+        // Extract JSON from XML and parse the data
+        var parsedJson = extractJsonFromXml(response.body).toList();
+
+        print('Full response:');
+        developer.log(parsedJson.toString());
+
+        // Filter rows where "RowType" == "SubRow" or "MainRow"
         var filteredFlightData = parsedJson
             .where((flight) =>
-        flight['RowType'] == 'SubRow' || flight['RowType'] == 'MainRow')
+                flight['RowType'] == 'SubRow' || flight['RowType'] == 'MainRow')
             .toList();
 
+        // Update the state with filtered data
         setState(() {
           resultFlightData = filteredFlightData;
-        });
+          if (resultFlightData.isEmpty) {
+            print('No valid flight data returned');
+          } else {
+            print('Filtered Flight Data: ${resultFlightData.toString()}');
 
-        // Apply stop count filtering
-        if (int.tryParse(widget.stopcount.toString()) == 0) {
-          resultFlightData = resultFlightData
-              .where((flight) => flight['RowType'] == 'MainRow')
-              .toList();
-        } else {
-          resultFlightData = resultFlightData
-              .where((flight) => flight['RowType'] == 'SubRow')
-              .toList();
-        }
-      } else {
-        print('❌ API failed with status: ${response.statusCode}');
-        _showErrorMessage('Server error. Try again later.');
+            // Check stop count to differentiate MainRow and SubRow
+            if (int.parse(widget.stopcount.toString()) == 0) {
+              // Display only MainRow
+              resultFlightData = filteredFlightData
+                  .where((flight) => flight['RowType'] == 'MainRow')
+                  .toList();
+              print('Displaying MainRow only: ${resultFlightData.toString()}');
+            }
+            else if (int.parse(widget.stopcount.toString()) >= 1) {
+              // Filter and display only SubRow
+              resultFlightData = filteredFlightData
+                  .where((flight) => flight['RowType'] == 'SubRow')
+                  .toList();
+
+              print('Displaying SubRow: ${resultFlightData.toString()}');
+
+              if (resultFlightData.isEmpty) {
+                print('No SubRow data available');
+              }
+            }
+          }
+        });
       }
-    } catch (e) {
-      print("⚠️ Error calling API: $e");
-      _showErrorMessage('Something went wrong. Please try again.');
-    } finally {
-      setState(() {
-        isLoading = false; // Always hide loader
-      });
+      else {
+        print('Request failed with status: ${response.statusCode}');
+        _showErrorMessage('Server error, please try again later.');
+      }
+    } catch (error) {
+      print('Error sending request: $error');
+      _showErrorMessage(
+          'An error occurred. Please check your internet connection and try again.');
     }
   }
-
 
   void _showErrorMessage(String message) {
     // This method can show a dialog or a snackbar to the user
@@ -1389,7 +1613,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
     int adultCountInt = int.parse(widget.adultCount);
     int childrenCount = int.parse(widget.childrenCount);
     int InfantCount = int.parse(widget.infantCount);
-    final dropdownItems = _generateDropdownItems();
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -1611,8 +1835,10 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                           Padding(
                                             padding: const EdgeInsets.only(top: 16),
                                             child: Text(
-                                              (resultFlightData[index]['TravelTime'] ?? '').replaceFirst('PT', ''),
-                                              style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
+                                              CommonUtils.convertMinutesToHoursMinutes(
+                                                  resultFlightData[
+                                                  index][
+                                                  'TravelTime']),                                              style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
                                             ),
                                           ),
                                           Image.asset('assets/images/oneStop.png', width: 60, fit: BoxFit.fitWidth),
@@ -1899,7 +2125,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                         Padding(
                                           padding: const EdgeInsets.only(top: 16),
                                           child: Text(
-                                            (resultFlightData[index + 1]['TravelTime'] ?? '').replaceFirst('PT', ''),
+                                          CommonUtils.convertMinutesToHoursMinutes((resultFlightData[index + 1]['TravelTime'] ?? '')),
                                             style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
                                           ),
                                         ),
@@ -2138,7 +2364,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             'View Full Breakup',
                                             style: TextStyle(
                                               color:
-                                              Color(0xFF00ADEE),
+                                              Color(0xFF1C5870),
                                               fontWeight:
                                               FontWeight.bold,
                                               fontSize: 14,
@@ -3543,7 +3769,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             BorderRadius.circular(
                                                 8.0),
                                             borderSide: BorderSide(
-                                                color: Color(0xFF00ADEE)),
+                                                color: Colors.blue),
                                           ),
                                         ),
                                       ),
@@ -3668,7 +3894,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             BorderRadius.circular(
                                                 8.0),
                                             borderSide: BorderSide(
-                                                color: Color(0xFF00ADEE)),
+                                                color: Colors.blue),
                                           ),
                                         ),
                                       ),
@@ -3719,7 +3945,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             BorderRadius.circular(
                                                 8.0),
                                             borderSide: BorderSide(
-                                                color: Color(0xFF00ADEE)),
+                                                color: Colors.blue),
                                           ),
                                         ),
                                       ),
@@ -3771,7 +3997,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             BorderRadius.circular(
                                                 8.0),
                                             borderSide: BorderSide(
-                                                color: Color(0xFF00ADEE)),
+                                                color: Colors.blue),
                                           ),
                                         ),
                                       ),
@@ -3822,7 +4048,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             BorderRadius.circular(
                                                 8.0),
                                             borderSide: BorderSide(
-                                                color: Color(0xFF00ADEE)),
+                                                color: Colors.blue),
                                           ),
                                         ),
                                       ),
@@ -3873,7 +4099,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             BorderRadius.circular(
                                                 8.0),
                                             borderSide: BorderSide(
-                                                color: Color(0xFF00ADEE)),
+                                                color: Colors.blue),
                                           ),
                                         ),
                                       ),
@@ -4612,7 +4838,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                                                   Icons
                                                                       .edit,
                                                                   color:
-                                                                  Color(0xFF00ADEE)),
+                                                                  Color(0xFF1C5870)),
                                                               onPressed: hasChildData &&
                                                                   !isEditChild
                                                                   ? () {
@@ -4953,7 +5179,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                                                   Icons
                                                                       .edit,
                                                                   color:
-                                                                  Color(0xFF00ADEE)),
+                                                                  Color(0xFF1C5870)),
                                                               onPressed: hasInfantData &&
                                                                   !isEditInfant
                                                                   ? () {
@@ -5114,54 +5340,5 @@ class _OneWayBookingState extends State<OneWayBooking> {
       ),
     );
   }
-
-  void printFullJson(List<dynamic> matchingRows) {
-    final encoder = JsonEncoder.withIndent('  ');
-    final prettyJson = encoder.convert(matchingRows);
-    developer.log(prettyJson, name: 'FilteredFlighsddfdftDetails');
-  }
-
-
-
-  void printFullJson1(dynamic data) {
-    try {
-      if (data is String) {
-        // Remove XML tags
-        String cleaned = data
-            .replaceAll(RegExp(r'<.*?>'), '') // remove <string ...> and </string>
-            .trim();
-
-        // Log the raw token
-        developer.log('Raw Token: $cleaned', name: 'TokenValue');
-
-        // If you want to decode JWT header & payload
-        if (cleaned.contains('.')) {
-          final parts = cleaned.split('.');
-          if (parts.length >= 2) {
-            final header = _decodeBase64(parts[0]);
-            final payload = _decodeBase64(parts[1]);
-
-            developer.log('JWT Header: ${jsonEncode(header)}', name: 'TokenValue');
-            developer.log('JWT Payload: ${jsonEncode(payload)}', name: 'TokenValue');
-            return;
-          }
-        }
-      } else {
-        // If it's JSON or List
-        final encoder = JsonEncoder.withIndent('  ');
-        final prettyJson = encoder.convert(data);
-        developer.log(prettyJson, name: 'TokenValue');
-      }
-    } catch (e) {
-      developer.log('Error in printFullJson1: $e');
-    }
-  }
-
-  dynamic _decodeBase64(String str) {
-    String normalized = base64Url.normalize(str);
-    return jsonDecode(utf8.decode(base64Url.decode(normalized)));
-  }
-
-
 
 }

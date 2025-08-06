@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:developer' as developer;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:http/http.dart' as http;
@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shimmer/shimmer.dart';
 
-import '../AdultDatabaseHelperCass.dart';
 import '../DatabseHelper.dart';
 import '../bookings/flight/Children_DatabaseHelper.dart';
 import '../bookings/flight/FilterPage.dart';
@@ -80,11 +79,10 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
       }
     });
   }
-
   void _deleteAllRecordsAndGoBack() async {
     try {
       // Initialize the database helper
-      final dbHelper = AdultDatabaseHelper.instance;
+      final dbHelper = DatabaseHelper.instance;
 
       // Delete all records from the adults table (or your specific table)
       await dbHelper.deleteAllRecords('adults'); // Adjust table name if needed
@@ -101,7 +99,7 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
 
       // Delete all records from the adults table (or your specific table)
       await dbHelper
-          .deleteAllRecords('children'); // Adjust table name if needed
+          .deleteAllRecords('childrens'); // Adjust table name if needed
     } catch (e) {
       print("Error deleting all records: $e");
       // Optionally, show a snackbar or error dialog to the user
@@ -120,7 +118,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
       // Optionally, show a snackbar or error dialog to the user
     }
   }
-
   Future<void> _retrieveSavedValues() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -134,19 +131,8 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
         // Add other filters as necessary
       };
 
-      _initializeSearch();
+      sendFlightSearchRequest(filters);
     });
-  }
-
-  void _initializeSearch() async {
-    String? token = await fetchAndStoreToken(); // 🔐 Get the token
-
-    if (token != null) {
-      Map<String, dynamic> filters = {}; // or pass actual filters
-      sendFlightSearchRequest(filters); // ✅ Now call API
-    } else {
-      print("Failed to fetch token");
-    }
   }
 
   String? selectedSortOption = "Low to High";
@@ -168,7 +154,7 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
   bool isBookingLoading = false;
   bool isRefundable = false; // Default to false
   bool isNonRefundable = false;
-
+  Map<String, bool> airlineCheckboxes = {};
   bool isNonStop = false;
   bool isOneStop = false;
   bool isTwoPlusStops = false;
@@ -199,167 +185,40 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
         context, MaterialPageRoute(builder: (BuildContext context) => screen));
   }
 
-  String? tpToken;
-
-  Future<String?> getValidToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('TPToken');
-    final savedTime = prefs.getString('TokenSavedTime');
-
-    if (token != null && savedTime != null) {
-      final savedDateTime = DateTime.tryParse(savedTime);
-      if (savedDateTime != null) {
-        final now = DateTime.now();
-        final diff = now.difference(savedDateTime).inHours;
-
-        if (diff < 24) {
-          print('✅ Existing token is still valid (${24 - diff} hours left)');
-          return token;
-        } else {
-          print('⌛ Token expired after $diff hours. Fetching new token...');
-        }
-      } else {
-        print('⚠️ Invalid saved token time. Fetching new token...');
-      }
-    } else {
-      print('ℹ️ No token found. Fetching new token...');
-    }
-
-    // Delete old token data
-    await prefs.remove('TPToken');
-    await prefs.remove('TokenSavedTime');
-
-    // Fetch and save new token
-    return await fetchAndStoreToken();
-  }
-
-  Future<String?> fetchAndStoreToken() async {
-    final url = Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx');
-
-    final envelope = '''<?xml version="1.0" encoding="utf-8"?>
-    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-                   xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-      <soap:Body>
-        <TravelPort_GetToken xmlns="http://tempuri.org/" />
-      </soap:Body>
-    </soap:Envelope>''';
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          'SOAPAction': 'http://tempuri.org/TravelPort_GetToken',
-        },
-        body: envelope,
-      );
-
-      print('🔃 Status Code: ${response.statusCode}');
-      print('📥 Raw Response: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final rawXml = response.body;
-
-        // ✅ Corrected: Extract token from <TravelPort_GetTokenResult>
-        final token = RegExp(
-            r'<TravelPort_GetTokenResult>(.*?)</TravelPort_GetTokenResult>',
-            dotAll: true)
-            .firstMatch(rawXml)
-            ?.group(1);
-
-        if (token != null && token.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('TPToken', token);
-          await prefs.setString(
-              'TokenSavedTime', DateTime.now().toIso8601String());
-
-          printFullString('✅ Token saved: $token');
-          return token;
-        } else {
-          print('⚠️ Token not found in XML');
-        }
-      } else {
-        print('❌ HTTP Error: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Exception occurred: $e');
-    }
-
-    return null;
-  }
-
-  void printFullString(String text) {
-    const int chunkSize = 800;
-    for (int i = 0; i < text.length; i += chunkSize) {
-      int endIndex = i + chunkSize;
-      if (endIndex > text.length) endIndex = text.length;
-      debugPrint(
-          text.substring(i, endIndex)); // Automatically handles long logs
-    }
-  }
-  Map<String, bool> airlineCheckboxes = {};
-
   void sendFlightSearchRequest(Map<String, dynamic> filters) async {
-    String finDate = DateFormat('yyyy-MM-dd').format(widget.departDate);
-    String finDate1 = DateFormat('yyyy-MM-dd').format(widget.returnDate);
+    String fin_date =
+    widget.departDate.toString().split(' ')[0].replaceAll('-', '/');
+    String fin_date1 =
+    widget.returnDate.toString().split(' ')[0].replaceAll('-', '/');
 
-    String origin = widget.originCountry;
-    String destination = widget.destinationCourntry;
-    print('widget.departDate ${finDate}');
-    print('widget.origin ${origin}');
-    print('widget.destination ${destination}');
-    tpToken = await getValidToken(); // Call token
-    if (tpToken == null) {
-      print('❌ Failed to retrieve TPToken');
-      return;
-    }
-
-    // Replace these values with your actual data
     var requestBody = {
       'AdultCount': widget.adult,
       'ChildrenCount': widget.children,
       'InfantCount': widget.infants,
       'Origin': widget.orgin,
       'Destination': widget.destination,
-      'Class': '2',
-      'fromCountry': origin,
-      'tocountry': destination,
-      'DepartDate': finDate,
-      'ReturnDate': finDate1,
-      "TPToken": tpToken,
+      'fromCountry': widget.originCountry,
+      'tocountry': widget.destinationCourntry,
+      'DepartDate': fin_date,
+      'ReturnDate': fin_date1,
+      'DefaultCurrency': 'KES',
+      'UserID': userID
     };
-    print('Request Body Details:');
-    print('AdultCount: ${widget.adult}');
-    print('ChildrenCount: ${widget.children}');
-    print('InfantCount: ${widget.infants}');
-    print('Origin (IATA): ${widget.orgin}');
-    print('Destination (IATA): ${widget.destination}');
-    print('Class: 2');
-    print('From Country: $origin');
-    print('To Country: $destination');
-    print('DepartDate: $finDate');
-    print('ReturnDate: $finDate1');
-    print('TPToken: $tpToken');
 
     final url = Uri.parse(
-        'https://boqoltravel.com/app/b2badminapi.asmx/Roundway_GetFlightDetails');
+        'https://traveldemo.org/travelapp/corporateapi.asmx/AdivahaSearchFlightRoundWay');
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
 
     try {
       setState(() {
         isLoading = true;
       });
-      var response = await http.post(
-        url,
-        headers: headers,
-        body: requestBody,
-      );
+      var response = await http.post(url, headers: headers, body: requestBody);
       setState(() {
         isLoading = false;
       });
+
       if (response.statusCode == 200) {
-        // Handle the response data here
         print('Response: ${response.body}');
 
         setState(() {
@@ -367,37 +226,48 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
           fullResultList =
               json.decode(ResponseHandler.parseData(response.body));
 
-// 🔁 Forward flights
+          // Forward flights
           List forwardList = fullResultList
               .where((item) => item['RowTypeForward'] == 'MainRow')
               .toList();
 
-// 🔁 Return flights
+          // Return flights
           List returnList = fullResultList
               .where((item) => item['RowTypeReturn'] == 'MainRow')
               .toList();
 
-// 💡 Combine if needed (optional)
+          // Combine
           resultList = [...forwardList, ...returnList];
-          Set<String> carrierCodes = {};
 
+          // ✅ Remove duplicates
+          final seen = <String>{};
+          resultList = resultList.where((flight) {
+            final key =
+                '${flight['CarrierNameForward'] ?? ''}_${flight['DepartureDateForward'] ?? ''}_${flight['ArrivalDateForward'] ?? ''}';
+            if (seen.contains(key)) return false;
+            seen.add(key);
+            return true;
+          }).toList();
+
+          // Build airline checkbox map
+          Set<String> carrierNames = {};
           for (var item in resultList) {
-            if (item['CarrierCodeForward'] != null) {
-              carrierCodes.add(item['CarrierCodeForward']);
+            if (item['CarrierNameForward'] != null) {
+              carrierNames.add(item['CarrierNameForward']);
             }
-            if (item['CarrierCodeReturn'] != null) {
-              carrierCodes.add(item['CarrierCodeReturn']);
+            if (item['CarrierNameReturn'] != null) {
+              carrierNames.add(item['CarrierNameReturn']);
             }
           }
 
-// ✅ Preserve previous airline selections
           airlineCheckboxes = {
-            for (var code in carrierCodes)
-              code: airlineCheckboxes.containsKey(code) ? airlineCheckboxes[code]! : false
+            for (var code in carrierNames)
+              code: airlineCheckboxes.containsKey(code)
+                  ? airlineCheckboxes[code]!
+                  : false
           };
 
           print('✅ Airline Checkbox Map (Round Trip): $airlineCheckboxes');
-
           _applyFiltersToResult(resultList, filters);
         });
       } else {
@@ -408,43 +278,39 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
     }
   }
 
-  void _applyStopCountFilter(
-      List<dynamic> results, Map<String, dynamic> filters) {
-    if (filters['isNonStop'] == true) {
-      // ✅ KEEP THIS BLOCK UNCHANGED (your original logic)
-      resultList = results.where((flight) {
-        String? stopCountForwardStr = flight['StopCountForward'];
-        String? stopCountReturnStr = flight['StopCountReturn'];
+  void _applyStopCountFilter(List<dynamic> results, Map<String, dynamic> filters) {
+    // Step 1 → always show only MainRow items first
+    List<dynamic> mainRows = results.where((flight) =>
+    (flight['RowTypeForward'] ?? '') == 'MainRow' &&
+        (flight['RowTypeReturn'] ?? '') == 'MainRow').toList();
 
-        int stopCountForward = stopCountForwardStr != null
-            ? int.tryParse(stopCountForwardStr) ?? 0
-            : 0;
-        int stopCountReturn = stopCountReturnStr != null
-            ? int.tryParse(stopCountReturnStr) ?? 0
-            : 0;
+    // Step 2 → If non-stop toggle ON → inside mainRows only pick 0 stop flights
+    if (filters['isNonStop'] == true) {
+      resultList = mainRows.where((flight) {
+        String stopCountForwardStr = flight['StopCountForward']?.toString() ?? '0';
+        String stopCountReturnStr = flight['StopCountReturn']?.toString() ?? '0';
+
+        int stopCountForward = int.tryParse(stopCountForwardStr) ?? 0;
+        int stopCountReturn = int.tryParse(stopCountReturnStr) ?? 0;
 
         return stopCountForward == 0 && stopCountReturn == 0;
       }).toList();
     } else {
-      // ✅ WHEN TOGGLE IS OFF → Show ONLY MainRow (no filtering by stop)
-      resultList = results
-          .where((flight) =>
-      flight['RowTypeForward'] == 'MainRow' &&
-          flight['RowTypeReturn'] == 'MainRow')
-          .toList();
+      // toggle OFF → just take all MainRows
+      resultList = mainRows;
     }
-// ✅ Extract unique airlines for Round Trip
 
-
-    // ✅ Update UI
+    // Update UI
     setState(() {
       resultList = resultList;
-      //expandedList = List.generate(resultList.length, (_) => false);
     });
   }
 
+
+
   void _applyDepartureTimeFilter(
-      List<dynamic> results, Map<String, dynamic> filters) {
+      List<dynamic> results, Map<String, dynamic> filters)
+  {
     print('Displaying all flights: $results');
 
     List<dynamic> filteredResults = results.where((flight) {
@@ -551,7 +417,7 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
         bool arrivalConditionMatches = false;
 
         // ✅ Airline filter (Forward only)
-        String forwardCode = (flight['CarrierCodeForward'] ?? '').toString();
+        String forwardCode = (flight['CarrierNameForward'] ?? '').toString();
         if (selectedAirlines.isEmpty || selectedAirlines.contains(forwardCode)) {
           matchesAirline = true;
         }
@@ -639,10 +505,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
     });
   }
 
-
-
-
-
   void _applySort(List<dynamic> results, String sortOrder) {
     // ✅ First filter to include only valid MainRows (Forward + Return)
     List<dynamic> filteredResults = results
@@ -670,7 +532,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
 
     print('Sorted flights: $filteredResults');
   }
-
   double _parsePrice(dynamic price) {
     if (price is String) {
       return double.tryParse(price.replaceAll(RegExp(r'[^\d.]'), '')) ?? 0.0;
@@ -680,7 +541,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
       return 0.0; // Fallback if it's neither string nor number
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -702,7 +562,7 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
 
             SizedBox(width: 1), // Set the desired width
             Text(
-              "Available FLights",
+              "Available Flights",
               style: TextStyle(
                   color: Colors.white, fontFamily: "Montserrat",
                   fontSize: 18),
@@ -793,7 +653,7 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                     children: [
                                       Text(
                                         resultList[index]
-                                        ['CarrierCodeForward'] ??
+                                        ['CarrierNameForward'] ??
                                             'Unknown',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
@@ -848,8 +708,12 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                                 resultList[index][
                                                 'TravelTimeForward'] !=
                                                     null
-                                                    ? resultList[index][
-                                                'TravelTimeForward']
+                                                    ? CommonUtils
+                                                    .convertMinutesToHoursMinutes(
+                                                    resultList[
+                                                    index]
+                                                    [
+                                                    'TravelTimeForward'])
                                                     : 'N/A',
                                                 style: TextStyle(
                                                   fontWeight:
@@ -926,7 +790,7 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                         children: [
                                           Text(
                                             resultList[index][
-                                            'CarrierCodeReturn'] ??
+                                            'CarrierNameForward'] ??
                                                 'Unknown',
                                             style: TextStyle(
                                               fontWeight: FontWeight.bold,
@@ -1000,8 +864,12 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                                 resultList[index][
                                                 'TravelTimeReturn'] !=
                                                     null
-                                                    ? resultList[index][
-                                                'TravelTimeReturn']
+                                                    ? CommonUtils
+                                                    .convertMinutesToHoursMinutes(
+                                                    resultList[
+                                                    index]
+                                                    [
+                                                    'TravelTimeReturn'])
                                                     : 'No Travel Time',
                                                 style: TextStyle(
                                                   fontWeight:
@@ -1111,22 +979,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                         ),
                                         GestureDetector(
                                           onTap: () {
-                                            String mainRowForward =
-                                            resultList[index][
-                                            'MainRowNumberForward'];
-                                            String mainRowReturn =
-                                            resultList[index][
-                                            'MainRowNumberReturn'];
-
-                                            final matchingRows = fullResultList
-                                                .where((item) =>
-                                            item['MainRowNumberForward'] ==
-                                                mainRowForward &&
-                                                item['MainRowNumberReturn'] ==
-                                                    mainRowReturn)
-                                                .toList();
-
-                                            printFullJson(matchingRows);
                                             print(
                                                 "Flight Details: ${resultList[index]}");
                                             _deleteAllRecordsAndGoBack();
@@ -1137,14 +989,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                               MaterialPageRoute(
                                                 builder: (context) =>
                                                     TwoWayBooking(
-                                                      refundable:resultList[index]
-                                                      ['Refundable'],
-                                                      TPToken: tpToken,
-                                                      arrivecityname: resultList[
-                                                      index][
-                                                      'ArriveCityNameForward'],
-                                                      flightDetailsList:
-                                                      matchingRows,
                                                       flightDetails:
                                                       resultList[index],
                                                       adultCount:
@@ -1155,20 +999,15 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                                                       widget.infants,
                                                       departdate:
                                                       widget.departDate,
-                                                      stopCountForward:
-                                                      resultList[index][
+                                                      stopCount: resultList[
+                                                      index][
                                                       "StopCountForward"],
-                                                      stopCountReturn:
-                                                      resultList[index][
-                                                      "StopCountReturn"],
                                                       departCity: resultList[
                                                       index][
                                                       "DepartCityNameForward"],
                                                       TotalPrice:
                                                       resultList[index]
                                                       ["TotalPrice"],
-                                                      TokenValue:
-                                                      tpToken ?? '',
                                                     ),
                                               ),
                                             );
@@ -1797,12 +1636,6 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
       },
     );
   }
-}
-
-void printFullJson(List<dynamic> matchingRows) {
-  final encoder = JsonEncoder.withIndent('  ');
-  final prettyJson = encoder.convert(matchingRows);
-  developer.log(prettyJson, name: 'FilteredFlightDetails');
 }
 
 class CustomCheckbox extends StatelessWidget {

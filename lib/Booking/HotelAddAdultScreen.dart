@@ -217,6 +217,38 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
       String surname = adultLname_controller.text.trim();
       String dob = dateControllerAdult1.text.trim();
 
+      // 🔽 required field validation
+      if (firstName.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "First name is required",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
+      if (surname.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Surname is required",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
+      if (dob.isEmpty) {
+        Fluttertoast.showToast(
+          msg: "Date of Birth is required",
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+          backgroundColor: Colors.red,
+          textColor: Colors.white,
+        );
+        return;
+      }
+
       // Insert only the required fields
       Map<String, dynamic> adultData = {
         'title': title,
@@ -278,6 +310,7 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
   }
 
 
+
   Future<void> _retrieveSavedValues() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -292,7 +325,7 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
       String empName) async
   {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellers?UserId=2112&UserTypeId=2&SearchFilter=$empName&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
+        'https://traveldemo.org/travelapp/b2capi.asmx/BookingSearchTravellers?UserId=2620&UserTypeId=5&SearchFilter=$empName&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
     print('userID' + widget.userid);
     print('userTypeID' + widget.usertypeid);
     print('empName' + empName);
@@ -327,7 +360,7 @@ class _OneWayBookingState extends State<HotelAddAdultScreen> {
 
   Future<void> callSecondApi(String id) async {
     final url =
-        'https://boqoltravel.com/app/b2badminapi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2B-a2e3-2e722772';
+        'https://boqoltravel.org/travelapp/b2capi.asmx/BookingSearchTravellerDetails?TravellerId=$id&UID=35510b94-5342-TDemoB2CAPI-a2e3-2e722772';
     print('object' + id);
 
     final response = await http.get(Uri.parse(url));

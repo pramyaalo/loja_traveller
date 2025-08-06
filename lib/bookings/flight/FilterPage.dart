@@ -240,7 +240,7 @@ class _FilterPageState extends State<FilterPage> {
 
             SizedBox(width: 1), // Set the desired width
             Text(
-              "Flight Filter",
+              "Filter Page",
               style: TextStyle(
                   color: Colors.white, fontFamily: "Montserrat",
                   fontSize: 18),

@@ -304,13 +304,275 @@ class _HotelDescriptionState extends State<HolidayReviewBooking> {
   late String userTypeID = '';
   late String userID = '';
   late String Currency = '';
+  TextEditingController zipCodeController = TextEditingController();
+  TextEditingController CityController = TextEditingController();
+  TextEditingController StreetNoController = TextEditingController();
+  TextEditingController HouseNoController = TextEditingController();
+  TextEditingController MobileNoController = TextEditingController();
+  TextEditingController EmailController = TextEditingController();
+  Future<void> fetchCountries() async {
+    final response = await http.post(
+      Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx/GetCountries'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
 
+    if (response.statusCode == 200) {
+      final rawXml = response.body;
+
+      try {
+        final document = xml.XmlDocument.parse(rawXml);
+        final elements = document.findAllElements('string');
+        if (elements.isNotEmpty) {
+          final result = elements.first.text;
+
+          // Split and remove duplicates
+          final items = result.split(',').map((e) => e.trim()).toSet().toList();
+
+          setState(() {
+            countries = items;
+          });
+        } else {
+          print('No <string> tag found');
+        }
+      } catch (e) {
+        print('XML parse error: $e');
+      }
+    } else {
+      print('Request failed: ${response.statusCode}');
+    }
+  }
+
+  List<String> nationalityList = [];
+  String? selectedNationality;
+
+  Future<void> fetchNationalities() async {
+    final response = await http.post(
+      Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx/GetCountries'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final rawXml = response.body;
+
+      try {
+        final document = xml.XmlDocument.parse(rawXml);
+        final elements = document.findAllElements('string');
+        if (elements.isNotEmpty) {
+          final result = elements.first.text;
+
+          final items = result.split(',').map((e) => e.trim()).toSet().toList();
+
+          setState(() {
+            nationalityList = items;
+          });
+        } else {
+          print('No <string> found in XML');
+        }
+      } catch (e) {
+        print('Error parsing XML: $e');
+      }
+    } else {
+      print('Failed: ${response.statusCode}');
+    }
+  }
+
+  List<String> countries = [];
+  String? selectedCountry;
+   String? selectedPhoneCode;
+
+  Map<String, String> countryPhoneMap = {
+    'Afghanistan': '+93',
+    'Albania': '+355',
+    'Algeria': '+213',
+    'Andorra': '+376',
+    'Angola': '+244',
+    'Antigua and Barbuda': '+1268',
+    'Argentina': '+54',
+    'Armenia': '+374',
+    'Aruba': '+297',
+    'Australia': '+61',
+    'Austria': '+43',
+    'Azerbaijan': '+994',
+    'Bahamas': '+1242',
+    'Bahrain': '+973',
+    'Bangladesh': '+880',
+    'Barbados': '+1246',
+    'Belarus': '+375',
+    'Belgium': '+32',
+    'Belize': '+501',
+    'Benin': '+229',
+    'Bhutan': '+975',
+    'Bolivia': '+591',
+    'Bosnia and Herzegovina': '+387',
+    'Botswana': '+267',
+    'Brazil': '+55',
+    'Brunei': '+673',
+    'Bulgaria': '+359',
+    'Burundi': '+257',
+    'Cambodia': '+855',
+    'Cameroon': '+237',
+    'Canada': '+1',
+    'Cape Verde': '+238',
+    'Chile': '+56',
+    'China': '+86',
+    'Colombia': '+57',
+    'Comoros': '+269',
+    'Costa Rica': '+506',
+    'Croatia': '+385',
+    'Cuba': '+53',
+    'Cyprus': '+357',
+    'Czech Republic': '+420',
+    'Democratic Republic of the Congo': '+243',
+    'Denmark': '+45',
+    'Djibouti': '+253',
+    'Dominica': '+1767',
+    'Dominican Republic': '+1809',
+    'Ecuador': '+593',
+    'Egypt': '+20',
+    'Equatorial Guinea': '+240',
+    'Eritrea': '+291',
+    'Estonia': '+372',
+    'Eswatini': '+268',
+    'Ethiopia': '+251',
+    'Fiji': '+679',
+    'Finland': '+358',
+    'France': '+33',
+    'Gambia': '+220',
+    'Georgia': '+995',
+    'Germany': '+49',
+    'Ghana': '+233',
+    'Greece': '+30',
+    'Guam': '+1671',
+    'Guatemala': '+502',
+    'Guinea': '+224',
+    'Guinea-Bissau': '+245',
+    'Guyana': '+592',
+    'Haiti': '+509',
+    'Honduras': '+504',
+    'Hungary': '+36',
+    'Iceland': '+354',
+    'India': '+91',
+    'Indonesia': '+62',
+    'Iran': '+98',
+    'Iraq': '+964',
+    'Ireland': '+353',
+    'Israel': '+972',
+    'Italy': '+39',
+    'Jamaica': '+1876',
+    'Japan': '+81',
+    'Jordan': '+962',
+    'Kazakhstan': '+7',
+    'Kenya': '+254',
+    'Kiribati': '+686',
+    'Kuwait': '+965',
+    'Kyrgyzstan': '+996',
+    'Lebanon': '+961',
+    'Lesotho': '+266',
+    'Liberia': '+231',
+    'Liechtenstein': '+423',
+    'Lithuania': '+370',
+    'Luxembourg': '+352',
+    'Madagascar': '+261',
+    'Malawi': '+265',
+    'Malaysia': '+60',
+    'Maldives': '+960',
+    'Mali': '+223',
+    'Malta': '+356',
+    'Marshall Islands': '+692',
+    'Martinique': '+596',
+    'Mauritania': '+222',
+    'Mauritius': '+230',
+    'Mexico': '+52',
+    'Moldova': '+373',
+    'Monaco': '+377',
+    'Mongolia': '+976',
+    'Montenegro': '+382',
+    'Morocco': '+212',
+    'Mozambique': '+258',
+    'Myanmar': '+95',
+    'Namibia': '+264',
+    'Nauru': '+674',
+    'Nepal': '+977',
+    'Netherlands': '+31',
+    'New Zealand': '+64',
+    'Nicaragua': '+505',
+    'Niger': '+227',
+    'Nigeria': '+234',
+    'Norway': '+47',
+    'Oman': '+968',
+    'Pakistan': '+92',
+    'Palau': '+680',
+    'Panama': '+507',
+    'Paraguay': '+595',
+    'Peru': '+51',
+    'Philippines': '+63',
+    'Poland': '+48',
+    'Portugal': '+351',
+    'Qatar': '+974',
+    'Republic of the Congo': '+242',
+    'Romania': '+40',
+    'Russia': '+7',
+    'Rwanda': '+250',
+    'Saint Kitts and Nevis': '+1869',
+    'Saint Lucia': '+1758',
+    'Samoa': '+685',
+    'San Marino': '+378',
+    'Saudi Arabia': '+966',
+    'Senegal': '+221',
+    'Serbia': '+381',
+    'Seychelles': '+248',
+    'Singapore': '+65',
+    'Slovakia': '+421',
+    'Slovenia': '+386',
+    'Solomon Islands': '+677',
+    'Somalia': '+252',
+    'South Korea': '+82',
+    'South Sudan': '+211',
+    'Spain': '+34',
+    'Sri Lanka': '+94',
+    'Sudan': '+249',
+    'Suriname': '+597',
+    'Sweden': '+46',
+    'Switzerland': '+41',
+    'Syria': '+963',
+    'Tajikistan': '+992',
+    'Tanzania': '+255',
+    'Thailand': '+66',
+    'Timor-Leste': '+670',
+    'Togo': '+228',
+    'Tonga': '+676',
+    'Trinidad and Tobago': '+1868',
+    'Tunisia': '+216',
+    'Turkey': '+90',
+    'Turkmenistan': '+993',
+    'Tuvalu': '+688',
+    'Uganda': '+256',
+    'Ukraine': '+380',
+    'United Arab Emirates': '+971',
+    'United Kingdom': '+44',
+    'United States of America': '+1',
+    'Uruguay': '+598',
+    'Uzbekistan': '+998',
+    'Vanuatu': '+678',
+    'Vatican City': '+379',
+    'Venezuela': '+58',
+    'Vietnam': '+84',
+    'Yemen': '+967',
+    'Zambia': '+260',
+    'Zimbabwe': '+263',
+  };
   @override
   void initState() {
     super.initState();
 
     setState(() {
       _retrieveSavedValues();
+      fetchCountries();
+      fetchNationalities();
       print(widget.childrenCount);
     });
   }
@@ -1062,32 +1324,32 @@ class _HotelDescriptionState extends State<HolidayReviewBooking> {
             IconButton(
               icon: Icon(
                 Icons.arrow_back,
-                color: Colors.black,
+                color: Colors.white,
                 size: 27,
               ),
               onPressed: () {
                 Navigator.pop(context);
               },
             ),
-            SizedBox(width: 1),
+
+            SizedBox(width: 1), // Set the desired width
             Text(
               "Review Booking",
               style: TextStyle(
-                  color: Colors.black, fontFamily: "Montserrat", fontSize: 19),
+                  color: Colors.white, fontFamily: "Montserrat",
+                  fontSize: 18),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-            width: 150,
+            width: 100,
             height: 50,
           ),
-          SizedBox(
-            width: 10,
-          )
+
         ],
-        backgroundColor: Colors.white,
+        backgroundColor:Color(0xFF00ADEE),
       ),
       body: Column(
         children: [
@@ -1779,6 +2041,467 @@ class _HotelDescriptionState extends State<HolidayReviewBooking> {
                     SizedBox(
                       height: 20,
                     ),
+                    Container(
+                      color: Colors.white,
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0,vertical: 10),
+                            child: Text(
+                              "Contact Details",
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight:
+                                  FontWeight.bold),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Enter Your Email:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: EmailController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Email',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Select Country",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8),
+                            child: Container(
+                              padding: const EdgeInsets
+                                  .symmetric(
+                                  horizontal: 10),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: Colors.grey),
+                                // Border color
+                                borderRadius:
+                                BorderRadius.circular(
+                                    8), // Rounded corners
+                              ),
+                              child:
+                              DropdownButtonHideUnderline(
+                                child:
+                                DropdownButton<String>(
+                                    value: selectedCountry,
+                                    hint: Text(
+                                        'Select a country'),
+                                    isExpanded: true,
+                                    // Optional: makes the dropdown take full width
+                                    items: countries.map((String value) {
+                                      final parts = value.split(' - ');
+                                      final countryName = parts[0].trim();
+                                      final countryCode = parts.length > 1 ? parts[1].trim() : '';
+                                      final phoneCode = countryPhoneMap[countryName] ?? '';
+
+                                      final displayText = phoneCode.isNotEmpty
+                                          ? '$countryName - $countryCode ($phoneCode)'
+                                          : '$countryName - $countryCode';
+
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(displayText),
+                                      );
+                                    }).toList(),
+
+                                    onChanged: (newValue) {
+                                      final parts = newValue!.split(' - ');
+                                      final countryName = parts[0].trim();
+                                      final countryCode = parts.length > 1 ? parts[1].trim() : '';
+                                      final phoneCode = countryPhoneMap[countryName] ?? '';
+
+                                      setState(() {
+                                        selectedCountry = newValue;
+                                        selectedCountryCode = countryCode;
+                                        selectedPhoneCode = phoneCode;
+                                      });
+
+                                      print('Country Code: $selectedCountryCode');
+                                      print('Phone Code: $selectedPhoneCode');
+                                    }
+
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Enter Your Mobile:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller:
+                              MobileNoController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Mobile',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "House No:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: HouseNoController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter House No',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Street:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller:
+                              StreetNoController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Street No',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "City:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: CityController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter City',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Zip Code:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: zipCodeController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Zip Code',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Country",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8),
+                            child: Container(
+                              padding: const EdgeInsets
+                                  .symmetric(
+                                  horizontal: 10),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: Colors.grey),
+                                borderRadius:
+                                BorderRadius.circular(
+                                    8),
+                              ),
+                              child:
+                              DropdownButtonHideUnderline(
+                                child:
+                                DropdownButton<String>(
+                                  value:
+                                  selectedNationality,
+                                  hint: Text(
+                                      'Select Nationality'),
+                                  isExpanded: true,
+                                  items: nationalityList
+                                      .map((String value) {
+                                    return DropdownMenuItem<
+                                        String>(
+                                      value: value,
+                                      child: Text(value
+                                          .split(' - ')[
+                                      0]), // Show only name
+                                    );
+                                  }).toList(),
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      selectedNationality =
+                                          newValue;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                        ],
+                      ),
+                    ),
 
                   ],
                 ),
@@ -1820,7 +2543,7 @@ class _HotelDescriptionState extends State<HolidayReviewBooking> {
                         child: ElevatedButton(
                           onPressed: bookTour,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF152238),
+                            backgroundColor: Color(0xFF00ADEE),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10.0),
                             ),

@@ -968,7 +968,7 @@ class _OneWayBookingState extends State<AddAdultScreen> {
             IconButton(
               icon: Icon(
                 Icons.arrow_back,
-                color: Colors.white,
+                color: Colors.black,
                 size: 27,
               ),
               onPressed: () {
@@ -980,20 +980,21 @@ class _OneWayBookingState extends State<AddAdultScreen> {
             Text(
               "Add Adult",
               style: TextStyle(
-                  color: Colors.white, fontFamily: "Montserrat",
-                  fontSize: 18),
+                  color: Colors.black, fontFamily: "Montserrat", fontSize: 19),
             ),
           ],
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
-            width: 100,
+            'assets/images/logo.png',
+            width: 150,
             height: 50,
           ),
-
+          SizedBox(
+            width: 10,
+          )
         ],
-        backgroundColor:Color(0xFF00ADEE),
+        backgroundColor: Colors.white,
       ),
       resizeToAvoidBottomInset: true,
       body: isLoading
@@ -1362,7 +1363,7 @@ class _OneWayBookingState extends State<AddAdultScreen> {
                             // Makes the button take full width
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Color(0xFF00ADEE),
+                                backgroundColor: Color(0xFF152238),
                                 // Button background color
                                 fixedSize: const Size.fromHeight(47),
                                 // Set button height to 45

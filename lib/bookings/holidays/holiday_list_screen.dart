@@ -704,7 +704,7 @@ Divider(),
       'ToDate': fin_date,
       'AdultCount': widget.AdultCountRoom1.toString(),
       'ChildCount': widget.ChildrenCountRoom1.toString(),
-      'DefaultCurrency': Currency.toString(),
+      'DefaultCurrency': 'KES',
       'UserId': userID.toString(),
     };
     print('Destination Name: ${widget.Locationid.toString()}');
@@ -888,7 +888,7 @@ Divider(),
               IconButton(
                 icon: Icon(
                   Icons.arrow_back,
-                  color: Colors.black,
+                  color: Colors.white,
                   size: 27,
                 ),
                 onPressed: () {
@@ -898,25 +898,22 @@ Divider(),
 
               SizedBox(width: 1), // Set the desired width
               Text(
-                "Holiday List",
+                "Available Tours",
                 style: TextStyle(
-                    color: Colors.black,
-                    fontFamily: "Montserrat",
-                    fontSize: 19),
+                    color: Colors.white, fontFamily: "Montserrat",
+                    fontSize: 18),
               ),
             ],
           ),
           actions: [
             Image.asset(
               'assets/images/lojologo.png',
-              width: 150,
+              width: 100,
               height: 50,
             ),
-            SizedBox(
-              width: 10,
-            )
+
           ],
-          backgroundColor: Colors.white,
+          backgroundColor:Color(0xFF00ADEE),
         ),
         body: isLoading
             ? ListView.builder(

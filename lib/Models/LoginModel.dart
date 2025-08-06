@@ -82,3 +82,32 @@ class Table1Model {
     );
   }
 }
+
+class CurrencyModel {
+  final String id;
+  final String currencyCode;
+  final String exchangeRate;
+
+  CurrencyModel({
+    required this.id,
+    required this.currencyCode,
+    required this.exchangeRate,
+  });
+
+  factory CurrencyModel.fromJson(Map<String, dynamic> json) {
+    return CurrencyModel(
+      id: json['id'].toString(),
+      currencyCode: json['CurrencyCode'].toString(),
+      exchangeRate: json['ExchangeRate'].toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'CurrencyCode': currencyCode,
+      'ExchangeRate': exchangeRate,
+    };
+  }
+}
+

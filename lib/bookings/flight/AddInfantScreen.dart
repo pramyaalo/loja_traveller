@@ -969,7 +969,7 @@ class _OneWayBookingState extends State<AddInfantScreen> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/logo.png',
             width: 150,
             height: 50,
           ),

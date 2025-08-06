@@ -4560,8 +4560,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                                               selecteddDate
                                                                   .toString(),
                                                               userId: userID,
-                                                              currency: Currency,
-                                                              classtype:selectedClassId),
+                                                              currency: Currency),
                                                     ));
                                               } else if (tTripType == "2") {
                                                 print(
@@ -4604,22 +4603,21 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                                   children:
                                                   childrenCount.toString(),
                                                   infants: infantsCount.toString(),
-                                                  origin1: FinalOutput,
-                                                  destination1: FinalOutPut1,
-                                                  origin2: FinalOutputMultiSecond,
+                                                  orgin: FinalOutput,
+                                                  destination: FinalOutPut1,
+                                                  orgin2: FinalOutputMultiSecond,
                                                   destination2:
                                                   FinalOutput1MultiSecond,
-                                                  origin3: FinalOutputMultiThird,
+                                                  orgin3: FinalOutputMultiThird,
                                                   destination3:
                                                   FinalOutput1MultiThird,
-                                                  origin4: FinalOutputMultiFourth,
+                                                  orgin4: FinalOutputMultiFourth,
                                                   destination4:
                                                   FinalOutput1MultiFourth,
                                                   departdate2: selecteddDate2,
                                                   departDate1: selecteddDate1,
                                                   departDate3: selecteddDate3,
                                                   departdate4: selecteddDate4,
-                                                  ClassType: '',
                                                 ));
                                               }
                                             },
@@ -4630,7 +4628,7 @@ class _FlightsScreenState extends State<FlightsScreen> {
                                                   fontWeight: FontWeight.bold),
                                             ),
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor:  Color(0xFF00ADEE),
+                                              backgroundColor:  Color(0xFF152238),
 
                                               // Background color of the button
                                               shape: RoundedRectangleBorder(

@@ -226,7 +226,7 @@ class _HotelDescriptionState extends State<HolidayDescription> {
               IconButton(
                 icon: Icon(
                   Icons.arrow_back,
-                  color: Colors.black,
+                  color: Colors.white,
                   size: 27,
                 ),
                 onPressed: () {
@@ -236,25 +236,22 @@ class _HotelDescriptionState extends State<HolidayDescription> {
 
               SizedBox(width: 1), // Set the desired width
               Text(
-                "Holiday",
+                "Holiday Description",
                 style: TextStyle(
-                    color: Colors.black,
-                    fontFamily: "Montserrat",
-                    fontSize: 19),
+                    color: Colors.white, fontFamily: "Montserrat",
+                    fontSize: 18),
               ),
             ],
           ),
           actions: [
             Image.asset(
               'assets/images/lojologo.png',
-              width: 150,
+              width: 100,
               height: 50,
             ),
-            SizedBox(
-              width: 10,
-            )
+
           ],
-          backgroundColor: Colors.white,
+          backgroundColor:Color(0xFF00ADEE),
         ),
         body:isDetailsLoading // Show loading indicator if data is loading
             ? Center(child:SingleChildScrollView(
@@ -636,41 +633,14 @@ class _HotelDescriptionState extends State<HolidayDescription> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                width: MediaQuery.of(context).size.width - 150,
+                              Expanded(             // changed here from Container(...)
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text(
-                                      RoomResult[index]['modalities_name'],
-                                      style: TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.normal),
-                                    ),
-                                    SizedBox(
-                                      height: 10,
-                                    ),
-                                    Text(
-                                      RoomResult[index]['durationvalue'] +
-                                          RoomResult[index]['durationmetric'],
-                                      style: TextStyle(
-                                          color: Colors.green,
-                                          fontWeight: FontWeight.normal),
-                                    ),
-                                    Text(
-                                      "Cancellation Amount From" +
-                                          " " +
-                                          RoomResult[index]
-                                              ['cancelpolicyDate'] +
-                                          " " +
-                                          "is" +
-                                          " " +
-                                          RoomResult[index]
-                                              ['cancelpolicypAmount'],
-                                      style: TextStyle(
-                                          color: Colors.black,
-                                          fontWeight: FontWeight.normal),
-                                    ),
+                                    Text(RoomResult[index]['modalities_name'], style: TextStyle(fontSize: 15)),
+                                    SizedBox(height: 10),
+                                    Text('${RoomResult[index]['durationvalue']} ${RoomResult[index]['durationmetric']}', style: TextStyle(color: Colors.green)),
+                                    Text('Cancellation Amount From ${RoomResult[index]['cancelpolicyDate']} is ${RoomResult[index]['cancelpolicypAmount']}', style: TextStyle(color: Colors.black)),
                                   ],
                                 ),
                               ),
@@ -678,62 +648,40 @@ class _HotelDescriptionState extends State<HolidayDescription> {
                                 children: [
                                   Text(
                                     RoomResult[index]['modalities_rate'],
-                                    style: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 20,
-                                        color: Colors.green),
+                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: Colors.green),
                                   ),
-                                  SizedBox(
-                                    height: 10,
-                                  ),
+                                  SizedBox(height: 10),
                                   GestureDetector(
                                     onTap: () {
                                       _deleteAllRecordsAndGoBack();
                                       _deleteAllRecordsChildren();
                                       navigate(HolidayReviewBooking(
-                                          holidayName: hotelResult[0]
-                                              ['tourname'],
-                                          touraddress: hotelResult[0]
-                                                  ['destinationname'] +
-                                              "," +
-                                              hotelResult[0]['countryname'],
-                                          CheckinDate:
-                                              widget.Checkindate.toString()
-                                                  .substring(0, 10),
-                                          RoomCount: widget.RoomCount,
-                                          adultCount: widget.adultCount,
-                                          Tourcode: widget.Tourcode,
-                                          featuresInclusion: featuresInclusion,
-                                          featuresExclusion: featuresExclusion,
-                                          price: RoomResult[index]
-                                              ['modalities_rate'],
-                                          modalities_rateKey: RoomResult[index]
-                                              ['modalities_rateKey'],
-                                          ModalitiesCode: RoomResult[index]
-                                              ['modalities_code'],
-                                          childrenCount: widget.childrenCount,
-                                          imageurl: widget.imageUrl));
-                                      print('Container tapped!');
+                                        holidayName: hotelResult[0]['tourname'],
+                                        touraddress: hotelResult[0]['destinationname'] + "," + hotelResult[0]['countryname'],
+                                        CheckinDate: widget.Checkindate.toString().substring(0, 10),
+                                        RoomCount: widget.RoomCount,
+                                        adultCount: widget.adultCount,
+                                        Tourcode: widget.Tourcode,
+                                        featuresInclusion: featuresInclusion,
+                                        featuresExclusion: featuresExclusion,
+                                        price: RoomResult[index]['modalities_rate'],
+                                        modalities_rateKey: RoomResult[index]['modalities_rateKey'],
+                                        ModalitiesCode: RoomResult[index]['modalities_code'],
+                                        childrenCount: widget.childrenCount,
+                                        imageurl: widget.imageUrl,
+                                      ));
                                     },
                                     child: Container(
-                                      decoration: BoxDecoration(
-                                          color: Color(0xff3093c7),
-                                          borderRadius:
-                                              BorderRadius.circular(10)),
-                                      padding: EdgeInsets.symmetric(
-                                          vertical: 10, horizontal: 20),
-                                      child: Center(
-                                        child: Text(
-                                          'Book Now',
-                                          style: TextStyle(color: Colors.white),
-                                        ),
-                                      ),
+                                      decoration: BoxDecoration(color: Color(0xff3093c7), borderRadius: BorderRadius.circular(10)),
+                                      padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+                                      child: Center(child: Text('Book Now', style: TextStyle(color: Colors.white))),
                                     ),
-                                  )
+                                  ),
                                 ],
-                              )
+                              ),
                             ],
-                          ),
+                          )
+
                         );
                       }),
                 ],
@@ -771,7 +719,7 @@ class _HotelDescriptionState extends State<HolidayDescription> {
           ),
           actions: [
             Image.asset(
-              'assets/images/lojologo.png',
+              'assets/images/logo.png',
               width: 150,
               height: 50,
             ),

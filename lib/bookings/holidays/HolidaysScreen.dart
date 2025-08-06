@@ -118,11 +118,11 @@ class _HotelsScreenState extends State<Holidays> {
       lastDate: DateTime(2101), builder: (BuildContext context, Widget? child) {
       return Theme(data: ThemeData.light().copyWith(
 
-        colorScheme: const ColorScheme.light(primary: Color(0xFF152238)),
+        colorScheme: const ColorScheme.light(primary: Color(0xFF00ADEE)),
         datePickerTheme: const DatePickerThemeData(
           backgroundColor: Colors.white,
-          dividerColor: Color(0xFF152238),
-          headerBackgroundColor: Color(0xFF152238),
+          dividerColor: Color(0xFF00ADEE),
+          headerBackgroundColor: Color(0xFF00ADEE),
           headerForegroundColor: Colors.white, // Custom primary color
         ),), child: child!,
 
@@ -154,7 +154,7 @@ class _HotelsScreenState extends State<Holidays> {
             IconButton(
               icon: Icon(
                 Icons.arrow_back,
-                color: Colors.black,
+                color: Colors.white,
                 size: 27,
               ),
               onPressed: () {
@@ -166,23 +166,20 @@ class _HotelsScreenState extends State<Holidays> {
             Text(
               "Holiday Booking",
               style: TextStyle(
-                  color: Colors.black,
-                  fontFamily: "Montserrat",
-                  fontSize: 19),
+                  color: Colors.white, fontFamily: "Montserrat",
+                  fontSize: 18),
             ),
           ],
         ),
         actions: [
           Image.asset(
             'assets/images/lojologo.png',
-            width: 150,
+            width: 100,
             height: 50,
           ),
-          SizedBox(
-            width: 10,
-          )
+
         ],
-        backgroundColor: Colors.white,
+        backgroundColor:Color(0xFF00ADEE),
       ),
       body: Container(
         child: Column(
@@ -197,7 +194,7 @@ class _HotelsScreenState extends State<Holidays> {
                         Container(
                           width: double.infinity,
                           height: 150,
-                          color: Color(0xFF152238),
+                          color: Color(0xFF00ADEE),
                         ),
                         Container(
                           margin: const EdgeInsets.fromLTRB(20, 30, 20, 20),
@@ -677,7 +674,7 @@ class _HotelsScreenState extends State<Holidays> {
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor:
-                                                    Color(0xFF152238),
+                                                    Color(0xFF00ADEE),
 
                                                 // Background color of the button
                                                 shape: RoundedRectangleBorder(

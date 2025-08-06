@@ -876,7 +876,7 @@ class _OneWayBookingState extends State<FlightBookNow> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/logo.png',
             width: 150,
             height: 50,
           ),

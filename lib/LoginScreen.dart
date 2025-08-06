@@ -302,10 +302,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                   json.decode(jsonResponse);
                                   List<dynamic> list = map["Table"];
                                   List<dynamic> list1 = map["Table1"];
+
+                                  List<dynamic> list2 = map["Table2"];
                                   Table1Model table1Data =
                                   Table1Model.fromJson(list1[0]);
                                   String currency = table1Data.symbol;
-                                  print('decodedJson: ${currency}');
+                                  CurrencyModel table2Data = CurrencyModel.fromJson((list2[0]));
+                                  String Currency = table2Data.currencyCode;
+                                  print('decodedJson: ${Currency}');
                                   print('decodedJson: ${list1}');
                                   LoginModel fm = LoginModel.fromJson(list[0]);
                                   print('decodedJson[0]: ${list[0]}');
@@ -321,7 +325,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   Prefs.saveStringValue(
                                       Prefs.PREFS_USER_NAME, fm.username);
                                   UserName = fm.username;
-
+Prefs.saveStringValue((Prefs.PREFS_CURRENCY), table2Data.currencyCode);
+                                  print('USERID' + currency);
                                   Prefs.saveStringValue(
                                       Prefs.PREFS_NAME, fm.name);
                                   Prefs.saveStringValue(

@@ -17,32 +17,34 @@ import 'multicity_booking.dart';
 class MultiCityFlightsList extends StatefulWidget {
   final add,
       adult,
-      origin1,
-      destination1,
-      origin2,
+      orgin,
+      destination,
+      orgin2,
       destination2,
-      origin3,
+      orgin3,
       destination3,
-      origin4,
+      orgin4,
       destination4,
       departDate1,
       departdate2,
       departDate3,
       departdate4,
       children,
-      infants,
-      ClassType;
+      infants;
 
-  MultiCityFlightsList({
-    required this.add,
+    MultiCityFlightsList({
+
+
+
+    required this. add,
     required this.adult,
-    required this.origin1,
-    required this.destination1,
-    required this.origin2,
+    required this.orgin,
+    required this.destination,
+    required this.orgin2,
     required this.destination2,
-    required this.origin3,
+    required this.orgin3,
     required this.destination3,
-    required this.origin4,
+    required this.orgin4,
     required this.destination4,
     required this.departDate1,
     required this.departdate2,
@@ -50,7 +52,6 @@ class MultiCityFlightsList extends StatefulWidget {
     required this.departdate4,
     required this.children,
     required this.infants,
-    required this.ClassType,
   });
 
   @override
@@ -87,167 +88,47 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
     });
   }
 
-  void _applyStopCountFilter(
-      List<dynamic> results, Map<String, dynamic> filters) {
-    final bool isNonStop = filters['isNonStop'] ?? false;
+  void _applyStopCountFilter(List<dynamic> results, Map<String, dynamic> filters) {
+    if (filters['isNonStop'] == true) {
+      // If the switch is ON, filter only non-stop flights (StopCount == 0 for all StopCounts)
+      myResult = results.where((flight) {
+        // Ensure the StopCounts are not null before parsing
+        String? stopCountFirstStr = flight['StopCountFirst'];
+        String? stopCountSecondStr = flight['StopCountSecond'];
+        String? stopCountThirdStr = flight['StopCountThird'];
+        String? stopCountFourthStr = flight['StopCountFourth'];
 
-    List<Map<String, dynamic>> filtered = [];
+        // Use 0 as a fallback if parsing fails or the values are null
+        int stopCountFirst = stopCountFirstStr != null
+            ? int.tryParse(stopCountFirstStr) ?? 0
+            : 0;
+        int stopCountSecond = stopCountSecondStr != null
+            ? int.tryParse(stopCountSecondStr) ?? 0
+            : 0;
+        int stopCountThird = stopCountThirdStr != null
+            ? int.tryParse(stopCountThirdStr) ?? 0
+            : 0;
+        int stopCountFourth = stopCountFourthStr != null
+            ? int.tryParse(stopCountFourthStr) ?? 0
+            : 0;
 
-    for (var flight in results) {
-      // Parse all stop counts safely
-      int stopCountFirst =
-          int.tryParse(flight['StopCountFirst']?.toString() ?? '0') ?? 0;
-      int stopCountSecond =
-          int.tryParse(flight['StopCountSecond']?.toString() ?? '0') ?? 0;
-      int stopCountThird =
-          int.tryParse(flight['StopCountThird']?.toString() ?? '0') ?? 0;
-      int stopCountFourth =
-          int.tryParse(flight['StopCountFourth']?.toString() ?? '0') ?? 0;
-
-      // Check all RowTypes
-      String rowTypeFirst = flight['RowTypeFirst'] ?? '';
-      String rowTypeSecond = flight['RowTypeSecond'] ?? '';
-      String rowTypeThird = flight['RowTypeThird'] ?? '';
-      String rowTypeFourth = flight['RowTypeFourth'] ?? '';
-      String rowType = flight['RowType'] ?? '';
-
-      bool isMainRow = rowType == 'MainRow' ||
-          rowTypeFirst == 'MainRow' ||
-          rowTypeSecond == 'MainRow' ||
-          rowTypeThird == 'MainRow' ||
-          rowTypeFourth == 'MainRow';
-
-      if (isNonStop) {
-        // Filter: only flights with all StopCounts == 0 and must be MainRow
-        if (stopCountFirst == 0 &&
+        // Return true if all stop counts are 0 (non-stop)
+        return stopCountFirst == 0 &&
             stopCountSecond == 0 &&
             stopCountThird == 0 &&
-            stopCountFourth == 0 &&
-            isMainRow) {
-          filtered.add(flight);
-        }
-      } else {
-        // Filter: all flights but only MainRow
-        if (isMainRow) {
-          filtered.add(flight);
-        }
-      }
-    }
-
-    print('🔍 Filtered Flights (isNonStop: $isNonStop): ${filtered.length}');
-    for (int i = 0; i < filtered.length; i++) {
-      print('▶ Flight ${filtered[i]['FlightNumber']} - '
-          'Stops: [${filtered[i]['StopCountFirst']}, '
-          '${filtered[i]['StopCountSecond']}, '
-          '${filtered[i]['StopCountThird']}, '
-          '${filtered[i]['StopCountFourth']}]');
-    }
-
-    setState(() {
-      myResult = filtered;
-    });
-
-    // Optional: apply further filters if needed
-    _applyFiltersToResult(myResult, filters);
-  }
-
-  void printFullString(String text) {
-    const int chunkSize = 800;
-    for (int i = 0; i < text.length; i += chunkSize) {
-      int endIndex = i + chunkSize;
-      if (endIndex > text.length) endIndex = text.length;
-      debugPrint(
-          text.substring(i, endIndex)); // Automatically handles long logs
-    }
-  }
-
-  Future<String?> fetchAndStoreToken() async {
-    final url = Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx');
-
-    final envelope = '''<?xml version="1.0" encoding="utf-8"?>
-    <soap:Envelope xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xmlns:xsd="http://www.w3.org/2001/XMLSchema"
-                   xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-      <soap:Body>
-        <TravelPort_GetToken xmlns="http://tempuri.org/" />
-      </soap:Body>
-    </soap:Envelope>''';
-
-    try {
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'text/xml; charset=utf-8',
-          'SOAPAction': 'http://tempuri.org/TravelPort_GetToken',
-        },
-        body: envelope,
-      );
-
-      print('🔃 Status Code: ${response.statusCode}');
-      print('📥 Raw Response: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final rawXml = response.body;
-
-        // ✅ Corrected: Extract token from <TravelPort_GetTokenResult>
-        final token = RegExp(
-            r'<TravelPort_GetTokenResult>(.*?)</TravelPort_GetTokenResult>',
-            dotAll: true)
-            .firstMatch(rawXml)
-            ?.group(1);
-
-        if (token != null && token.isNotEmpty) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('TPToken', token);
-          await prefs.setString(
-              'TokenSavedTime', DateTime.now().toIso8601String());
-
-          printFullString('✅ Token saved: $token');
-          return token;
-        } else {
-          print('⚠️ Token not found in XML');
-        }
-      } else {
-        print('❌ HTTP Error: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Exception occurred: $e');
-    }
-
-    return null;
-  }
-
-  Future<String?> getValidToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('TPToken');
-    final savedTime = prefs.getString('TokenSavedTime');
-
-    if (token != null && savedTime != null) {
-      final savedDateTime = DateTime.tryParse(savedTime);
-      if (savedDateTime != null) {
-        final now = DateTime.now();
-        final diff = now.difference(savedDateTime).inHours;
-
-        if (diff < 24) {
-          print('✅ Existing token is still valid (${24 - diff} hours left)');
-          return token;
-        } else {
-          print('⌛ Token expired after $diff hours. Fetching new token...');
-        }
-      } else {
-        print('⚠️ Invalid saved token time. Fetching new token...');
-      }
+            stopCountFourth == 0;
+      }).toList();
     } else {
-      print('ℹ️ No token found. Fetching new token...');
+      // If the switch is OFF, show all flights (no filtering)
+      myResult = fullResultList; // Reset resultList to show all flights
     }
 
-    // Delete old token data
-    await prefs.remove('TPToken');
-    await prefs.remove('TokenSavedTime');
-
-    // Fetch and save new token
-    return await fetchAndStoreToken();
+    // Now update the UI
+    setState(() {
+      myResult = myResult; // Refresh the list in the UI
+    });
   }
+
 
   void _applyDepartureTimeFilter(
       List<dynamic> results, Map<String, dynamic> filters) {
@@ -269,7 +150,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
 
       // Check if the flight matches any of the selected departure time filters
       bool matchesDeparture = (filters['isEarlyDeparture'] == true &&
-          departureDate.hour < 6) ||
+              departureDate.hour < 6) ||
           (filters['isMorningDeparture'] == true &&
               departureDate.hour >= 6 &&
               departureDate.hour < 12) ||
@@ -280,7 +161,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
 
       // Check if the flight matches any of the selected arrival time filters
       bool matchesArrival = (filters['ArrivalisEarlyDeparture'] == true &&
-          arrivalDate.hour < 6) ||
+              arrivalDate.hour < 6) ||
           (filters['ArrivalisMorningDeparture'] == true &&
               arrivalDate.hour >= 6 &&
               arrivalDate.hour < 12) ||
@@ -292,9 +173,9 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
 
       // Case 1: Both departure and arrival filters are selected (AND condition)
       if ((filters['isEarlyDeparture'] == true ||
-          filters['isMorningDeparture'] == true ||
-          filters['isNoonDeparture'] == true ||
-          filters['isEveningDeparture'] == true) &&
+              filters['isMorningDeparture'] == true ||
+              filters['isNoonDeparture'] == true ||
+              filters['isEveningDeparture'] == true) &&
           (filters['ArrivalisEarlyDeparture'] == true ||
               filters['ArrivalisMorningDeparture'] == true ||
               filters['ArrivalisNoonDeparture'] == true ||
@@ -340,23 +221,13 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
         'isNonRefundable': isNonRefundable ? 'Non-Refundable' : '',
         // Add other filters as necessary
       };
-      _initializeSearch();
+      sendMultiWayFlightSearchRequest(filters);
     });
-  }
-
-  void _initializeSearch() async {
-    String? token = await fetchAndStoreToken(); // 🔐 Get the token
-
-    if (token != null) {
-      Map<String, dynamic> filters = {}; // or pass actual filters
-      sendMultiWayFlightSearchRequest(filters); // ✅ Now call API
-    } else {
-      print("Failed to fetch token");
-    }
   }
 
   String? selectedSortOption = "Low to High";
   int selectedCount = 0;
+  Map<String, bool> airlineCheckboxes = {};
   bool isNonStopSelected = false;
   bool DepartisEarlySelected = false;
   bool DepartisMorningSelected = false;
@@ -368,7 +239,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
   bool ArrivalisNoonSelected = false;
   bool ArrivalisEveningSelected = false;
 
-  List<dynamic> fullmyResult = [];
+  List<dynamic> fullResultList = [];
   List<dynamic> filteredResults = [];
   bool isLoading = false;
   bool isBookingLoading = false;
@@ -379,7 +250,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
   bool isOneStop = false;
   bool isTwoPlusStops = false;
   bool isAirIndia = false;
-  bool isMorningDeparture = false;
+   bool isMorningDeparture = false;
   bool isNoonDeparture = false;
   bool isAirIndiaExpress = false;
   bool isBimanBangladesh = false;
@@ -397,89 +268,76 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
   bool isSriLankanAirlines = false;
   bool isTurkishAirlines = false;
   bool isVistara = false;
-  String? tpToken;
 
   late ScrollController _scrollController;
   bool _isBottomBarVisible = true;
   var myResult = [];
 
-  String formatDateOrEmpty(DateTime? date) {
-    return date != null ? date.toString().split(' ')[0] : '';
-  }
-
-  String convertDuration(String duration) {
-    // Example input: PT1H25M
-    final regex = RegExp(r'PT(\d+H)?(\d+M)?');
-    final match = regex.firstMatch(duration);
-
-    if (match != null) {
-      final hours = match.group(1)?.replaceAll('H', '') ?? '0';
-      final minutes = match.group(2)?.replaceAll('M', '') ?? '0';
-
-      String result = '';
-      if (hours != '0') result += '${int.parse(hours)}h ';
-      if (minutes != '0') result += '${int.parse(minutes)}m';
-      return result.trim();
-    }
-
-    return duration; // Fallback
-  }
-  Map<String, bool> airlineCheckboxes = {};
   Future<void> sendMultiWayFlightSearchRequest(
       Map<String, dynamic> filters) async {
-    String fin_date = widget.departDate1;
-    String fin_date1 = widget.departdate2;
-    String fin_date2 = widget.departDate3; // '' if not selected
-    String fin_date3 = widget.departdate4; // '' if not selected
-
-    tpToken = await getValidToken(); // Call token
-    if (tpToken == null) {
-      print('❌ Failed to retrieve TPToken');
-      return;
-    }
-
-    // 📦 Prepare request body with all fields, including optional ones as ''
+    String fin_date =
+        widget.departDate1.toString().split(' ')[0].replaceAll('-', '-');
+    String fin_date1 =
+        widget.departdate2.toString().split(' ')[0].replaceAll('-', '-');
+    String fin_date2 =
+        widget.departDate3.toString().split(' ')[0].replaceAll('-', '-');
+    String fin_date3 =
+        widget.departdate4.toString().split(' ')[0].replaceAll('-', '-');
     var requestBody = {
-      'OriginFirst': widget.origin1 ?? '',
-      'DestinationFirst': widget.destination1 ?? '',
-      'DepartDateFirst': fin_date,
-      'OriginSecond': widget.origin2 ?? '',
+      'OriginFirst': widget.orgin ?? '',
+      'DestinationFirst': widget.destination ?? '',
+      'OriginSecond': widget.orgin2 ?? '',
       'DestinationSecond': widget.destination2 ?? '',
-      'DepartDateSecond': fin_date1,
-
-      // ✅ Always send third and fourth segments — even if blank
-      'OriginThird': widget.origin3 ?? '',
+      'DepartDateFirst': fin_date ?? '',
+      'DepartDateSecond': fin_date1 ?? '',
+      'OriginThird': widget.orgin3 ?? '',
       'DestinationThird': widget.destination3 ?? '',
-      'DepartDateThird': fin_date2,
-      'OriginFourth': widget.origin4 ?? '',
+      'DepartDateThird': fin_date2 ?? '',
+      'OriginFourth': widget.orgin4 ?? '',
       'DestinationFourth': widget.destination4 ?? '',
-      'DepartDateFourth': fin_date3,
-
-      'AdultCount': widget.adult?.toString() ?? '1',
-      'ChildrenCount': widget.children?.toString() ?? '0',
-      'InfantCount': widget.infants?.toString() ?? '0',
-      'CabinClass': widget.ClassType?.toString() ?? '1',
-      'TPToken': tpToken,
+      'DepartDateFourth': fin_date3 ?? '',
+      'AdultCount': widget.adult ?? '',
+      'ChildrenCount': widget.children ?? '',
+      'InfantCount': widget.infants ?? '',
+      'Class': '3',
+      'DefaultCurrency': Currency ?? '',
+      'UserID': userID ?? '',
     };
-
-    print('📤 Sending Request: $requestBody');
+    print('OriginFirst: ${widget.orgin}');
+    print('DestinationFirst: ${widget.destination}');
+    print('OriginSecond: ${widget.orgin2}');
+    print('DestinationSecond: ${widget.destination2}');
+    print('DepartDateFirst: $fin_date');
+    print('DepartDateSecond: $fin_date1');
+    print('OriginThird: ${widget.orgin3}');
+    print('DestinationThird: ${widget.destination3}');
+    print('DepartDateThird: $fin_date2');
+    print('OriginFourth: ${widget.orgin4}');
+    print('DestinationFourth: ${widget.destination4}');
+    print('DepartDateFourth: $fin_date3');
+    print('AdultCount: ${widget.adult}');
+    print('ChildrenCount: ${widget.children}');
+    print('InfantCount: ${widget.infants}');
+    print('Class: 3');
+    print('DefaultCurrency: $Currency');
+    print('UserID: $userID');
 
     final url = Uri.parse(
-        'https://boqoltravel.com/app/b2badminapi.asmx/Multiway_GetFlightDetails');
+        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaSearchFlightMultiWay');
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
 
     try {
       setState(() {
         isLoading = true;
       });
-
-      final response =
-      await http.post(url, headers: headers, body: requestBody);
-
+      var response = await http.post(
+        url,
+        headers: headers,
+        body: requestBody,
+      );
       setState(() {
         isLoading = false;
       });
-
       if (response.statusCode == 200) {
         print('✅ Response: ${response.body}');
 
@@ -487,10 +345,10 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
         json.decode(ResponseHandler.parseData(response.body));
 
         // Save full data (MainRow + SubRow)
-        fullmyResult = parsedData;
+        fullResultList = parsedData;
 
         // Filter only MainRow items for UI display
-        myResult = fullmyResult
+        myResult = fullResultList
             .where((item) =>
         item['RowTypeFirst'] == 'MainRow' ||
             item['RowTypeSecond'] == 'MainRow' ||
@@ -506,14 +364,14 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
 
         // Optional: log sub-row count
         final subRowCount =
-            fullmyResult.where((item) => item['RowType'] == 'SubRow').length;
+            fullResultList.where((item) => item['RowType'] == 'SubRow').length;
         print('ℹ️ Total SubRow items: $subRowCount');
 
         Set<String> carrierCodes = {};
 
-        for (var item in fullmyResult) {
-          if (item['CarrierCodeFirst'] != null) {
-            carrierCodes.add(item['CarrierCodeFirst']);
+        for (var item in fullResultList) {
+          if (item['CarrierNameFirst'] != null) {
+            carrierCodes.add(item['CarrierNameFirst']);
           }
 
         }
@@ -527,14 +385,12 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
         print('✅ Airline Checkbox Map (Round Trip): $airlineCheckboxes');
         // Apply filters on MainRow list
         _applyFiltersToResult(myResult, filters);
-      } else {
+      }
+      else {
         print('❌ Error ${response.statusCode} : ${response.body}');
       }
     } catch (error) {
-      print('❌ Error sending request: $error');
-      setState(() {
-        isLoading = false;
-      });
+      print('Error sending request: $error');
     }
   }
 
@@ -542,128 +398,125 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
     Navigator.push(
         context, MaterialPageRoute(builder: (BuildContext context) => screen));
   }
-
   void _applyFiltersToResult(List<dynamic> flights, Map<String, dynamic> filters) {
     List<dynamic> filteredResults = [];
 
-    // ✅ Extract airline selections
+    // Selected Airlines (checkbox map from filters)
     Map<String, bool> airlineCheckboxes =
     Map<String, bool>.from(filters['airlineCheckboxes'] ?? {});
     List<String> selectedAirlines = airlineCheckboxes.entries
-        .where((entry) => entry.value)
-        .map((entry) => entry.key)
+        .where((e) => e.value)
+        .map((e) => e.key)
         .toList();
-
-    print('✅ Selected Airlines for Filtering: $selectedAirlines');
-
-    // ✅ Check if any filters are active
-    bool airlineActive = selectedAirlines.isNotEmpty;
-    bool refundableActive = filters['isRefundable'] == 'Refundable' ||
-        filters['isNonRefundable'] == 'Non-Refundable';
-    bool stopActive = filters['isNonStop'] == 'Yes' ||
-        filters['isOneStop'] == 'Yes' ||
-        filters['isTwoPlusStops'] == 'Yes';
-    bool departureActive = filters['isEarlyDeparture'] == 'Yes' ||
-        filters['isMorningDeparture'] == 'Yes' ||
-        filters['isNoonDeparture'] == 'Yes' ||
-        filters['isEveningDeparture'] == 'Yes';
-    bool arrivalActive = filters['ArrivalIsEarlyDeparture'] == 'Yes' ||
-        filters['ArrivalIsMorningDeparture'] == 'Yes' ||
-        filters['ArrivalIsNoonDeparture'] == 'Yes' ||
-        filters['ArrivalIsEveningDeparture'] == 'Yes';
-
-    bool anyFilterActive =
-        airlineActive || refundableActive || stopActive || departureActive || arrivalActive;
-
-    if (!anyFilterActive) {
-      setState(() {
-        myResult = flights;
-        print('✅ No filters selected. Showing all flights.');
-      });
-      return;
-    }
 
     for (var flight in flights) {
       bool matchesAirline = false;
-      bool matchesRefundable = false;
-      bool matchesStops = false;
-      bool matchesDeparture = false;
-      bool matchesArrival = false;
+      bool stopMatches = false;
+      bool refundableMatches = false;
+      bool departMatches = false;
+      bool arriveMatches = false;
 
-      // ✅ Airline filter (CarrierNameFirst)
-      String airlineName = (flight['CarrierNameFirst'] ?? '').toString();
-      if (selectedAirlines.isEmpty || selectedAirlines.contains(airlineName)) {
-        matchesAirline = true;
+      /*--------- Airline Match ----------*/
+      String carrierName = flight['CarrierNameFirst']?.toString() ?? '';
+      if (selectedAirlines.isEmpty) {
+        matchesAirline = true; // no filter → accept
+      } else {
+        matchesAirline = selectedAirlines.any((s) =>
+            carrierName.replaceAll(RegExp(r'[^A-Za-z]'), '').toLowerCase().contains(
+                s.replaceAll(RegExp(r'[^A-Za-z]'), '').toLowerCase()));
       }
 
-      // ✅ Refundable filter
-      String refundableStatus = (flight['Refundable']?.toLowerCase() ?? '');
-      bool isFlightRefundable = refundableStatus == 'refundable';
-      bool isFlightNonRefundable = refundableStatus == 'non-refundable';
-      matchesRefundable =
-          (filters['isRefundable'] == 'Refundable' && isFlightRefundable) ||
-              (filters['isNonRefundable'] == 'Non-Refundable' && isFlightNonRefundable);
-
-      // ✅ Stop count filter
-      // ✅ Stop count filter (Only StopCountFirst considered)
-      int stop1 = int.tryParse(flight['StopCountFirst'] ?? '0') ?? 0;
-
-      if (filters['isNonStop'] == 'Yes') {
-        matchesStops = stop1 == 0;
-      } else if (filters['isOneStop'] == 'Yes') {
-        matchesStops = stop1 == 1;
-      } else if (filters['isTwoPlusStops'] == 'Yes') {
-        matchesStops = stop1 >= 2;
+      /*--------- Refundable Match ----------*/
+      String ref = (flight['Refundable'] ?? '').toString().toLowerCase();
+      bool isFlightRef = ref == 'refundable';
+      bool isFlightNonRef = ref == 'non-refundable';
+      if (!filters['isRefundable'] && !filters['isNonRefundable']) {
+        refundableMatches = true;
+      } else {
+        refundableMatches =
+            (filters['isRefundable'] == 'Yes' && isFlightRef) ||
+                (filters['isNonRefundable'] == 'Yes' && isFlightNonRef);
       }
 
+      /*--------- Stops Match ----------*/
+      int stop = int.tryParse(flight['StopCountFirst'] ?? '0') ?? 0;
+      if (!filters['isNonStop'] &&
+          !filters['isOneStop'] &&
+          !filters['isTwoPlusStops']) {
+        stopMatches = true;
+      } else {
+        stopMatches = (filters['isNonStop'] == 'Yes' && stop == 0) ||
+            (filters['isOneStop'] == 'Yes' && stop == 1) ||
+            (filters['isTwoPlusStops'] == 'Yes' && stop >= 2);
+      }
 
-      // ✅ Departure filter
-      DateTime departureDate =
-          DateTime.tryParse(flight['DepartureDateFirst'] ?? '') ?? DateTime.now();
-      matchesDeparture = (filters['isEarlyDeparture'] == 'Yes' &&
-          departureDate.hour < 6) ||
-          (filters['isMorningDeparture'] == 'Yes' &&
-              departureDate.hour >= 6 &&
-              departureDate.hour < 12) ||
-          (filters['isNoonDeparture'] == 'Yes' &&
-              departureDate.hour >= 12 &&
-              departureDate.hour < 18) ||
-          (filters['isEveningDeparture'] == 'Yes' &&
-              departureDate.hour >= 18);
+      /*--------- Departure Match ----------*/
+      DateTime d = DateTime.tryParse(flight['DepartureDateFirst'] ?? '') ??
+          DateTime(1900);
+      if (!filters['isEarlyDeparture'] &&
+          !filters['isMorningDeparture'] &&
+          !filters['isNoonDeparture'] &&
+          !filters['isEveningDeparture']) {
+        departMatches = true;
+      } else {
+        departMatches =
+            (filters['isEarlyDeparture'] == 'Yes' && d.hour < 6) ||
+                (filters['isMorningDeparture'] == 'Yes' &&
+                    d.hour >= 6 &&
+                    d.hour < 12) ||
+                (filters['isNoonDeparture'] == 'Yes' &&
+                    d.hour >= 12 &&
+                    d.hour < 18) ||
+                (filters['isEveningDeparture'] == 'Yes' && d.hour >= 18);
+      }
 
-      // ✅ Arrival filter
-      DateTime arrivalDate =
-          DateTime.tryParse(flight['ArrivalDateFirst'] ?? '') ?? DateTime.now();
-      matchesArrival = (filters['ArrivalIsEarlyDeparture'] == 'Yes' &&
-          arrivalDate.hour < 6) ||
-          (filters['ArrivalIsMorningDeparture'] == 'Yes' &&
-              arrivalDate.hour >= 6 &&
-              arrivalDate.hour < 12) ||
-          (filters['ArrivalIsNoonDeparture'] == 'Yes' &&
-              arrivalDate.hour >= 12 &&
-              arrivalDate.hour < 18) ||
-          (filters['ArrivalIsEveningDeparture'] == 'Yes' &&
-              arrivalDate.hour >= 18);
+      /*--------- Arrival Match ----------*/
+      DateTime a = DateTime.tryParse(flight['ArrivalDateFirst'] ?? '') ??
+          DateTime(1900);
+      if (!filters['ArrivalIsEarlyDeparture'] &&
+          !filters['ArrivalIsMorningDeparture'] &&
+          !filters['ArrivalIsNoonDeparture'] &&
+          !filters['ArrivalIsEveningDeparture']) {
+        arriveMatches = true;
+      } else {
+        arriveMatches =
+            (filters['ArrivalIsEarlyDeparture'] == 'Yes' && a.hour < 6) ||
+                (filters['ArrivalIsMorningDeparture'] == 'Yes' &&
+                    a.hour >= 6 &&
+                    a.hour < 12) ||
+                (filters['ArrivalIsNoonDeparture'] == 'Yes' &&
+                    a.hour >= 12 &&
+                    a.hour < 18) ||
+                (filters['ArrivalIsEveningDeparture'] == 'Yes' && a.hour >= 18);
+      }
 
-      // ✅ Final Check: Dynamic AND Logic
-      if ((!airlineActive || matchesAirline) &&
-          (!refundableActive || matchesRefundable) &&
-          (!stopActive || matchesStops) &&
-          (!departureActive || matchesDeparture) &&
-          (!arrivalActive || matchesArrival)) {
+      // ✅ Add only if all match
+      if (matchesAirline &&
+          stopMatches &&
+          refundableMatches &&
+          departMatches &&
+          arriveMatches) {
         filteredResults.add(flight);
       }
     }
 
+    /*--------- Remove Duplicates ----------*/
+    final seen = <String>{};
+    filteredResults = filteredResults.where((flight) {
+      final key =
+          '${flight['CarrierNameFirst']}_${flight['DepartureDateFirst']}_${flight['ArrivalDateFirst']}';
+      if (seen.contains(key)) return false;
+      seen.add(key);
+      return true;
+    }).toList();
+
+    /*--------- Show only MainRow ----------*/
     setState(() {
-      myResult = filteredResults;
-      print('🎯 Filtered results: ${myResult.length}');
+      myResult =
+          filteredResults.where((f) => f['RowTypeFirst'] == 'MainRow').toList();
+      print('🎯 Filtered results after duplicate-remove: ${myResult.length}');
     });
   }
-
-
-
-
 
   void _applySort(List<dynamic> results, String sortOrder) {
     if (sortOrder == "Low to High") {
@@ -704,7 +557,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
             IconButton(
               icon: Icon(
                 Icons.arrow_back,
-                color: Colors.white,
+                color: Colors.black,
                 size: 27,
               ),
               onPressed: () {
@@ -716,1233 +569,1130 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
             Text(
               "Multi City Flights",
               style: TextStyle(
-                  color: Colors.white, fontFamily: "Montserrat",
-                  fontSize: 18),
+                  color: Colors.black, fontFamily: "Montserrat", fontSize: 19),
             ),
           ],
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
-            width: 100,
+            'assets/images/logo.png',
+            width: 150,
             height: 50,
           ),
-
+          SizedBox(
+            width: 10,
+          )
         ],
-        backgroundColor:Color(0xFF00ADEE),
+        backgroundColor: Colors.white,
       ),
       body: isLoading
           ? ListView.builder(
-          itemCount: 10, // Number of skeleton items
-          itemBuilder: (context, index) {
-            return Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: ListTile(
-                leading: Container(
-                  width: 64.0,
-                  height: 64.0,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
+              itemCount: 10, // Number of skeleton items
+              itemBuilder: (context, index) {
+                return Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: ListTile(
+                    leading: Container(
+                      width: 64.0,
+                      height: 64.0,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white,
+                      ),
+                    ),
+                    title: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 16.0,
+                          margin: EdgeInsets.symmetric(vertical: 4.0),
+                          color: Colors.white,
+                        ),
+                        Container(
+                          width: double.infinity,
+                          height: 12.0,
+                          margin: EdgeInsets.symmetric(vertical: 4.0),
+                          color: Colors.white,
+                        ),
+                        Container(
+                          width: double.infinity,
+                          height: 12.0,
+                          margin: EdgeInsets.symmetric(vertical: 4.0),
+                          color: Colors.white,
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                title: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: double.infinity,
-                      height: 16.0,
-                      margin: EdgeInsets.symmetric(vertical: 4.0),
-                      color: Colors.white,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 12.0,
-                      margin: EdgeInsets.symmetric(vertical: 4.0),
-                      color: Colors.white,
-                    ),
-                    Container(
-                      width: double.infinity,
-                      height: 12.0,
-                      margin: EdgeInsets.symmetric(vertical: 4.0),
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          })
+                );
+              })
           : Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                child: ListView.builder(
-                    itemCount: myResult.length,
-                    controller: _scrollController,
-                    itemBuilder: (BuildContext context, index) {
-                      print('🟢 Rendering item $index');
-
-                      final hasThirdData = [
-                        myResult[index]['DepartCityCodeThird'],
-                        myResult[index]['ArriveCityCodeThird'],
-                        myResult[index]['DepartureDateThird'],
-                      ].any((val) => val?.toString().isNotEmpty == true);
-
-                      print(
-                          '🔎 hasThirdSegment for index $index: $hasThirdData');
-
-                      return Container(
-                          margin:
-                          EdgeInsets.only(left: 8, right: 8, top: 2),
-                          padding: EdgeInsets.all(2),
-                          child: Material(
-                            color: Colors.white,
-                            elevation: 15,
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: EdgeInsets.only(
-                                  left: 5, right: 5, bottom: 5, top: 5),
-                              child: Container(
-                                width: MediaQuery.of(context).size.width,
-                                child: Column(children: [
-                                  Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      Column(
-                                        crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            myResult[index][
-                                            'CarrierCodeFirst'] !=
-                                                null
-                                                ? myResult[index][
-                                            'CarrierCodeFirst']
-                                                .toString()
-                                                : '',
-                                            style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.bold,
-                                                color: Colors.black),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Image.asset(
-                                              'assets/images/img.png'),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Column(
-                                            children: [
-                                              Text(
-                                                myResult[index][
-                                                'DepartureDateFirst'] !=
-                                                    null
-                                                    ? CommonUtils.convertToFormattedTime(
-                                                    myResult[
-                                                    index]
-                                                    [
-                                                    'DepartureDateFirst'])
-                                                    ?.toUpperCase() ??
-                                                    'Not Available'
-                                                    : 'Not Available',
-                                                // Default if DepartureDateFirst is null
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              Text(
-                                                myResult[index][
-                                                'DepartCityCodeFirst'] ??
-                                                    'Not Available',
-                                                style: TextStyle(
-                                                    color:
-                                                    Color(0xff777777),
-                                                    fontWeight:
-                                                    FontWeight.bold,
-                                                    fontSize: 13),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Column(
-                                            children: [
-                                              Text(
-                                                myResult[index][
-                                                'TravelTimeFirst'] !=
-                                                    null
-                                                    ? convertDuration(
-                                                    myResult[
-                                                    index]
-                                                    [
-                                                    'TravelTimeFirst']) ??
-                                                    'Not Available'
-                                                    : 'Not Available',
-                                                // Handle null case for TravelTimeFirst
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                              Image.asset(
-                                                (myResult[index][
-                                                'StopCountFirst'] !=
-                                                    null)
-                                                    ? (myResult[index][
-                                                'StopCountFirst'] ==
-                                                    '0'
-                                                    ? "assets/images/NonStop.png"
-                                                    : (myResult[index]
-                                                [
-                                                'StopCountFirst'] ==
-                                                    '1'
-                                                    ? "assets/images/oneStop.png"
-                                                    : "assets/images/TwoStop.png"))
-                                                    : "assets/images/NonStop.png",
-                                                // Fallback for StopCountFirst if null
-                                                width: 70,
-                                              ),
-                                              Text(
-                                                '${myResult[index]['StopCountFirst'] ?? '0'} stops',
-                                                style: TextStyle(
-                                                    fontSize: 13),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Column(
-                                            children: [
-                                              Text(
-                                                myResult[index][
-                                                'ArrivalDateFirst'] !=
-                                                    null
-                                                    ? CommonUtils.convertToFormattedTime(
-                                                    myResult[
-                                                    index]
-                                                    [
-                                                    'ArrivalDateFirst'])
-                                                    ?.toUpperCase() ??
-                                                    'Not Available'
-                                                    : 'Not Available',
-                                                // Default if ArrivalDateFirst is null
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              Text(
-                                                myResult[index][
-                                                'ArriveCityCodeFirst'] ??
-                                                    'Not Available',
-                                                style: TextStyle(
-                                                    color:
-                                                    Color(0xff777777),
-                                                    fontWeight:
-                                                    FontWeight.bold,
-                                                    fontSize: 13),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .spaceBetween,
-                                        children: [
-                                          Text(
-                                            myResult[index][
-                                            'CarrierCodeSecond'] !=
-                                                null
-                                                ? myResult[index][
-                                            'CarrierCodeSecond']
-                                                .toString()
-                                                : '',
-                                            style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.bold,
-                                                color: Colors.black),
-                                          ),
-                                          Padding(
-                                            padding:
-                                            const EdgeInsets.only(
-                                                right: 10),
-                                            child: Text(
-                                              '${myResult[index]['Currency']} ${myResult[index]['TotalPrice']}',
-                                              style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 16),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Row(
-                                        children: [
-                                          Image.asset(
-                                              'assets/images/img.png'),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Column(
-                                            children: [
-                                              Text(
-                                                CommonUtils.convertToFormattedTime(
-                                                    myResult[index]
-                                                    [
-                                                    'DepartureDateSecond'] ??
-                                                        '')
-                                                    ?.toUpperCase() ??
-                                                    'Not Available',
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              Text(
-                                                myResult[index][
-                                                'DepartCityCodeSecond'] ??
-                                                    'Not Available',
-                                                style: TextStyle(
-                                                  color:
-                                                  Color(0xff777777),
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Column(
-                                            children: [
-                                              Text(
-                                                myResult[index][
-                                                'TravelTimeSecond'] !=
-                                                    null
-                                                    ? convertDuration(
-                                                    myResult[
-                                                    index]
-                                                    [
-                                                    'TravelTimeSecond']) ??
-                                                    'Not Available'
-                                                    : 'Not Available',
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                              Image.asset(
-                                                myResult[index][
-                                                'StopCountSecond'] !=
-                                                    null
-                                                    ? (myResult[index][
-                                                'StopCountSecond'] ==
-                                                    '0'
-                                                    ? "assets/images/NonStop.png"
-                                                    : (myResult[index]
-                                                [
-                                                'StopCountSecond'] ==
-                                                    '1'
-                                                    ? "assets/images/oneStop.png"
-                                                    : "assets/images/TwoStop.png"))
-                                                    : "assets/images/NonStop.png",
-                                                // Fallback image if StopCountSecond is null
-                                                width: 60,
-                                              ),
-                                              Text(
-                                                '${myResult[index]['StopCountSecond'] ?? '0'} stops',
-                                                style: TextStyle(
-                                                    fontSize: 13),
-                                              ),
-                                            ],
-                                          ),
-                                          SizedBox(
-                                            width: 10,
-                                          ),
-                                          Column(
-                                            children: [
-                                              Text(
-                                                CommonUtils.convertToFormattedTime(
-                                                    myResult[index]
-                                                    [
-                                                    'ArrivalDateSecond'] ??
-                                                        '')
-                                                    ?.toUpperCase() ??
-                                                    'Not Available',
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              Text(
-                                                myResult[index][
-                                                'ArriveCityCodeSecond'] ??
-                                                    'Not Available',
-                                                style: TextStyle(
-                                                  color:
-                                                  Color(0xff777777),
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                      // Inside your ListView.builder or wherever you're looping with index
-                                      hasThirdData
-                                          ? Padding(
-                                        padding: const EdgeInsets
-                                            .symmetric(
-                                            vertical: 10.0),
-                                        child: Column(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: ListView.builder(
+                          itemCount: myResult.length,
+                          controller: _scrollController,
+                          itemBuilder: (BuildContext context, index) {
+                            return Container(
+                                margin:
+                                    EdgeInsets.only(left: 8, right: 8, top: 2),
+                                padding: EdgeInsets.all(2),
+                                child: Material(
+                                  color: Colors.white,
+                                  elevation: 15,
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: EdgeInsets.only(
+                                        left: 5, right: 5, bottom: 5, top: 5),
+                                    child: Container(
+                                      width: MediaQuery.of(context).size.width,
+                                      child: Column(children: [
+                                        Column(
                                           crossAxisAlignment:
-                                          CrossAxisAlignment
-                                              .start,
+                                              CrossAxisAlignment.start,
                                           children: [
-                                            Text(
-                                              myResult[index][
-                                              'CarrierCodeThird']
-                                                  ?.toString() ??
-                                                  '',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.bold,
-                                                color: Colors.black,
-                                                fontSize: 16,
-                                              ),
+                                            Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  myResult[index][
+                                                              'CarrierNameFirst'] !=
+                                                          null
+                                                      ? myResult[index][
+                                                              'CarrierNameFirst']
+                                                          .toString()
+                                                      : '',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black),
+                                                ),
+                                              ],
                                             ),
-                                            SizedBox(height: 8),
                                             Row(
-                                              mainAxisAlignment:
-                                              MainAxisAlignment
-                                                  .start,
                                               children: [
                                                 Image.asset(
                                                     'assets/images/img.png'),
-                                                SizedBox(width: 10),
+                                                SizedBox(
+                                                  width: 10,
+                                                ),
                                                 Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
                                                   children: [
                                                     Text(
-                                                      CommonUtils.convertToFormattedTime(myResult[index]['DepartureDateThird'] ??
-                                                          '')
-                                                          ?.toUpperCase() ??
-                                                          'Not Available',
-                                                      style:
-                                                      TextStyle(
+                                                      myResult[index][
+                                                                  'DepartureDateFirst'] !=
+                                                              null
+                                                          ? CommonUtils.convertToFormattedTime(
+                                                                      myResult[
+                                                                              index]
+                                                                          [
+                                                                          'DepartureDateFirst'])
+                                                                  ?.toUpperCase() ??
+                                                              'Not Available'
+                                                          : 'Not Available',
+                                                      // Default if DepartureDateFirst is null
+                                                      style: TextStyle(
                                                         fontWeight:
-                                                        FontWeight
-                                                            .bold,
-                                                        fontSize:
-                                                        14,
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
                                                       ),
                                                     ),
                                                     Text(
-                                                      myResult[index]
-                                                      [
-                                                      'DepartCityCodeThird'] ??
+                                                      myResult[index][
+                                                              'DepartCityCodeFirst'] ??
                                                           'Not Available',
-                                                      style:
-                                                      TextStyle(
-                                                        color: Color(
-                                                            0xff777777),
-                                                        fontWeight:
-                                                        FontWeight
-                                                            .bold,
-                                                        fontSize:
-                                                        13,
-                                                      ),
+                                                      style: TextStyle(
+                                                          color:
+                                                              Color(0xff777777),
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13),
                                                     ),
                                                   ],
                                                 ),
-                                                SizedBox(width: 10),
+                                                SizedBox(
+                                                  width: 10,
+                                                ),
                                                 Column(
                                                   children: [
                                                     Text(
-                                                      myResult[index]
-                                                      [
-                                                      'TravelTimeThird'] !=
-                                                          null
-                                                          ? convertDuration(myResult[index]
-                                                      [
-                                                      'TravelTimeThird']) ??
-                                                          'Not Available'
+                                                      myResult[index][
+                                                                  'TravelTimeFirst'] !=
+                                                              null
+                                                          ? CommonUtils.convertMinutesToHoursMinutes(
+                                                                  myResult[
+                                                                          index]
+                                                                      [
+                                                                      'TravelTimeFirst']) ??
+                                                              'Not Available'
                                                           : 'Not Available',
-                                                      style:
-                                                      TextStyle(
+                                                      // Handle null case for TravelTimeFirst
+                                                      style: TextStyle(
                                                         fontWeight:
-                                                        FontWeight
-                                                            .bold,
-                                                        fontSize:
-                                                        13,
+                                                            FontWeight.bold,
+                                                        fontSize: 13,
                                                       ),
                                                     ),
                                                     Image.asset(
-                                                      myResult[index]
-                                                      [
-                                                      'StopCountThird'] ==
-                                                          '0'
-                                                          ? "assets/images/NonStop.png"
-                                                          : myResult[index]['StopCountThird'] ==
-                                                          '1'
-                                                          ? "assets/images/oneStop.png"
-                                                          : "assets/images/TwoStop.png",
+                                                      (myResult[index][
+                                                                  'StopCountFirst'] !=
+                                                              null)
+                                                          ? (myResult[index][
+                                                                      'StopCountFirst'] ==
+                                                                  '0'
+                                                              ? "assets/images/NonStop.png"
+                                                              : (myResult[index]
+                                                                          [
+                                                                          'StopCountFirst'] ==
+                                                                      '1'
+                                                                  ? "assets/images/oneStop.png"
+                                                                  : "assets/images/TwoStop.png"))
+                                                          : "assets/images/NonStop.png",
+                                                      // Fallback for StopCountFirst if null
                                                       width: 70,
                                                     ),
                                                     Text(
-                                                      '${myResult[index]['StopCountThird'] ?? '0'} stops',
+                                                      '${myResult[index]['StopCountFirst'] ?? '0'} stops',
                                                       style: TextStyle(
-                                                          fontSize:
-                                                          13),
+                                                          fontSize: 13),
                                                     ),
                                                   ],
                                                 ),
-                                                SizedBox(width: 10),
+                                                SizedBox(
+                                                  width: 10,
+                                                ),
                                                 Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
                                                   children: [
                                                     Text(
-                                                      CommonUtils.convertToFormattedTime(myResult[index]['ArrivalDateThird'] ??
-                                                          '')
-                                                          ?.toUpperCase() ??
-                                                          'Not Available',
-                                                      style:
-                                                      TextStyle(
+                                                      myResult[index][
+                                                                  'ArrivalDateFirst'] !=
+                                                              null
+                                                          ? CommonUtils.convertToFormattedTime(
+                                                                      myResult[
+                                                                              index]
+                                                                          [
+                                                                          'ArrivalDateFirst'])
+                                                                  ?.toUpperCase() ??
+                                                              'Not Available'
+                                                          : 'Not Available',
+                                                      // Default if ArrivalDateFirst is null
+                                                      style: TextStyle(
                                                         fontWeight:
-                                                        FontWeight
-                                                            .bold,
-                                                        fontSize:
-                                                        14,
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
                                                       ),
                                                     ),
                                                     Text(
-                                                      myResult[index]
-                                                      [
-                                                      'ArriveCityCodeThird'] ??
+                                                      myResult[index][
+                                                              'ArriveCityCodeFirst'] ??
                                                           'Not Available',
-                                                      style:
-                                                      TextStyle(
-                                                        color: Color(
-                                                            0xff777777),
+                                                      style: TextStyle(
+                                                          color:
+                                                              Color(0xff777777),
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          fontSize: 13),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                              children: [
+                                                Text(
+                                                  myResult[index][
+                                                              'CarrierNameSecond'] !=
+                                                          null
+                                                      ? myResult[index][
+                                                              'CarrierNameSecond']
+                                                          .toString()
+                                                      : '',
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black),
+                                                ),
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 10),
+                                                  child: Text(
+                                                    '${myResult[index]['Currency']} ${myResult[index]['TotalPrice']}',
+                                                    style: TextStyle(
                                                         fontWeight:
-                                                        FontWeight
-                                                            .bold,
-                                                        fontSize:
-                                                        13,
+                                                            FontWeight.bold,
+                                                        fontSize: 16),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            Row(
+                                              children: [
+                                                Image.asset(
+                                                    'assets/images/img.png'),
+                                                SizedBox(
+                                                  width: 10,
+                                                ),
+                                                Column(
+                                                  children: [
+                                                    Text(
+                                                      CommonUtils.convertToFormattedTime(
+                                                                  myResult[index]
+                                                                          [
+                                                                          'DepartureDateSecond'] ??
+                                                                      '')
+                                                              ?.toUpperCase() ??
+                                                          'Not Available',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      myResult[index][
+                                                              'DepartCityCodeSecond'] ??
+                                                          'Not Available',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xff777777),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                  width: 10,
+                                                ),
+                                                Column(
+                                                  children: [
+                                                    Text(
+                                                      myResult[index][
+                                                                  'TravelTimeSecond'] !=
+                                                              null
+                                                          ? CommonUtils.convertMinutesToHoursMinutes(
+                                                                  myResult[
+                                                                          index]
+                                                                      [
+                                                                      'TravelTimeSecond']) ??
+                                                              'Not Available'
+                                                          : 'Not Available',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 13,
+                                                      ),
+                                                    ),
+                                                    Image.asset(
+                                                      myResult[index][
+                                                                  'StopCountSecond'] !=
+                                                              null
+                                                          ? (myResult[index][
+                                                                      'StopCountSecond'] ==
+                                                                  '0'
+                                                              ? "assets/images/NonStop.png"
+                                                              : (myResult[index]
+                                                                          [
+                                                                          'StopCountSecond'] ==
+                                                                      '1'
+                                                                  ? "assets/images/oneStop.png"
+                                                                  : "assets/images/TwoStop.png"))
+                                                          : "assets/images/NonStop.png",
+                                                      // Fallback image if StopCountSecond is null
+                                                      width: 60,
+                                                    ),
+                                                    Text(
+                                                      '${myResult[index]['StopCountSecond'] ?? '0'} stops',
+                                                      style: TextStyle(
+                                                          fontSize: 13),
+                                                    ),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                  width: 10,
+                                                ),
+                                                Column(
+                                                  children: [
+                                                    Text(
+                                                      CommonUtils.convertToFormattedTime(
+                                                                  myResult[index]
+                                                                          [
+                                                                          'ArrivalDateSecond'] ??
+                                                                      '')
+                                                              ?.toUpperCase() ??
+                                                          'Not Available',
+                                                      style: TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 14,
+                                                      ),
+                                                    ),
+                                                    Text(
+                                                      myResult[index][
+                                                              'ArriveCityCodeSecond'] ??
+                                                          'Not Available',
+                                                      style: TextStyle(
+                                                        color:
+                                                            Color(0xff777777),
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 13,
                                                       ),
                                                     ),
                                                   ],
                                                 ),
                                               ],
                                             ),
-                                          ],
-                                        ),
-                                      )
-                                          : SizedBox.shrink(),
-
-                                      if (myResult[index][
-                                      'DepartCityCodeFourth'] !=
-                                          null &&
-                                          myResult[index]
-                                          ['ArriveCityCodeFourth']
-                                              .toString()
-                                              .isNotEmpty &&
-                                          myResult[index][
-                                          'DepartureDateFourth'] !=
-                                              null)
-                                        Padding(
-                                          padding:
-                                          const EdgeInsets.symmetric(
-                                              vertical: 0),
-                                          // Add vertical padding for spacing
-                                          child: Column(
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                            children: [
-                                              // Carrier Name Section
-                                              if (myResult[index][
-                                              'CarrierCodeFourth'] !=
-                                                  null)
-                                                Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .center,
-                                                  children: [
-                                                    Image.asset(
-                                                        'assets/images/img.png'),
-                                                    Container(
-                                                      width: 65,
-                                                      padding:
-                                                      EdgeInsets.only(
-                                                          left: 5),
-                                                      child: Text(
-                                                        myResult[index][
-                                                        'CarrierCodeFourth']
-                                                            .toString(),
-                                                        style: TextStyle(
-                                                          fontWeight:
-                                                          FontWeight
-                                                              .bold,
-                                                          color: Colors
-                                                              .black,
-                                                        ),
-                                                      ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 10.0),
+                                              // Add vertical padding for spacing
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    myResult[index][
+                                                                'CarrierNameThird'] !=
+                                                            null
+                                                        ? myResult[index][
+                                                                'CarrierNameThird']
+                                                            .toString()
+                                                        : '',
+                                                    style: TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.black,
+                                                      fontSize:
+                                                          16, // Increase font size for emphasis
                                                     ),
-                                                    SizedBox(height: 9),
-                                                    // Space after carrier name
-                                                  ],
-                                                ),
-
-                                              // Departure and Arrival Dates Section
-                                              Padding(
-                                                padding:
-                                                const EdgeInsets.only(
-                                                    right: 0),
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                  CrossAxisAlignment
-                                                      .start,
-                                                  children: [
-                                                    Row(
-                                                      mainAxisAlignment:
-                                                      MainAxisAlignment
-                                                          .spaceBetween,
+                                                  ),
+                                                  SizedBox(height: 8),
+                                                  // Space between carrier name and row below
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.start,
+                                                    children: [
+                                                      Image.asset(
+                                                          'assets/images/img.png'),
+                                                      SizedBox(
+                                                        width: 10,
+                                                      ),
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils.convertToFormattedTime(
+                                                                        myResult[index]['DepartureDateThird'] ??
+                                                                            '')
+                                                                    ?.toUpperCase() ??
+                                                                'Not Available',
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            myResult[index][
+                                                                    'DepartCityCodeThird'] ??
+                                                                'Not Available',
+                                                            style: TextStyle(
+                                                              color: Color(
+                                                                  0xff777777),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 13,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      SizedBox(
+                                                        width: 10,
+                                                      ),
+                                                      // Travel Time and Stops Column
+                                                      Column(
+                                                        children: [
+                                                          Text(
+                                                            myResult[index][
+                                                                        'TravelTimeThird'] !=
+                                                                    null
+                                                                ? CommonUtils.convertMinutesToHoursMinutes(
+                                                                        myResult[index]
+                                                                            [
+                                                                            'TravelTimeThird']) ??
+                                                                    'Not Available'
+                                                                : 'Not Available',
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 13,
+                                                            ),
+                                                          ),
+                                                          // Image for Stop Count
+                                                          Image.asset(
+                                                            myResult[index][
+                                                                        'StopCountThird'] !=
+                                                                    null
+                                                                ? (myResult[index]
+                                                                            [
+                                                                            'StopCountThird'] ==
+                                                                        '0'
+                                                                    ? "assets/images/NonStop.png"
+                                                                    : (myResult[index]['StopCountThird'] ==
+                                                                            '1'
+                                                                        ? "assets/images/oneStop.png"
+                                                                        : "assets/images/TwoStop.png"))
+                                                                : "assets/images/NonStop.png",
+                                                            // Default image if null
+                                                            width: 70,
+                                                          ),
+                                                          Text(
+                                                            '${myResult[index]['StopCountThird'] ?? '0'} stops',
+                                                            style: TextStyle(
+                                                                fontSize: 13),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      SizedBox(
+                                                        width: 10,
+                                                      ),
+                                                      // Arrival Column
+                                                      Column(
+                                                        crossAxisAlignment:
+                                                            CrossAxisAlignment
+                                                                .start,
+                                                        children: [
+                                                          Text(
+                                                            CommonUtils.convertToFormattedTime(
+                                                                        myResult[index]['ArrivalDateThird'] ??
+                                                                            '')
+                                                                    ?.toUpperCase() ??
+                                                                'Not Available',
+                                                            style: TextStyle(
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 14,
+                                                            ),
+                                                          ),
+                                                          Text(
+                                                            myResult[index][
+                                                                    'ArriveCityCodeThird'] ??
+                                                                'Not Available',
+                                                            style: TextStyle(
+                                                              color: Color(
+                                                                  0xff777777),
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              fontSize: 13,
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 0),
+                                              // Add vertical padding for spacing
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  // Carrier Name Section
+                                                  if (myResult[index][
+                                                          'CarrierNameFourth'] !=
+                                                      null)
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .center,
                                                       children: [
-                                                        if (myResult[
-                                                        index]
-                                                        [
-                                                        'DepartureDateFourth'] !=
-                                                            null)
-                                                          Text(
-                                                            '${CommonUtils.convertToFormattedTime(myResult[index]['DepartureDateFourth']).toString().toUpperCase()}',
-                                                            style:
-                                                            TextStyle(
+                                                        Image.asset(
+                                                            'assets/images/img.png'),
+                                                        Container(
+                                                          width: 65,
+                                                          padding:
+                                                              EdgeInsets.only(
+                                                                  left: 5),
+                                                          child: Text(
+                                                            myResult[index][
+                                                                    'CarrierNameFourth']
+                                                                .toString(),
+                                                            style: TextStyle(
                                                               fontWeight:
-                                                              FontWeight
-                                                                  .bold,
-                                                              fontSize:
-                                                              14,
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color:
+                                                                  Colors.black,
                                                             ),
                                                           ),
-                                                        if (myResult[
-                                                        index]
-                                                        [
-                                                        'ArrivalDateFourth'] !=
-                                                            null)
-                                                          Text(
-                                                            '${CommonUtils.convertToFormattedTime(myResult[index]['ArrivalDateFourth']).toString().toUpperCase()}',
-                                                            style:
-                                                            TextStyle(
-                                                              fontWeight:
-                                                              FontWeight
-                                                                  .bold,
-                                                              fontSize:
-                                                              14,
-                                                            ),
-                                                          ),
+                                                        ),
+                                                        SizedBox(height: 9),
+                                                        // Space after carrier name
                                                       ],
                                                     ),
 
-                                                    // Travel Time and Stop Count Section
-                                                    Row(
+                                                  // Departure and Arrival Dates Section
+                                                  Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            right: 0),
+                                                    child: Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
                                                       children: [
-                                                        Column(
+                                                        Row(
                                                           mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
+                                                              MainAxisAlignment
+                                                                  .spaceBetween,
                                                           children: [
-                                                            if (myResult[
-                                                            index]
-                                                            [
-                                                            'TravelTimeFourth'] !=
+                                                            if (myResult[index][
+                                                                    'DepartureDateFourth'] !=
                                                                 null)
                                                               Text(
-                                                                convertDuration(
-                                                                    myResult[index]
-                                                                    [
-                                                                    'TravelTimeFourth']),
+                                                                '${CommonUtils.convertToFormattedTime(myResult[index]['DepartureDateFourth']).toString().toUpperCase()}',
                                                                 style:
-                                                                TextStyle(
+                                                                    TextStyle(
                                                                   fontWeight:
-                                                                  FontWeight.bold,
-                                                                  fontSize:
-                                                                  13,
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 14,
                                                                 ),
                                                               ),
-                                                            if (myResult[
-                                                            index]
-                                                            [
-                                                            'StopCountFourth'] !=
+                                                            if (myResult[index][
+                                                                    'ArrivalDateFourth'] !=
                                                                 null)
-                                                              Padding(
-                                                                padding: const EdgeInsets
-                                                                    .only(
-                                                                    left:
-                                                                    20),
-                                                                child: Image
-                                                                    .asset(
-                                                                  myResult[index]['StopCountFourth'] ==
-                                                                      '0'
-                                                                      ? "assets/images/NonStop.png"
-                                                                      : (myResult[index]['StopCountFourth'] == '1'
-                                                                      ? "assets/images/oneStop.png"
-                                                                      : "assets/images/TwoStop.png"),
-                                                                  width:
-                                                                  70,
-                                                                  height:
-                                                                  20,
-                                                                  fit: BoxFit
-                                                                      .fitWidth,
+                                                              Text(
+                                                                '${CommonUtils.convertToFormattedTime(myResult[index]['ArrivalDateFourth']).toString().toUpperCase()}',
+                                                                style:
+                                                                    TextStyle(
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
+                                                                  fontSize: 14,
                                                                 ),
                                                               ),
                                                           ],
                                                         ),
+
+                                                        // Travel Time and Stop Count Section
+                                                        Row(
+                                                          children: [
+                                                            Column(
+                                                              mainAxisAlignment:
+                                                                  MainAxisAlignment
+                                                                      .center,
+                                                              children: [
+                                                                if (myResult[
+                                                                            index]
+                                                                        [
+                                                                        'TravelTimeFourth'] !=
+                                                                    null)
+                                                                  Text(
+                                                                    CommonUtils
+                                                                        .convertMinutesToHoursMinutes(
+                                                                      myResult[index]
+                                                                              [
+                                                                              'TravelTimeFourth']
+                                                                          .toString(),
+                                                                    ),
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .bold,
+                                                                      fontSize:
+                                                                          13,
+                                                                    ),
+                                                                  ),
+                                                                if (myResult[
+                                                                            index]
+                                                                        [
+                                                                        'StopCountFourth'] !=
+                                                                    null)
+                                                                  Padding(
+                                                                    padding: const EdgeInsets
+                                                                        .only(
+                                                                        left:
+                                                                            20),
+                                                                    child: Image
+                                                                        .asset(
+                                                                      myResult[index]['StopCountFourth'] ==
+                                                                              '0'
+                                                                          ? "assets/images/NonStop.png"
+                                                                          : (myResult[index]['StopCountFourth'] == '1'
+                                                                              ? "assets/images/oneStop.png"
+                                                                              : "assets/images/TwoStop.png"),
+                                                                      width: 70,
+                                                                      height:
+                                                                          20,
+                                                                      fit: BoxFit
+                                                                          .fitWidth,
+                                                                    ),
+                                                                  ),
+                                                              ],
+                                                            ),
+                                                          ],
+                                                        ),
+
+                                                        // Departure and Arrival City Codes Section
+                                                        if (myResult[index][
+                                                                'ArriveCityCodeFourth'] !=
+                                                            null)
+                                                          Row(
+                                                            children: [
+                                                              SizedBox(
+                                                                  width: 10),
+                                                              if (myResult[
+                                                                          index]
+                                                                      [
+                                                                      'DepartCityCodeFourth'] !=
+                                                                  null)
+                                                                Text(
+                                                                  myResult[index]
+                                                                          [
+                                                                          'DepartCityCodeFourth']
+                                                                      .toString(),
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Color(
+                                                                        0xff777777),
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                                ),
+                                                              SizedBox(
+                                                                  width: 60),
+                                                              if (myResult[
+                                                                          index]
+                                                                      [
+                                                                      'StopCountFourth'] !=
+                                                                  null)
+                                                                Text(
+                                                                  '${myResult[index]['StopCountFourth']} stops',
+                                                                  style: TextStyle(
+                                                                      fontSize:
+                                                                          13),
+                                                                ),
+                                                              SizedBox(
+                                                                  width: 60),
+                                                              if (myResult[
+                                                                          index]
+                                                                      [
+                                                                      'ArriveCityCodeFourth'] !=
+                                                                  null)
+                                                                Text(
+                                                                  myResult[index]
+                                                                          [
+                                                                          'ArriveCityCodeFourth']
+                                                                      .toString(),
+                                                                  style:
+                                                                      TextStyle(
+                                                                    color: Color(
+                                                                        0xff777777),
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .bold,
+                                                                    fontSize:
+                                                                        13,
+                                                                  ),
+                                                                ),
+                                                            ],
+                                                          ),
+
+                                                        // Divider
+                                                        if (myResult[index][
+                                                                'ArriveCityCodeFourth'] !=
+                                                            null)
+                                                          Column(
+                                                            children: [
+                                                              SizedBox(
+                                                                  height: 5),
+                                                              SizedBox(
+                                                                width: 250,
+                                                                height: 1,
+                                                                child:
+                                                                    DecoratedBox(
+                                                                  decoration:
+                                                                      const BoxDecoration(
+                                                                    color: Color(
+                                                                        0xffededed),
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ),
                                                       ],
                                                     ),
-
-                                                    // Departure and Arrival City Codes Section
-                                                    if (myResult[index][
-                                                    'ArriveCityCodeFourth'] !=
-                                                        null)
-                                                      Row(
-                                                        children: [
-                                                          SizedBox(
-                                                              width: 10),
-                                                          if (myResult[
-                                                          index]
-                                                          [
-                                                          'DepartCityCodeFourth'] !=
-                                                              null)
-                                                            Text(
-                                                              myResult[index]
-                                                              [
-                                                              'DepartCityCodeFourth']
-                                                                  .toString(),
-                                                              style:
-                                                              TextStyle(
-                                                                color: Color(
-                                                                    0xff777777),
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                                fontSize:
-                                                                13,
-                                                              ),
-                                                            ),
-                                                          SizedBox(
-                                                              width: 60),
-                                                          if (myResult[
-                                                          index]
-                                                          [
-                                                          'StopCountFourth'] !=
-                                                              null)
-                                                            Text(
-                                                              '${myResult[index]['StopCountFourth']} stops',
-                                                              style: TextStyle(
-                                                                  fontSize:
-                                                                  13),
-                                                            ),
-                                                          SizedBox(
-                                                              width: 60),
-                                                          if (myResult[
-                                                          index]
-                                                          [
-                                                          'ArriveCityCodeFourth'] !=
-                                                              null)
-                                                            Text(
-                                                              myResult[index]
-                                                              [
-                                                              'ArriveCityCodeFourth']
-                                                                  .toString(),
-                                                              style:
-                                                              TextStyle(
-                                                                color: Color(
-                                                                    0xff777777),
-                                                                fontWeight:
-                                                                FontWeight
-                                                                    .bold,
-                                                                fontSize:
-                                                                13,
-                                                              ),
-                                                            ),
-                                                        ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        Container(
+                                          child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.book_outlined,
+                                                    size: 14,
+                                                  ),
+                                                  Text(
+                                                    myResult[index]
+                                                            ['Refundable']
+                                                        .toString(),
+                                                    style: TextStyle(
+                                                        fontFamily:
+                                                            "Montserrat",
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: (myResult[index][
+                                                                    'Refundable'] ==
+                                                                'Refundable')
+                                                            ? Colors.green
+                                                            : Colors.red,
+                                                        fontSize: 15),
+                                                  ),
+                                                ],
+                                              ),
+                                              GestureDetector(
+                                                onTap: () {
+                                                  //TwoWayBooking
+                                                  Navigator.push(
+                                                    context,
+                                                    MaterialPageRoute(
+                                                      builder: (context) =>
+                                                          MultiCityBooking(
+                                                        flightDetails:
+                                                            myResult[index],
+                                                        adultCount:
+                                                            widget.adult,
+                                                        childrenCount:
+                                                            widget.children,
+                                                        infantCount:
+                                                            widget.infants,
+                                                            StopCountFirst:myResult[index]['StopCountFirst'],
+                                                            StopCountSecond:myResult[index]['StopCountSecond'],
+                                                            StopCountThird:myResult[index]['StopCountThird'],
+                                                            TotalPrice:myResult[index]['TotalPrice'],
                                                       ),
+                                                    ),
+                                                  );
 
-                                                    // Divider
-                                                    if (myResult[index][
-                                                    'ArriveCityCodeFourth'] !=
-                                                        null)
-                                                      Column(
-                                                        children: [
-                                                          SizedBox(
-                                                              height: 5),
-                                                          SizedBox(
-                                                            width: 250,
-                                                            height: 1,
-                                                            child:
-                                                            DecoratedBox(
-                                                              decoration:
-                                                              const BoxDecoration(
-                                                                color: Color(
-                                                                    0xffededed),
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      ),
-                                                  ],
+                                                },
+                                                child: Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 10),
+                                                  child: Text(
+                                                    "View Details",
+                                                    style: TextStyle(
+                                                        color: Colors.red,
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        fontSize: 13),
+                                                  ),
                                                 ),
                                               ),
                                             ],
                                           ),
+                                        )
+                                      ]),
+                                    ),
+                                  ),
+                                ));
+                          }),
+                    ),
+                  ],
+                ),
+                if (_isBottomBarVisible)
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      color: Colors.white,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            // Filter Icon and Text
+
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () async {
+                                    // Navigate to FilterPage and pass the current 'add' state
+                                    final result = await Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) => FilterPage(airlineCheckboxes: airlineCheckboxes,
+                                            Refundable: isRefundable,
+                                            NonRefundable: isNonRefundable,
+                                            NonStop: isNonStop,
+                                            oneStop: isOneStop,
+                                            twoStop: isTwoPlusStops,
+                                            DepartisEarlySelected:
+                                            DepartisEarlySelected,
+                                            DepartisMorningSelected:
+                                            DepartisMorningSelected,
+                                            DepartisNoonSelected:
+                                            DepartisNoonSelected,
+                                            DepartisEveningSelected:
+                                            DepartisEveningSelected,
+                                            ArrivalisEarlySelected:
+                                            ArrivalisEarlySelected,
+                                            ArrivalisMorningSelected:
+                                            ArrivalisMorningSelected,
+                                            ArrivalisNoonSelected:
+                                            ArrivalisNoonSelected,
+                                            ArrivalisEveningSelected:
+                                            ArrivalisEveningSelected,
+                                            add: widget.add,
+                                          )),
+                                    );
+
+                                    // If we received any result from the filter page
+                                    if (result != null) {
+                                      setState(() {
+                                        isRefundable = result['isRefundable'] == 'Refundable';
+                                        isNonRefundable = result['isNonRefundable'] == 'Non-Refundable';
+
+                                        isNonStop = result['isNonStop'] == 'Yes';
+                                        isOneStop = result['isOneStop'] == 'Yes';
+                                        isTwoPlusStops = result['isTwoPlusStops'] == 'Yes';
+
+                                        DepartisEarlySelected = result['isEarlyDeparture'] == 'Yes';
+                                        DepartisMorningSelected = result['isMorningDeparture'] == 'Yes';
+                                        DepartisNoonSelected = result['isNoonDeparture'] == 'Yes';
+                                        DepartisEveningSelected = result['isEveningDeparture'] == 'Yes';
+
+                                        ArrivalisEarlySelected = result['ArrivalIsEarlyDeparture'] == 'Yes';
+                                        ArrivalisMorningSelected = result['ArrivalIsMorningDeparture'] == 'Yes';
+                                        ArrivalisNoonSelected = result['ArrivalIsNoonDeparture'] == 'Yes';
+                                        ArrivalisEveningSelected = result['ArrivalIsEveningDeparture'] == 'Yes';
+
+                                        airlineCheckboxes = Map<String, bool>.from(result['airlineCheckboxes'] ?? {});
+                                        selectedCount = result['selectedCount'] ?? 0;
+
+                                        print('✅ Selected filter count: $selectedCount');
+                                        print('✅ Airline Checkbox Map: $airlineCheckboxes');
+                                        sendMultiWayFlightSearchRequest(result);
+                                      });
+                                    }
+                                  },
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    // Ensures the row only takes necessary space
+                                    children: [
+                                      Icon(
+                                        Icons.filter_alt_outlined,
+                                        size:
+                                        20, // Adjust the icon size as needed
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      SizedBox(height: 7),
+                                      // Optional: Adjust this for spacing between icon and text
+                                      Text(
+                                        "Filter",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w500,
                                         ),
+                                      ),
                                     ],
                                   ),
-                                  Container(
-                                    child: Row(
-                                      mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.book_outlined,
-                                              size: 14,
-                                            ),
-                                            Text(
-                                              myResult[index]
-                                              ['Refundable']
-                                                  .toString(),
-                                              style: TextStyle(
-                                                  fontFamily:
-                                                  "Montserrat",
-                                                  fontWeight:
-                                                  FontWeight.w500,
-                                                  color: (myResult[index][
-                                                  'Refundable'] ==
-                                                      'Refundable')
-                                                      ? Colors.green
-                                                      : Colors.red,
-                                                  fontSize: 15),
-                                            ),
-                                          ],
+                                ),
+                              ],
+                            ),
+
+                            // Time Icon and Text
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    _showTimeBottomSheet(context);
+                                  },
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    // Ensures the row only takes necessary space
+                                    children: [
+                                      Icon(
+                                        Icons.schedule,
+                                        size: 20,
+                                        // Adjust the size of the icon as needed
+                                        color: Colors.grey
+                                            .shade600, // Match the icon color with the text
+                                      ),
+                                      SizedBox(height: 7),
+                                      // Optional: Add a tiny width for spacing
+                                      Text(
+                                        "Time",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w500,
                                         ),
-                                        GestureDetector(
-                                          onTap: () {
-                                            String mainRowFirst = myResult[
-                                            index][
-                                            'MainRowNumberFirst'] ??
-                                                '';
-                                            String mainRowSecond = myResult[
-                                            index][
-                                            'MainRowNumberSecond'] ??
-                                                '';
-                                            String mainRowThird = myResult[
-                                            index][
-                                            'MainRowNumberThird'] ??
-                                                '';
-                                            String mainRowFourth = myResult[
-                                            index][
-                                            'MainRowNumberFourth'] ??
-                                                '';
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
 
-                                            final matchingRows =
-                                            fullmyResult
-                                                .where((item) {
-                                              bool isMatch = item[
-                                              'MainRowNumberFirst'] ==
-                                                  mainRowFirst &&
-                                                  item['MainRowNumberSecond'] ==
-                                                      mainRowSecond;
-
-                                              // Include third leg only if it's not empty
-                                              if (mainRowThird
-                                                  .isNotEmpty &&
-                                                  item['MainRowNumberThird'] !=
-                                                      null &&
-                                                  item['MainRowNumberThird'] ==
-                                                      mainRowThird) {
-                                                isMatch = isMatch && true;
-                                              } else if (mainRowThird
-                                                  .isNotEmpty) {
-                                                // Mismatch or not found
-                                                isMatch = false;
-                                              }
-
-                                              // Include fourth leg only if it's not empty
-                                              if (mainRowFourth
-                                                  .isNotEmpty &&
-                                                  item['MainRowNumberFourth'] !=
-                                                      null &&
-                                                  item['MainRowNumberFourth'] ==
-                                                      mainRowFourth) {
-                                                isMatch = isMatch && true;
-                                              } else if (mainRowFourth
-                                                  .isNotEmpty) {
-                                                // Mismatch or not found
-                                                isMatch = false;
-                                              }
-
-                                              return isMatch;
-                                            }).toList();
-
-                                            printFullJson(matchingRows);
-                                            //TwoWayBooking
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    MultiCityBooking(
-                                                      TPToken:tpToken,
-                                                      flightDetailsList:
-                                                      matchingRows,
-                                                      flightDetails:
-                                                      myResult[index],
-                                                      departuredatefirst:myResult[index]['DepartureDateFirst'],
-                                                      departuredateSecond:myResult[index]['DepartureDateSecond'],
-                                                      departuredatethird:myResult[index]['DepartureDateThird'],
-                                                      departuredatefourth:myResult[index]['DepartureDateFourth'],
-                                                      departCityNameSecond:myResult[index]['DepartCityNameSecond'],
-                                                      departCityNameThird:myResult[index]['DepartCityNameThird'],
-                                                      departCityNameFourth:myResult[index]['DepartCityNameFourth'],
-                                                      arriveCityNameFirst:myResult[index]['ArriveCityNameFirst'],
-                                                      arriveCityNameSecond:myResult[index]['ArriveCityNameSecond'],
-                                                      arriveCityNameThird:myResult[index]['ArriveCityNameThird'],
-                                                      arriveCityNameFourth:myResult[index]['ArriveCityNameFourth'],
-                                                      refundable:myResult[index]
-                                                      ['Refundable'],
-                                                      adultCount:
-                                                      widget.adult,
-                                                      childrenCount:
-                                                      widget.children,
-                                                      infantCount:
-                                                      widget.infants,
-                                                      StopCountFirst: myResult[
-                                                      index]
-                                                      ['StopCountFirst'],
-                                                      StopCountSecond: myResult[
-                                                      index]
-                                                      ['StopCountSecond'],
-                                                      StopCountThird: myResult[
-                                                      index]
-                                                      ['StopCountThird'],
-                                                      TotalPrice:
-                                                      myResult[index]
-                                                      ['TotalPrice'],
-                                                      TokenValue:
-                                                      tpToken ?? '',
-                                                    ),
+                            // NonStop Icon and Text
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      isNonStopSelected =
+                                          !isNonStopSelected; // Toggle switch state
+                                      // Call filter function if necessary
+                                      Map<String, dynamic> filters = {
+                                        'isNonStop': isNonStopSelected,
+                                        // Non-stop filter
+                                      };
+                                      _applyStopCountFilter(
+                                          fullResultList, filters);
+                                    });
+                                  },
+                                  child: Container(
+                                    width: 35, // Adjusted width
+                                    height: 20, // Adjusted height
+                                    decoration: BoxDecoration(
+                                      color: isNonStopSelected
+                                          ? Colors.pink.shade200
+                                          : Colors
+                                              .grey, // Change color based on state
+                                      borderRadius: BorderRadius.circular(30),
+                                    ),
+                                    child: Stack(
+                                      children: [
+                                        // White circle
+                                        AnimatedAlign(
+                                          alignment: isNonStopSelected
+                                              ? Alignment.centerRight
+                                              : Alignment.centerLeft,
+                                          duration: Duration(milliseconds: 200),
+                                          child: Container(
+                                            width: 15,
+                                            // Adjusted width for the white circle
+                                            height: 15,
+                                            // Adjusted height for the white circle
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Icon(
+                                                isNonStopSelected
+                                                    ? Icons.check
+                                                    : Icons.close,
+                                                // Display tick or close icon
+                                                size: 14, // Adjusted icon size
+                                                color: isNonStopSelected
+                                                    ? Colors.pink.shade200
+                                                    : Colors.red,
                                               ),
-                                            );
-                                          },
-                                          child: Padding(
-                                            padding:
-                                            const EdgeInsets.only(
-                                                right: 10),
-                                            child: Text(
-                                              "View Details",
-                                              style: TextStyle(
-                                                  color: Colors.red,
-                                                  fontWeight:
-                                                  FontWeight.bold,
-                                                  fontSize: 13),
                                             ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  )
-                                ]),
-                              ),
-                            ),
-                          ));
-                    }),
-              ),
-            ],
-          ),
-          if (_isBottomBarVisible)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      // Filter Icon and Text
-
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () async {
-                              // Navigate to FilterPage and pass the current 'add' state
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                    builder: (context) => FilterPage(airlineCheckboxes: airlineCheckboxes,
-                                      Refundable: isRefundable,
-                                      NonRefundable: isNonRefundable,
-                                      NonStop: isNonStop,
-                                      oneStop: isOneStop,
-                                      twoStop: isTwoPlusStops,
-                                      DepartisEarlySelected:
-                                      DepartisEarlySelected,
-                                      DepartisMorningSelected:
-                                      DepartisMorningSelected,
-                                      DepartisNoonSelected:
-                                      DepartisNoonSelected,
-                                      DepartisEveningSelected:
-                                      DepartisEveningSelected,
-                                      ArrivalisEarlySelected:
-                                      ArrivalisEarlySelected,
-                                      ArrivalisMorningSelected:
-                                      ArrivalisMorningSelected,
-                                      ArrivalisNoonSelected:
-                                      ArrivalisNoonSelected,
-                                      ArrivalisEveningSelected:
-                                      ArrivalisEveningSelected,
-                                      add: widget.add,
-                                    )),
-                              );
-
-                              // If we received any result from the filter page
-                              if (result != null) {
-                                setState(() {
-                                  isRefundable = result['isRefundable'] == 'Refundable';
-                                  isNonRefundable = result['isNonRefundable'] == 'Non-Refundable';
-
-                                  isNonStop = result['isNonStop'] == 'Yes';
-                                  isOneStop = result['isOneStop'] == 'Yes';
-                                  isTwoPlusStops = result['isTwoPlusStops'] == 'Yes';
-
-                                  DepartisEarlySelected = result['isEarlyDeparture'] == 'Yes';
-                                  DepartisMorningSelected = result['isMorningDeparture'] == 'Yes';
-                                  DepartisNoonSelected = result['isNoonDeparture'] == 'Yes';
-                                  DepartisEveningSelected = result['isEveningDeparture'] == 'Yes';
-
-                                  ArrivalisEarlySelected = result['ArrivalIsEarlyDeparture'] == 'Yes';
-                                  ArrivalisMorningSelected = result['ArrivalIsMorningDeparture'] == 'Yes';
-                                  ArrivalisNoonSelected = result['ArrivalIsNoonDeparture'] == 'Yes';
-                                  ArrivalisEveningSelected = result['ArrivalIsEveningDeparture'] == 'Yes';
-
-                                  airlineCheckboxes = Map<String, bool>.from(result['airlineCheckboxes'] ?? {});
-                                  selectedCount = result['selectedCount'] ?? 0;
-
-                                  print('✅ Selected filter count: $selectedCount');
-                                  print('✅ Airline Checkbox Map: $airlineCheckboxes');
-                                  sendMultiWayFlightSearchRequest(result);
-                                });
-                              }
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              // Ensures the row only takes necessary space
-                              children: [
-                                Icon(
-                                  Icons.filter_alt_outlined,
-                                  size:
-                                  20, // Adjust the icon size as needed
-                                  color: Colors.grey.shade600,
-                                ),
-                                SizedBox(height: 7),
-                                // Optional: Adjust this for spacing between icon and text
-                                Text(
-                                  "Filter",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // Time Icon and Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              _showTimeBottomSheet(context);
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              // Ensures the row only takes necessary space
-                              children: [
-                                Icon(
-                                  Icons.schedule,
-                                  size: 20,
-                                  // Adjust the size of the icon as needed
-                                  color: Colors.grey
-                                      .shade600, // Match the icon color with the text
-                                ),
-                                SizedBox(height: 7),
-                                // Optional: Add a tiny width for spacing
-                                Text(
-                                  "Time",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      // NonStop Icon and Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isNonStopSelected =
-                                !isNonStopSelected; // Toggle switch state
-                                // Call filter function if necessary
-                                Map<String, dynamic> filters = {
-                                  'isNonStop': isNonStopSelected,
-                                  // Non-stop filter
-                                };
-                                _applyStopCountFilter(
-                                    fullmyResult, filters);
-                              });
-                            },
-                            child: Container(
-                              width: 35, // Adjusted width
-                              height: 20, // Adjusted height
-                              decoration: BoxDecoration(
-                                color: isNonStopSelected
-                                    ? Colors.pink.shade200
-                                    : Colors
-                                    .grey, // Change color based on state
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: Stack(
-                                children: [
-                                  // White circle
-                                  AnimatedAlign(
-                                    alignment: isNonStopSelected
-                                        ? Alignment.centerRight
-                                        : Alignment.centerLeft,
-                                    duration: Duration(milliseconds: 200),
-                                    child: Container(
-                                      width: 15,
-                                      // Adjusted width for the white circle
-                                      height: 15,
-                                      // Adjusted height for the white circle
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          isNonStopSelected
-                                              ? Icons.check
-                                              : Icons.close,
-                                          // Display tick or close icon
-                                          size: 14, // Adjusted icon size
-                                          color: isNonStopSelected
-                                              ? Colors.pink.shade200
-                                              : Colors.red,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(
-                            height: 7,
-                          ),
-                          Text(
-                            "NonStop",
-                            style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-
-                      // Sort Icon and Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              _showSortBottomSheet(context);
-                              print("Sort tapped");
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              // Ensure no extra space is taken
-                              children: [
-                                Icon(
-                                  Icons.sort,
-                                  size: 20, // Adjust the size as needed
-                                  color: Colors.grey.shade600,
                                 ),
                                 SizedBox(
                                   height: 7,
                                 ),
                                 Text(
-                                  "Sort",
+                                  "NonStop",
                                   style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+
+                            // Sort Icon and Text
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    _showSortBottomSheet(context);
+                                    print("Sort tapped");
+                                  },
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    // Ensure no extra space is taken
+                                    children: [
+                                      Icon(
+                                        Icons.sort,
+                                        size: 20, // Adjust the size as needed
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      SizedBox(
+                                        height: 7,
+                                      ),
+                                      Text(
+                                        "Sort",
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+              ],
             ),
-        ],
-      ),
     );
   }
 
@@ -1996,7 +1746,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
                     child: Text(
                       'Departure Time',
                       style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
                     ),
                   ),
 
@@ -2056,7 +1806,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
                     child: Text(
                       'Arrival Time',
                       style:
-                      TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.w400),
                     ),
                   ),
                   // No padding above Arrival Time
@@ -2127,7 +1877,7 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
                           'ArrivalisNoonDeparture': ArrivalisNoonSelected,
                           'ArrivalisEveningDeparture': ArrivalisEveningSelected,
                         };
-                        _applyDepartureTimeFilter(fullmyResult, filters);
+                        _applyDepartureTimeFilter(fullResultList, filters);
                         Navigator.pop(context);
                         print("Show Flights pressed.");
                       },
@@ -2254,8 +2004,8 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
                     child: TextButton(
                       onPressed: () {
                         if (selectedSortOption != null) {
-                          // Call the _applySort function with the fullmyResult and the selected sort option
-                          _applySort(fullmyResult,
+                          // Call the _applySort function with the fullResultList and the selected sort option
+                          _applySort(fullResultList,
                               selectedSortOption!); // Use the non-null assertion operator
                         } else {
                           print("No sorting option selected.");
@@ -2280,12 +2030,6 @@ class _MultiCityFlightsListState extends State<MultiCityFlightsList> {
       },
     );
   }
-}
-
-void printFullJson(List<dynamic> matchingRows) {
-  final encoder = JsonEncoder.withIndent('  ');
-  final prettyJson = encoder.convert(matchingRows);
-  developer.log(prettyJson, name: 'FilteredFlightDetails');
 }
 
 class CustomCheckbox extends StatelessWidget {
