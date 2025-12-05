@@ -75,7 +75,7 @@ class _OnewayFlightsListState extends State<CarListScreen> {
   var resultList = [];
   List<dynamic> fullResultList = [];
   List<dynamic> filteredResults = [];
-  bool isRefundable = false; // Default to false
+  bool isRefundable = false;
   bool isNonRefundable = false;
   Map<String, bool> airlineCheckboxes = {};
   bool isNonStop = false;
