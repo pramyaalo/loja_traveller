@@ -26,10 +26,10 @@ class _CarClientInvoiceReceiptState extends State<CreditNoteReceipt> {
                 "Credit Note  Invoice",
                 style: TextStyle(fontFamily: "Montserrat")
               ),
-              //title: Image.asset('assets/images/lojologo.png', width: 150, height: 30,),
+              //title: Image.asset('assets/images/lojolog.png', width: 150, height: 30,),
               actions: [
                 Image.asset(
-                  'assets/images/lojologo.png',
+                  'assets/images/lojolog.png',
                   width: 150,
                   height: 30,
                 ),
@@ -55,7 +55,7 @@ class _CarClientInvoiceReceiptState extends State<CreditNoteReceipt> {
                             child: Container(
                               padding: EdgeInsets.fromLTRB(80, 0, 80, 0),
                               child: Image.asset(
-                                'assets/images/lojologo.png',
+                                'assets/images/lojolog.png',
                                 width: 150,
                                 height: 30,
                               ),

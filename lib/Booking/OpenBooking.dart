@@ -92,7 +92,7 @@ class _BookingReportState extends State<OpenBooking> {
           ),
           actions: [
             Image.asset(
-              'assets/images/lojologo.png',
+              'assets/images/lojologg.png',
               width: 100,
               height: 50,
             ),

@@ -18,10 +18,10 @@ class _BookingCardGeneralDetailsState extends State<ClientInvoiceListReceipt> {
               "Credit Invoice List Receipt",
               style: TextStyle(fontFamily: "Montserrat", fontSize: 16),
             ),
-            //title: Image.asset('assets/images/lojologo.png', width: 150, height: 30,),
+            //title: Image.asset('assets/images/lojolog.png', width: 150, height: 30,),
             actions: [
               Image.asset(
-                'assets/images/lojologo.png',
+                'assets/images/lojolog.png',
                 width: 150,
                 height: 50,
               ),
@@ -46,7 +46,7 @@ class _BookingCardGeneralDetailsState extends State<ClientInvoiceListReceipt> {
                       Text('Credit Note',
                           style: TextStyle(
                               fontSize: 20, fontWeight: FontWeight.bold)),
-                      Image.asset('assets/images/lojologo.png',
+                      Image.asset('assets/images/lojolog.png',
                           width: 200, height: 50),
                     ],
                   ),

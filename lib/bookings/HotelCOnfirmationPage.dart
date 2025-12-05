@@ -175,7 +175,7 @@ class _BookingConfirmationPageState extends State<HotelCOnfirmationPage> {
           ),
           actions: [
             Image.asset(
-              'assets/images/lojologo.png',
+              'assets/images/lojologg.png',
               width: 100,
               height: 50,
             ),

@@ -18,10 +18,10 @@ class _BookingCardGeneralDetailsState extends State<IssueVouchersReceipt> {
           "Vouchers",
           style: TextStyle(fontFamily: "Montserrat", fontSize: 16),
         ),
-        //title: Image.asset('assets/images/lojologo.png', width: 150, height: 30,),
+        //title: Image.asset('assets/images/lojolog.png', width: 150, height: 30,),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojolog.png',
             width: 150,
             height: 30,
           ),
@@ -52,7 +52,7 @@ class _BookingCardGeneralDetailsState extends State<IssueVouchersReceipt> {
                     Text('BOOKING VOUCHERS',
                         style: TextStyle(
                             fontSize: 22, fontWeight: FontWeight.bold)),
-                    Image.asset('assets/images/lojologo.png',
+                    Image.asset('assets/images/lojolog.png',
                         width: 80, height: 50),
                   ],
                 ),

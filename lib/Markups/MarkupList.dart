@@ -416,7 +416,7 @@ class _MarkupListState extends State<MarkupList>  with SingleTickerProviderState
                 Padding(
                   padding: const EdgeInsets.only(right: 0),
                   child: Image.asset(
-                    'assets/images/lojologo.png',
+                    'assets/images/lojolog.png',
                     width: 100,
                     height: 50,
                     fit: BoxFit.contain,

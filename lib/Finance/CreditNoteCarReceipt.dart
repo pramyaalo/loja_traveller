@@ -134,7 +134,7 @@ class _BookingCardGeneralDetailsState extends State<CreditNoteCarReceipt> {
                 ),
                 actions: [
                   Image.asset(
-                    'assets/images/lojologo.png',
+                    'assets/images/lojolog.png',
                     width: 150,
                     height: 50,
                   ),
@@ -290,7 +290,7 @@ class _BookingCardGeneralDetailsState extends State<CreditNoteCarReceipt> {
                                                 fontSize: 18,
                                                 fontWeight: FontWeight.bold)),
                                         Image.asset(
-                                            'assets/images/lojologo.png',
+                                            'assets/images/lojolog.png',
                                             width: 150,
                                             height: 50),
                                       ],

@@ -166,7 +166,7 @@ class _MyRechargePageState extends State<AddMarkupAirline> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojolog.png',
             width: 150,
             height: 50,
           ),

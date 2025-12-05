@@ -249,7 +249,7 @@ class _FilterPageState extends State<FilterPage> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojolog.png',
             width: 100,
             height: 50,
           ),

@@ -72,6 +72,8 @@ class Table1Model {
     required this.symbol,
     required this.code,
     required this.countryId,
+
+
   });
 
   factory Table1Model.fromJson(Map<String, dynamic> json) {

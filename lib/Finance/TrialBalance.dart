@@ -92,7 +92,7 @@ class _BookingCardGeneralDetailsState extends State<TrialBalance> {
               ),
               actions: [
                 Image.asset(
-                  'assets/images/lojologo.png',
+                  'assets/images/lojolog.png',
                   width: 150,
                   height: 50,
                 ),
@@ -225,7 +225,7 @@ class _BookingCardGeneralDetailsState extends State<TrialBalance> {
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
                                       Image.asset(
-                                          'assets/images/lojologo.png',
+                                          'assets/images/lojolog.png',
                                           width: 200,
                                           height: 50),
                                     ],

@@ -161,7 +161,7 @@ class _BookingConfirmationPageState extends State<Oneway_ConfirmationScreen> {
           ),
           actions: [
             Image.asset(
-              'assets/images/lojologo.png',
+              'assets/images/lojologg.png',
               width: 100,
               height: 50,
             ),

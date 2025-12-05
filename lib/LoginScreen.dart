@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:loja_traveller/utils/shared_preferences.dart';
- 
 
 import '../utils/response_handler.dart';
 import 'Dashboard.dart';
@@ -34,9 +33,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void initState() {
+    bool isDebug = false;
+    assert(isDebug = true);
     _showPassword = true;
-    _userNameController.text = 'kenyaagencytraveller2';
-    _passwordController.text = 'vs2022';
+    if (isDebug) {
+      _userNameController.text = 'lojatravel';
+      String password = 'lojatravel@admin1';
+      _passwordController.text = password;
+    }
   }
 
   @override
@@ -46,25 +50,28 @@ class _LoginScreenState extends State<LoginScreen> {
     ));
     return Scaffold(
         body: Center(
-          child: Container(
-              height: MediaQuery.of(context).size.height / .1,
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  colorFilter: ColorFilter.mode(
-                    Color(0xFF00ADEE), // Replace green color
-                    BlendMode.hue, // This will change green to pink
-                  ),
-                  image: AssetImage('assets/images/loginbg8.png'),
-                  fit: BoxFit.cover,
-                ),
+      child: Container(
+          height: MediaQuery.of(context).size.height / .1,
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              colorFilter: ColorFilter.mode(
+                Color(0xFF00ADEE), // Replace green color
+                BlendMode.hue, // This will change green to pink
               ),
-              child: Center(
-                child: SingleChildScrollView(
-                  child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.center,children: [
+              image: AssetImage('assets/images/loginbg8.png'),
+              fit: BoxFit.cover,
+            ),
+          ),
+          child: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
                     Padding(
                       padding: const EdgeInsets.only(right: 25),
                       child: Image.asset(
-                        'assets/images/lojologo.png',
+                        'assets/images/lojolog.png',
                         width: 200,
                         height: 100,
                       ),
@@ -88,14 +95,16 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(
                                   5), // Adjust the radius as needed
                               border: Border.all(
-                                color: Colors.grey, // Specify the border color
+                                color: Colors.grey,
+                                // Specify the border color
                                 width: 1, // Specify the border width
                               ),
                             ),
                             child: TextField(
                               decoration: InputDecoration(
                                 hintText: "Username",
-                                hintStyle: TextStyle(fontSize: 16),
+                                hintStyle: TextStyle(
+                                    fontSize: 16, color: Colors.white),
 
                                 icon: Padding(
                                   padding: const EdgeInsets.only(left: 10),
@@ -119,7 +128,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(
                                   5), // Adjust the radius as needed
                               border: Border.all(
-                                color: Colors.grey, // Specify the border color
+                                color: Colors.grey,
+                                // Specify the border color
                                 width: 1, // Specify the border width
                               ),
                             ),
@@ -167,7 +177,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         decoration: BoxDecoration(
                                           color: Color(0xFF00ADEE),
                                         ),
-                                        padding: EdgeInsets.only(top: 15, left: 16),
+                                        padding:
+                                            EdgeInsets.only(top: 15, left: 16),
                                         child: Text(
                                           "Password",
                                           style: TextStyle(
@@ -177,13 +188,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                           ),
                                         ),
                                       ),
-                                      contentPadding: EdgeInsets.only(top: 10.0),
+                                      contentPadding:
+                                          EdgeInsets.only(top: 10.0),
                                       content: Container(
                                         width: 100.0,
                                         child: Column(
-                                          mainAxisAlignment: MainAxisAlignment.start,
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
                                           crossAxisAlignment:
-                                          CrossAxisAlignment.stretch,
+                                              CrossAxisAlignment.stretch,
                                           mainAxisSize: MainAxisSize.min,
                                           children: <Widget>[
                                             SizedBox(
@@ -203,10 +216,11 @@ class _LoginScreenState extends State<LoginScreen> {
                                                       borderSide: BorderSide(
                                                           color: Colors.white),
                                                       borderRadius:
-                                                      BorderRadius.circular(1.0),
+                                                          BorderRadius.circular(
+                                                              1.0),
                                                     ),
                                                     contentPadding:
-                                                    EdgeInsets.symmetric(
+                                                        EdgeInsets.symmetric(
                                                       vertical: 10.0,
                                                       horizontal: 10.0,
                                                     ),
@@ -227,18 +241,23 @@ class _LoginScreenState extends State<LoginScreen> {
                                                   onPressed: () {
                                                     //_forgotPassword();
                                                   },
-                                                  style: ElevatedButton.styleFrom(
-                                                    foregroundColor: Colors.white,
+                                                  style:
+                                                      ElevatedButton.styleFrom(
+                                                    foregroundColor:
+                                                        Colors.white,
                                                     backgroundColor:
-                                                    Color(0xFF00ADEE),
-                                                    shape: RoundedRectangleBorder(
+                                                        Color(0xFF00ADEE),
+                                                    shape:
+                                                        RoundedRectangleBorder(
                                                       borderRadius:
-                                                      BorderRadius.circular(10),
+                                                          BorderRadius.circular(
+                                                              10),
                                                     ),
                                                   ),
                                                   child: Text(
                                                     "Forget Password",
-                                                    style: TextStyle(fontSize: 17),
+                                                    style:
+                                                        TextStyle(fontSize: 17),
                                                   ),
                                                 ),
                                               ),
@@ -273,127 +292,100 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(height: 10),
                         isLoading
                             ? Center(
-                          child: CircularProgressIndicator(),
-                        )
-                            :SizedBox(
+                                child: CircularProgressIndicator(),
+                              )
+                            : SizedBox(
                           width: 310,
                           height: 45,
-                          child: ElevatedButton(
+                          child:ElevatedButton(
                             onPressed: () {
-                              print('JSON Response: ${_userNameController.text}');
+                              print('USERNAME: ${_userNameController.text}');
+
                               __futureLogin = ResponseHandler.performPost(
-                                "Travellerogin",
-                                'Username=' +
-                                    _userNameController.text +
-                                    '&Password=' +
-                                    _passwordController.text,
+                                "B2BAdminLogin",
+                                'Username=${_userNameController.text}&Password=${_passwordController.text}',
                               );
 
                               __futureLogin?.then((value) {
                                 print('Response body: ${value.body}');
 
-                                String jsonResponse =
-                                ResponseHandler.parseData(value.body);
+                                // Extract <string> values from XML
+                                List<String> xmlStrings = ResponseHandler.parseXMLStrings(value.body);
+                                print("Extracted XML Strings: $xmlStrings");
 
-                                print('JSON Response: ${jsonResponse}');
+                                if (xmlStrings.isEmpty) {
+                                  showLoginError(context);
+                                  return;
+                                }
+
+                                // FIRST STRING = USER JSON ARRAY
+                                String userJson = xmlStrings[0].trim();
+                                // SECOND STRING = CURRENCY JSON ARRAY
+                                String currencyJson = xmlStrings.length > 1 ? xmlStrings[1].trim() : "[]";
+
+                                print("User JSON = $userJson");
+                                print("Currency JSON = $currencyJson");
 
                                 try {
-                                  Map<String, dynamic> map =
-                                  json.decode(jsonResponse);
-                                  List<dynamic> list = map["Table"];
-                                  List<dynamic> list1 = map["Table1"];
+                                  // Decode user JSON list
+                                  List<dynamic> userList = json.decode(userJson);
 
-                                  List<dynamic> list2 = map["Table2"];
-                                  Table1Model table1Data =
-                                  Table1Model.fromJson(list1[0]);
-                                  String currency = table1Data.symbol;
-                                  CurrencyModel table2Data = CurrencyModel.fromJson((list2[0]));
-                                  String Currency = table2Data.currencyCode;
-                                  print('decodedJson: ${Currency}');
-                                  print('decodedJson: ${list1}');
-                                  LoginModel fm = LoginModel.fromJson(list[0]);
-                                  print('decodedJson[0]: ${list[0]}');
+                                  if (userList.isEmpty) {
+                                    showLoginError(context);
+                                    return;
+                                  }
 
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_USER_TYPE, fm.userType);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_USER_TYPE_ID, fm.userTypeId);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_USER_ID, fm.userId);
+                                  // Decode currency JSON list
+                                  List<dynamic> currencyList = json.decode(currencyJson);
+
+                                  // MAP INTO MODELS
+                                  LoginModel fm = LoginModel.fromJson(userList[0]);
+
+                                  String currencySymbol = "";
+                                  String currencyCode = "";
+
+                                  if (currencyList.isNotEmpty) {
+                                    var c = currencyList[0];
+                                    currencySymbol = c["Symbol"] ?? "";
+                                    currencyCode = c["Code"] ?? "";
+                                  }
+
+                                  // SAVE DATA
+                                  Prefs.saveStringValue(Prefs.PREFS_USER_TYPE, fm.userType);
+                                  Prefs.saveStringValue(Prefs.PREFS_USER_TYPE_ID, fm.userTypeId);
+                                  Prefs.saveStringValue(Prefs.PREFS_USER_ID, fm.userId);
+
                                   MemberId = fm.userId;
-                                  print('USERID' + MemberId);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_USER_NAME, fm.username);
                                   UserName = fm.username;
-Prefs.saveStringValue((Prefs.PREFS_CURRENCY), table2Data.currencyCode);
-                                  print('USERID' + currency);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_NAME, fm.name);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_PASSWORD, fm.password);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_TRANSACTION_PASSWORD,
-                                      fm.transactionPassword);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_CONTACT_EMAIL,
-                                      fm.contactEmail);
                                   Email = fm.contactEmail;
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_MOBILE, fm.mobile);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_TIME_IN, fm.timein);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_TIME_OUT, fm.timeout);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_IS_ACTIVE, fm.isActive);
 
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_TWO, fm.two);
-                                  Prefs.saveStringValue(
-                                      Prefs.PREFS_PHOTO, fm.photo);
+                                  Prefs.saveStringValue(Prefs.PREFS_USER_NAME, fm.username);
+                                  Prefs.saveStringValue(Prefs.PREFS_CURRENCY, currencyCode);
+                                  Prefs.saveStringValue(Prefs.PREFS_NAME, fm.name);
+                                  Prefs.saveStringValue(Prefs.PREFS_PASSWORD, fm.password);
+                                  Prefs.saveStringValue(Prefs.PREFS_TRANSACTION_PASSWORD, fm.transactionPassword);
+                                  Prefs.saveStringValue(Prefs.PREFS_CONTACT_EMAIL, fm.contactEmail);
+                                  Prefs.saveStringValue(Prefs.PREFS_MOBILE, fm.mobile);
+                                  Prefs.saveStringValue(Prefs.PREFS_TIME_IN, fm.timein);
+                                  Prefs.saveStringValue(Prefs.PREFS_TIME_OUT, fm.timeout);
+                                  Prefs.saveStringValue(Prefs.PREFS_IS_ACTIVE, fm.isActive);
+                                  Prefs.saveStringValue(Prefs.PREFS_TWO, fm.two);
+                                  Prefs.saveStringValue(Prefs.PREFS_PHOTO, fm.photo);
 
+                                  // NAVIGATE
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => Dashboard(Username: UserName, email: Email, currency: currency),
+                                      builder: (context) => Dashboard(
+                                        Username: UserName,
+                                        email: Email,
+                                        currency: currencySymbol,
+                                      ),
                                     ),
                                   );
                                 } catch (e) {
-                                  print('Error in JSON data');
-                                  print(e);
-                                  showDialog(
-                                    context: context,
-                                    builder: (BuildContext context) {
-                                      return AlertDialog(
-                                        title: Text(
-                                          "Failed to login",
-                                          style: TextStyle(
-                                            color: Colors.redAccent,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        content: Text(
-                                          "Please check your username and password.",
-                                          style: TextStyle(
-                                            color: Colors.black,
-                                          ),
-                                        ),
-                                        actions: [
-                                          ElevatedButton(
-                                            onPressed: () {
-                                              Navigator.of(context).pop();
-                                            },
-                                            child: Text(
-                                              "Close",
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
-                                      );
-                                    },
-                                  );
+                                  print("JSON PARSE ERROR: $e");
+                                  showLoginError(context);
                                 }
                               });
                             },
@@ -406,17 +398,39 @@ Prefs.saveStringValue((Prefs.PREFS_CURRENCY), table2Data.currencyCode);
                             ),
                             child: Text(
                               'LOGIN',
-                              style: TextStyle(fontSize: 20,color: Colors.white),
+                              style: TextStyle(fontSize: 20, color: Colors.white),
                             ),
                           ),
+
                         ),
-                        SizedBox(height: 10),
+
+              SizedBox(height: 10),
                       ],
                     ),
                   ]),
-                ),
-              )),
-        ));
+            ),
+          )),
+    ));
   }
-
+}
+void showLoginError(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: Text(
+        "Failed to login",
+        style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+      ),
+      content: Text(
+        "Please check your username and password.",
+        style: TextStyle(color: Colors.black),
+      ),
+      actions: [
+        ElevatedButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text("Close", style: TextStyle(color: Colors.black)),
+        )
+      ],
+    ),
+  );
 }

@@ -85,7 +85,7 @@ class _WalletStatementReportState extends State<CreditRequestApproved> {
           ),
           actions: [
             Image.asset(
-              'assets/images/lojologo.png',
+              'assets/images/lojolog.png',
               width: 100,
               height: 50,
             ),

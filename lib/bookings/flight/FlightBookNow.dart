@@ -1284,11 +1284,10 @@ class _OneWayBookingState extends State<FlightBookNow> {
                                     Container(
                                       width: 65,
                                       child: Text(
-                                        CommonUtils
-                                            .convertMinutesToHoursMinutes(
+
                                                 resultFlightData[0]
                                                         ['TravelTime']
-                                                    .toString()),
+                                                    .toString(),
                                         style: TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16),

@@ -24,7 +24,9 @@ class HotelsScreen extends StatefulWidget {
 
 class _HotelsScreenState extends State<HotelsScreen> {
   DateTime? checkInDate;
-
+  final PageController _pageController = PageController(viewportFraction: 0.85);
+  int _currentPage = 0;
+  Timer? _timer;
   Future<http.Response>? __futureAirlinesDDL;
   DateTime? checkOutDate;
   String Cityid = '', countrycode = '';
@@ -47,18 +49,15 @@ class _HotelsScreenState extends State<HotelsScreen> {
     HotelDestination(
         title: "Fairview Nairobi",
         subtitle: "4 great deals",
-        image:
-            "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/0d/c3/8f/9c/fairview-hotel.jpg?w=1200&h=-1&s=1"),
+        image:"assets/images/hotelimg1.jpg"),
     HotelDestination(
         title: "Diani Reef Beach Resort",
         subtitle: "10 great deals",
-        image:
-            "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/95/4a/ce/diani-reef-beach-resort.jpg?w=1200&h=-1&s=1"),
+        image:"assets/images/hotelimg2.jpg"),
     HotelDestination(
         title: "Southern Palms Beach Resort",
         subtitle: "7 great deals",
-        image:
-            "https://dynamic-media-cdn.tripadvisor.com/media/photo-o/26/b8/4a/4a/southern-palms-beach.jpg?w=1200&h=-1&s=1"),
+        image:"assets/images/hotelimg3.jpg"),
   ];
   @override
   void initState() {
@@ -66,6 +65,24 @@ class _HotelsScreenState extends State<HotelsScreen> {
     //searchBookingTravellers(orginController.text.toString());
 
     super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      if (_currentPage < hotelDestination.length - 1) {
+        _currentPage++;
+      } else {
+        _currentPage = 0;
+      }
+      _pageController.animateToPage(
+        _currentPage,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
   }
 
   void navigate(Widget screen) {
@@ -175,7 +192,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojologg.png',
             width: 100,
             height: 50,
           ),
@@ -765,126 +782,67 @@ class _HotelsScreenState extends State<HotelsScreen> {
                     ),
                     SizedBox(
                       height: 230,
-                      width: double.infinity,
-                      child: ListView.builder(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: hotelDestination.length,
                         itemBuilder: (context, index) {
+                          final hotel = hotelDestination[index];
                           return Container(
-                            width: 330,
-                            height: 200,
-                            margin: const EdgeInsets.fromLTRB(10, 10, 10, 20),
+                            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                             child: Card(
-                              elevation: 10.0,
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
+                              elevation: 10,
                               shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0)),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              clipBehavior: Clip.antiAliasWithSaveLayer,
                               child: Stack(
                                 alignment: Alignment.bottomLeft,
                                 children: [
-                                  SizedBox(
+                                  Image.asset(
+                                    hotel.image,
+                                    fit: BoxFit.fill,
                                     width: 330,
                                     height: 200,
-                                    /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                    child: CachedNetworkImage(
-                                      imageUrl: hotelDestination[index].image,
-                                      placeholder: (context, url) => const Center(
-                                          child: SizedBox(
-                                              height: 40,
-                                              width: 40,
-                                              child:
-                                                  CircularProgressIndicator())),
-                                      errorWidget: (context, url, error) =>
-                                          const Icon(Icons.error),
-                                      fit: BoxFit.fill,
-                                    ),
                                   ),
                                   Container(
-                                      width: 330,
-                                      height: 55,
-                                      color: Colors.black.withOpacity(0.6),
-                                      padding: const EdgeInsets.all(5.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                hotelDestination[index].title,
-                                                maxLines: 1,
-                                                style: const TextStyle(
-                                                    fontFamily: "Montserrat",
-                                                    fontSize: 14,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white),
-                                              ),
-                                              const SizedBox(
-                                                height: 5,
-                                              ),
-                                              SizedBox(
-                                                width: 200,
-                                                child: Text(
-                                                  hotelDestination[index]
-                                                      .subtitle,
-                                                  maxLines: 1,
-                                                  style: const TextStyle(
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      fontFamily: "Montserrat",
-                                                      fontSize: 13,
-                                                      color: Colors.white),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          ElevatedButton(
-                                            onPressed: () {},
-                                            style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.red,
-                                                elevation: 16.0),
-                                            child: const Text(
-                                              "Explore",
-                                              style: TextStyle(
-                                                fontFamily: "Montserrat",
-                                              ),
+                                    color: Colors.black.withOpacity(0.6),
+                                    height: 55,
+                                    padding: const EdgeInsets.all(5),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              hotel.title,
+                                              style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold),
                                             ),
-                                          )
-                                        ],
-                                      ))
+                                            Text(
+                                              hotel.subtitle,
+                                              style: const TextStyle(color: Colors.white),
+                                            )
+                                          ],
+                                        ),
+                                        ElevatedButton(
+                                          onPressed: () {},
+                                          child: const Text("Explore"),
+                                          style: ElevatedButton.styleFrom(
+                                              backgroundColor: Colors.red),
+                                        )
+                                      ],
+                                    ),
+                                  )
                                 ],
                               ),
                             ),
                           );
                         },
-                        itemCount: hotelDestination.length,
-                        scrollDirection: Axis.horizontal,
                       ),
                     ),
-                    SizedBox(
-                        width: double.infinity,
-                        height: 200,
-                        child: CarouselSlider(
-                          items: [
-                            Image.asset(
-                              "assets/images/hotelllllei.jpg",
-                              fit: BoxFit.fitWidth,
-                            ),
-                            Image.asset(
-                              "assets/images/hotelgotra.jpg",
-                              fit: BoxFit.cover,
-                            ),
 
-                          ],
-                          options: CarouselOptions(
-                            autoPlay: true,
-                            viewportFraction: 1,
-                            enlargeCenterPage: false,
-                          ),
-                        )),
                     const SizedBox(
                       height: 10,
                     ),
@@ -915,6 +873,7 @@ class _HotelsScreenState extends State<HotelsScreen> {
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
+                          // First card
                           Container(
                             width: 250,
                             height: 150,
@@ -924,28 +883,15 @@ class _HotelsScreenState extends State<HotelsScreen> {
                               clipBehavior: Clip.antiAliasWithSaveLayer,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10.0)),
-                              child: SizedBox(
+                              child: Image.asset(
+                                'assets/images/travelsafety.jpg',
+                                fit: BoxFit.fill,
                                 width: 250,
                                 height: 150,
-                                /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://img.freepik.com/free-psd/travel-safely-banner-template_23-2149203644.jpg',
-                                  placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: CircularProgressIndicator())),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                  fit: BoxFit.fill,
-                                ),
                               ),
                             ),
                           ),
+                          // Second card
                           Container(
                             width: 250,
                             height: 150,
@@ -955,28 +901,15 @@ class _HotelsScreenState extends State<HotelsScreen> {
                               clipBehavior: Clip.antiAliasWithSaveLayer,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10.0)),
-                              child: SizedBox(
+                              child: Image.asset(
+                                'assets/images/travelsafety2.jpg',
+                                fit: BoxFit.fill,
                                 width: 250,
                                 height: 150,
-                                /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://cdn5.vectorstock.com/i/1000x1000/58/94/covid-safe-travel-logo-banner-with-passengers-vector-41645894.jpg',
-                                  placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: CircularProgressIndicator())),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                  fit: BoxFit.fill,
-                                ),
                               ),
                             ),
                           ),
+                          // Third card
                           Container(
                             width: 250,
                             height: 150,
@@ -986,157 +919,22 @@ class _HotelsScreenState extends State<HotelsScreen> {
                               clipBehavior: Clip.antiAliasWithSaveLayer,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10.0)),
-                              child: SizedBox(
+                              child: Image.asset(
+                                'assets/images/travelsafety3.jpg',
+                                fit: BoxFit.fill,
                                 width: 250,
                                 height: 150,
-                                /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://previews.123rf.com/images/decorwithme/decorwithme1903/decorwithme190300110/124429946-travel-insurance-colorful-flat-design-style-web-banner-on-white-background-with-copy-space-for.jpg',
-                                  placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: CircularProgressIndicator())),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                  fit: BoxFit.fill,
-                                ),
                               ),
                             ),
                           ),
                         ],
                       ),
                     ),
+
                     const SizedBox(
-                      height: 10,
+                      height: 100,
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      child: const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "What's new about us?",
-                            style: TextStyle(
-                                fontSize: 17, fontWeight: FontWeight.w700),
-                          ),
-                          SizedBox(
-                            height: 5,
-                          ),
-                          Text(
-                            "We're different from others in terms of service",
-                            style: TextStyle(
-                                fontSize: 15,
-                                color: Colors.black,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 150,
-                            height: 250,
-                            margin: const EdgeInsets.fromLTRB(10, 10, 10, 20),
-                            child: Card(
-                              elevation: 10.0,
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0)),
-                              child: SizedBox(
-                                width: 150,
-                                height: 250,
-                                /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://marketplace.canva.com/EAE-oK6TfmI/1/0/800w/canva-elegant-grand-opening-annoncement-invitation-banner-portrait-ZkcmPUyKFRY.jpg',
-                                  placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: CircularProgressIndicator())),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                  fit: BoxFit.fill,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 150,
-                            height: 250,
-                            margin: const EdgeInsets.fromLTRB(10, 10, 10, 20),
-                            child: Card(
-                              elevation: 10.0,
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0)),
-                              child: SizedBox(
-                                width: 150,
-                                height: 250,
-                                /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/travel-banner-design-template-74c2986da1078a325518f2202d02d74e_screen.jpg?ts=1661668122',
-                                  placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: CircularProgressIndicator())),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                  fit: BoxFit.fill,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Container(
-                            width: 150,
-                            height: 250,
-                            margin: const EdgeInsets.fromLTRB(10, 10, 10, 20),
-                            child: Card(
-                              elevation: 10.0,
-                              clipBehavior: Clip.antiAliasWithSaveLayer,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10.0)),
-                              child: SizedBox(
-                                width: 150,
-                                height: 250,
-                                /*child: Image(
-                          image: NetworkImage(hotelDestination[index].image),
-                          fit: BoxFit.fill,
-                        ),*/
-                                child: CachedNetworkImage(
-                                  imageUrl:
-                                      'https://marketplace.canva.com/EAEbm1h5br4/1/0/1200w/canva-blue-red-clean-%26-corporate-workplace-health-%26-safety-rules-health-explainer-poster-y07YKNJaiQ4.jpg',
-                                  placeholder: (context, url) => const Center(
-                                      child: SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: CircularProgressIndicator())),
-                                  errorWidget: (context, url, error) =>
-                                      const Icon(Icons.error),
-                                  fit: BoxFit.fill,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+
                   ],
                 ),
               ),

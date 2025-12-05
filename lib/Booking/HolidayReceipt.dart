@@ -154,7 +154,7 @@ class _BookingCardGeneralDetailsState extends State<HolidayReceipt> {
             ),
             actions: [
               Image.asset(
-                'assets/images/lojologo.png',
+                'assets/images/lojologg.png',
                 width: 100,
                 height: 50,
               ),
@@ -392,7 +392,7 @@ class _BookingCardGeneralDetailsState extends State<HolidayReceipt> {
                                       style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold)),
-                                  Image.asset('assets/images/lojologo.png',
+                                  Image.asset('assets/images/lojologg.png',
                                       width: 200, height: 50),
                                 ],
                               ),

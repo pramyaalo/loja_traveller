@@ -40,7 +40,7 @@ class _BookingCardGeneralDetailsState extends State<Receipt> {
           ),
           actions: [
             Image.asset(
-              'assets/images/lojologo.png',
+              'assets/images/lojologg.png',
               width: 150,
               height: 50,
             ),
@@ -64,7 +64,7 @@ class _BookingCardGeneralDetailsState extends State<Receipt> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('Invoice', style: TextStyle(fontSize: 20)),
-                      Image.asset('assets/images/lojologo.png',
+                      Image.asset('assets/images/lojologg.png',
                           width: 200, height: 50),
                     ],
                   ),

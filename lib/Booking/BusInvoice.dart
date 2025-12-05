@@ -155,7 +155,7 @@ class _BookingCardGeneralDetailsState extends State<BusInvoice> {
             ),
             actions: [
               Image.asset(
-                'assets/images/lojologo.png',
+                'assets/images/lojolog.png',
                 width: 100,
                 height: 50,
               ),
@@ -405,7 +405,7 @@ class _BookingCardGeneralDetailsState extends State<BusInvoice> {
                                       style: TextStyle(
                                           fontSize: 20,
                                           fontWeight: FontWeight.bold)),
-                                  Image.asset('assets/images/lojologo.png',
+                                  Image.asset('assets/images/lojolog.png',
                                       width: 200, height: 50),
                                 ],
                               ),

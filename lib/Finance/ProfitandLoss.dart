@@ -113,7 +113,7 @@ class _BookingCardGeneralDetailsState extends State<ProfitandLoss> {
               ),
               actions: [
                 Image.asset(
-                  'assets/images/lojologo.png',
+                  'assets/images/lojolog.png',
                   width: 150,
                   height: 50,
                 ),
@@ -266,7 +266,7 @@ class _BookingCardGeneralDetailsState extends State<ProfitandLoss> {
                                     mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
                                       Image.asset(
-                                          'assets/images/lojologo.png',
+                                          'assets/images/lojolog.png',
                                           width: 200,
                                           height: 50),
                                     ],

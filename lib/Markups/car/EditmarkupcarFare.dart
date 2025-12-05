@@ -203,7 +203,7 @@ class _MyRechargePageState extends State<EditmarkupcarFare> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojolog.png',
             width: 100,
             height: 50,
           ),

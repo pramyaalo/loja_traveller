@@ -30,7 +30,8 @@ class OnewayFlightsList extends StatefulWidget {
       children,
       infants,
       userId,
-      currency;
+      currency,
+      classtype;
 
   const OnewayFlightsList({
     super.key,
@@ -43,6 +44,7 @@ class OnewayFlightsList extends StatefulWidget {
     required this.departDate,
     required this.userId,
     required this.currency,
+    required this.classtype,
   });
 
   @override
@@ -190,23 +192,23 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
   }
 
   void sendFlightSearchRequest(Map<String, dynamic> filters) async {
-    String finDate =
-        widget.departDate.toString().split(' ')[0].replaceAll('-', '/');
+
+    DateTime parsedDate = DateTime.parse(widget.departDate); // String → DateTime
+    String finDate = DateFormat('dd-MM-yyyy').format(parsedDate);
+
+
     String origin = widget.orgin; // Fixed typo: 'orgin' to 'origin'
     String destination = widget.destination;
-
+    String travelClass = widget.classtype.toString();
     // Include filters in the request body
     var requestBody = {
       'AdultCount': widget.adult.toString(),
       'ChildrenCount': widget.children.toString(),
       'InfantCount': widget.infants.toString(),
       'DepartDate': finDate,
-      'Class': '3',
+      'Class': "2",
       'Origin': origin,
       'Destination': destination,
-      'TripType': 'OneWay',
-      'DefaultCurrency': 'KES',
-      'UserID': widget.userId,
     };
 
     // Check and include the refundable filter
@@ -220,7 +222,7 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
     print('Sending flight search request with parameters: $requestBody');
 
     var url = Uri.parse(
-        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaSearchFlightOneWay');
+        'https://lojatravel.com/app/b2badminapi.asmx/FlightSearch_OneWay');
 
     try {
       setState(() {
@@ -240,35 +242,36 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
       });
 
       if (response.statusCode == 200) {
-        print('✅ Request successful: ${response.statusCode}');
+
+
+
+        print('✅ Reqasdadfsduest successful: ${response.statusCode}');
 
         try {
-          // ✅ Parse XML response
+          // Parse XML response
           var document = xml.XmlDocument.parse(response.body);
-          var jsonString = document.findAllElements('string').first.text;
 
-          if (kDebugMode) print('🔍 Extracted JSON: $jsonString');
+          // Second <string> element text
+          var flightsJsonString = document.findAllElements('string').elementAt(1).text;
 
-          var jsonResponse = json.decode(jsonString);
+          if (kDebugMode) print('🔍 Extracted Flights JSON: $flightsJsonString');
 
-          if (jsonResponse is List) {
-            fullResultList = jsonResponse.map((e) => Map<String, dynamic>.from(e)).toList();
+          var flightsJson = json.decode(flightsJsonString);
+
+          if (flightsJson is List) {
+            fullResultList = flightsJson.map((e) => Map<String, dynamic>.from(e)).toList();
             resultList = fullResultList.where((item) => item['RowType'] == 'MainRow').toList();
 
-            // ✅ Extract unique airlines for checkboxes
-            // ✅ Extract unique airlines for checkbox list
+            // Extract unique CarrierName
             Set<String> carrierNames = {};
             for (var item in resultList) {
-              if (item['CarrierName'] != null) {
-                carrierNames.add(item['CarrierName']);
-              }
+              if (item['CarrierName'] != null) carrierNames.add(item['CarrierName']);
             }
 
-
-            // ✅ Preserve old selections
+            // Initialize airline checkboxes
             airlineCheckboxes = {
-              for (var code in carrierNames)
-                code: airlineCheckboxes.containsKey(code) ? airlineCheckboxes[code]! : false
+              for (var name in carrierNames)
+                name: airlineCheckboxes.containsKey(name) ? airlineCheckboxes[name]! : false
             };
 
             print('✅ Airline Checkbox Map: $airlineCheckboxes');
@@ -277,12 +280,13 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
                 airlineCheckboxes.values.where((v) => v == true).length;
             _applyFiltersToResult(resultList, filters);
           } else {
-            print('❌ Unexpected JSON format: $jsonResponse');
+            print('❌ Unexpected JSON format: $flightsJson');
           }
         } catch (e) {
-          print('❌ Parsing error: $e');
+          print('❌ ParsingSDdds error: $e');
         }
-      } else {
+      }
+      else {
         print('❌ Request failed: ${response.statusCode}');
       }
     } catch (error) {
@@ -295,70 +299,83 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
 
 
   void _applyStopCountFilter(
-      List<dynamic> results, Map<String, dynamic> filters)
-  {
-    if (filters['isNonStop'] == true) {
-      // If the switch is ON, filter only non-stop flights (StopCount == 0)
-      resultList = results.where((flight) {
+      List<dynamic> results,
+      Map<String, dynamic> filters,
+      ) {
+    // Only keep flights that are MainRow
+    List<dynamic> filtered = results.where((flight) {
+      bool isMainRow = flight['RowType'] == 'MainRow';
+
+      if (!isMainRow) return false;
+
+      // If non-stop filter is on, only keep StopCount == 0
+      if (filters['isNonStop'] == true) {
         int stopCount = int.tryParse(flight['StopCount']) ?? 0;
         return stopCount == 0;
-      }).toList();
-    } else {
-      // If the switch is OFF, show all flights (no filtering)
-      resultList = fullResultList; // Reset resultList to show all flights
-    }
+      }
 
-    // Now update the UI
+      // Otherwise keep all main rows
+      return true;
+    }).toList();
+
     setState(() {
-      resultList = resultList; // Refresh the list in the UI
+      resultList = filtered; // Only MainRow will be in the UI
     });
+  }
+  DateTime parseFlightDate(String dateStr) {
+    // Try ISO format first
+    DateTime? parsedDate = DateTime.tryParse(dateStr);
+    if (parsedDate != null) return parsedDate;
+
+    // Fallback to MM/dd/yyyy hh:mm:ss a format
+    try {
+      return DateFormat("MM/dd/yyyy hh:mm:ss a").parse(dateStr);
+    } catch (e) {
+      print("Failed to parse date: $dateStr, using now() as fallback");
+      return DateTime.now();
+    }
   }
   void _applyDepartureTimeFilter(List<dynamic> results, Map<String, dynamic> filters) {
     print('Displaying all flights: $results');
 
-    // Filter based on departure and arrival time
     List<dynamic> filteredResults = results.where((flight) {
-      DateTime departureDate = DateTime.parse(flight['DepartureDate']);
-      DateTime arrivalDate = DateTime.parse(flight['ArrivalDate']); // Assuming 'ArrivalDate' exists in the flight data
+      // Only consider MainRow entries
+      if (flight['RowType'] != 'MainRow') return false;
 
-      // Check if the flight matches any of the selected departure time filters
+      DateTime departureDate = parseFlightDate(flight['DepartureDate']);
+      DateTime arrivalDate = parseFlightDate(flight['ArrivalDate']);
+
+      // Departure time match
       bool matchesDeparture = (filters['isEarlyDeparture'] == true && departureDate.hour < 6) ||
           (filters['isMorningDeparture'] == true && departureDate.hour >= 6 && departureDate.hour < 12) ||
           (filters['isNoonDeparture'] == true && departureDate.hour >= 12 && departureDate.hour < 18) ||
           (filters['isEveningDeparture'] == true && departureDate.hour >= 18);
 
-      // Check if the flight matches any of the selected arrival time filters
+      // Arrival time match
       bool matchesArrival = (filters['ArrivalisEarlyDeparture'] == true && arrivalDate.hour < 6) ||
           (filters['ArrivalisMorningDeparture'] == true && arrivalDate.hour >= 6 && arrivalDate.hour < 12) ||
           (filters['ArrivalisNoonDeparture'] == true && arrivalDate.hour >= 12 && arrivalDate.hour < 18) ||
           (filters['ArrivalisEveningDeparture'] == true && arrivalDate.hour >= 18);
 
-      // Case 1: Both departure and arrival filters are selected (AND condition)
+      // Both departure and arrival filters selected: AND condition
       if ((filters['isEarlyDeparture'] == true || filters['isMorningDeparture'] == true ||
           filters['isNoonDeparture'] == true || filters['isEveningDeparture'] == true) &&
           (filters['ArrivalisEarlyDeparture'] == true || filters['ArrivalisMorningDeparture'] == true ||
               filters['ArrivalisNoonDeparture'] == true || filters['ArrivalisEveningDeparture'] == true)) {
-
-        // AND condition: Both departure and arrival times must match
         return matchesDeparture && matchesArrival;
-
       }
-      // Case 2: Only departure filters are selected (OR condition for departure match)
+      // Only departure filters selected
       else if (filters['isEarlyDeparture'] == true || filters['isMorningDeparture'] == true ||
           filters['isNoonDeparture'] == true || filters['isEveningDeparture'] == true) {
-
         return matchesDeparture;
-
       }
-      // Case 3: Only arrival filters are selected (OR condition for arrival match)
+      // Only arrival filters selected
       else if (filters['ArrivalisEarlyDeparture'] == true || filters['ArrivalisMorningDeparture'] == true ||
           filters['ArrivalisNoonDeparture'] == true || filters['ArrivalisEveningDeparture'] == true) {
-
         return matchesArrival;
-
       }
 
-      // If no filters are selected, exclude this flight
+      // No filters selected
       return false;
     }).toList();
 
@@ -369,24 +386,28 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
     print('Filtered flights: $filteredResults');
   }
 
+
   void _applySort(List<dynamic> results, String sortOrder) {
+    // Filter only MainRow entries
+    List<dynamic> mainRowResults = results.where((flight) => flight['RowType'] == 'MainRow').toList();
+
     // Ensure sorting works correctly
     if (sortOrder == "Low to High") {
-      results.sort((a, b) => _parsePrice(a['TotalPrice']).compareTo(_parsePrice(b['TotalPrice'])));
+      mainRowResults.sort((a, b) => _parsePrice(a['TotalPrice']).compareTo(_parsePrice(b['TotalPrice'])));
       print("Sorting: Low to High");
     } else if (sortOrder == "High to Low") {
-      // Sort in descending order (high price to low price)
-      results.sort((a, b) => _parsePrice(b['TotalPrice']).compareTo(_parsePrice(a['TotalPrice'])));
+      mainRowResults.sort((a, b) => _parsePrice(b['TotalPrice']).compareTo(_parsePrice(a['TotalPrice'])));
       print("Sorting: High to Low");
     }
 
-    // After sorting, update the result list
+    // Update the result list with only MainRow entries sorted
     setState(() {
-      resultList = results; // Update with sorted results
+      resultList = mainRowResults;
     });
 
-    print('Sorted hotels: $results');
+    print('Sorted flights (MainRow only): $mainRowResults');
   }
+
 
   double _parsePrice(dynamic price) {
     if (price is String) {
@@ -452,41 +473,35 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
       }
 
       // ✅ Departure time filter
-      DateTime departureDate = DateTime.parse(flight['DepartureDate']);
+      DateTime? departureDate = parseFlightDate(flight['DepartureDate']);
       if (!DepartisEarlySelected &&
           !DepartisMorningSelected &&
           !DepartisNoonSelected &&
           !DepartisEveningSelected) {
         departureConditionMatches = true;
       } else {
-        departureConditionMatches =
+        departureConditionMatches = departureDate == null || (
             (DepartisEarlySelected && departureDate.hour < 6) ||
-                (DepartisMorningSelected &&
-                    departureDate.hour >= 6 &&
-                    departureDate.hour < 12) ||
-                (DepartisNoonSelected &&
-                    departureDate.hour >= 12 &&
-                    departureDate.hour < 18) ||
-                (DepartisEveningSelected && departureDate.hour >= 18);
+                (DepartisMorningSelected && departureDate.hour >= 6 && departureDate.hour < 12) ||
+                (DepartisNoonSelected && departureDate.hour >= 12 && departureDate.hour < 18) ||
+                (DepartisEveningSelected && departureDate.hour >= 18)
+        );
       }
 
       // ✅ Arrival time filter
-      DateTime arrivalDate = DateTime.parse(flight['ArrivalDate']);
+      DateTime? arrivalDate = parseFlightDate(flight['ArrivalDate']);
       if (!ArrivalisEarlySelected &&
           !ArrivalisMorningSelected &&
           !ArrivalisNoonSelected &&
           !ArrivalisEveningSelected) {
         arrivalConditionMatches = true;
       } else {
-        arrivalConditionMatches =
+        arrivalConditionMatches = arrivalDate == null || (
             (ArrivalisEarlySelected && arrivalDate.hour < 6) ||
-                (ArrivalisMorningSelected &&
-                    arrivalDate.hour >= 6 &&
-                    arrivalDate.hour < 12) ||
-                (ArrivalisNoonSelected &&
-                    arrivalDate.hour >= 12 &&
-                    arrivalDate.hour < 18) ||
-                (ArrivalisEveningSelected && arrivalDate.hour >= 18);
+                (ArrivalisMorningSelected && arrivalDate.hour >= 6 && arrivalDate.hour < 12) ||
+                (ArrivalisNoonSelected && arrivalDate.hour >= 12 && arrivalDate.hour < 18) ||
+                (ArrivalisEveningSelected && arrivalDate.hour >= 18)
+        );
       }
 
       // ✅ FINAL: everything must pass (airline OR ALL + optional stop inside)
@@ -542,7 +557,14 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
         return '${day}th';
     }
   }
-
+  String formattedDate(String dateStr) {
+    try {
+      DateTime dt = DateFormat("MM/dd/yyyy hh:mm:ss a").parse(dateStr);
+      return DateFormat("dd-MM-yyyy\nh.mm a").format(dt); // 25-12-2025\n7.55 AM
+    } catch (e) {
+      return dateStr; // fallback
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -573,7 +595,7 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojologg.png',
             width: 100,
             height: 50,
           ),
@@ -643,344 +665,218 @@ class _OnewayFlightsListState extends State<OnewayFlightsList> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
+                                        Padding(
+                                          padding:
+                                          const EdgeInsets.only(
+                                              left: 5, top: 4,bottom: 7),
+                                          child: Text(
+                                            resultList[index]
+                                            ['CarrierName'],
+                                            style: TextStyle(
+                                              fontWeight:
+                                              FontWeight.bold,
+                                              fontSize: 15,
+                                            ),
+                                          ),
+                                        ),
                                         Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.start,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
+                                            // Carrier Icon
                                             Padding(
-                                              padding: const EdgeInsets.only(
-                                                  bottom: 5),
+                                              padding: const EdgeInsets.only(right: 4, top: 6),
+                                              child: Image.asset(
+                                                "assets/images/img.png",
+                                                width: 30,
+                                              ),
+                                            ),
+
+                                            // Departure info
+                                            Expanded(
+                                              flex: 2,
                                               child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.start,
-                                                crossAxisAlignment:
-                                                    CrossAxisAlignment.start,
+                                                crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                            left: 5, top: 4),
-                                                    child: Text(
-                                                      resultList[index]
-                                                          ['CarrierName'],
-                                                      style: TextStyle(
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        fontSize: 15,
+                                                  Text(
+                                                    formattedDate(resultList[index]['DepartureDate'].toString().toUpperCase()),
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    resultList[index]['DepartCityCode'],
+                                                    style: TextStyle(color: Color(0xff777777), fontWeight: FontWeight.bold, fontSize: 12),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Travel time & stops
+                                            Expanded(
+                                              flex: 2,
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    CommonUtils.convertMinutesToHoursMinutes(resultList[index]['TravelTime']),
+                                                    style: TextStyle(fontWeight: FontWeight.w400, fontSize: 11),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  Image.asset(
+                                                    (resultList[index]['StopCount'] == '0')
+                                                        ? "assets/images/NonStop.png"
+                                                        : (resultList[index]['StopCount'] == '1')
+                                                        ? "assets/images/oneStop.png"
+                                                        : "assets/images/TwoStop.png",
+                                                    width: 70,
+                                                    fit: BoxFit.fitWidth,
+                                                  ),
+                                                  Text(
+                                                    '${resultList[index]['StopCount']} stops',
+                                                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Arrival info
+                                            Expanded(
+                                              flex: 2,
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    formattedDate(resultList[index]['ArrivalDate'].toString().toUpperCase()),
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  Text(
+                                                    resultList[index]['ArriveCityCode'],
+                                                    style: TextStyle(color: Color(0xff777777), fontWeight: FontWeight.bold, fontSize: 12),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+
+                                            // Price & View Details
+                                            Expanded(
+                                              flex: 2,
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    '${resultList[index]['Currency']} ${resultList[index]['TotalPrice']}',
+                                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                                  GestureDetector(
+                                                    onTap: () {
+                                                      final selectedMainRowNumber =
+                                                      resultList[
+                                                      index]
+                                                      ['MainRowNumber'];
+
+                                                      final matchingRows = fullResultList.where((item) =>
+                                                      item['MainRowNumber'] == selectedMainRowNumber
+                                                      ).toList();
+                                                      printFullJson(
+                                                          matchingRows);
+                                                      print(
+                                                          "Flight Details: ${fullResultList[index]}");
+                                                      _deleteAllRecordsAndGoBack();
+                                                      _deleteAllRecordsChildren();
+                                                      _deleteAllRecordsInfant();
+                                                      print(
+                                                          'Flight Details for index $index:');
+                                                      Navigator.push(
+                                                        context,
+                                                        MaterialPageRoute(
+                                                          builder: (BuildContext
+                                                          context) =>
+                                                              OneWayBooking(
+                                                                flightDetailsList:
+                                                                matchingRows,
+                                                                flightDetails:
+                                                                resultList[
+                                                                index],
+                                                                adultCount:
+                                                                widget
+                                                                    .adult,
+                                                                childrenCount:
+                                                                widget
+                                                                    .children,
+                                                                infantCount:
+                                                                widget
+                                                                    .infants,
+                                                                userid: widget
+                                                                    .userId,
+                                                                currency:
+                                                                widget
+                                                                    .currency,
+                                                                departDate:
+                                                                fin_date
+                                                                    .toString(),
+                                                                departcityname:
+                                                                resultList[index]
+                                                                [
+                                                                'DepartCityName'],
+                                                                arrivecityname:
+                                                                resultList[index]
+                                                                [
+                                                                'ArriveCityName'],
+                                                                departureDate: DateFormat("dd-MM-yyyy HH:mm").format(
+                                                                    parseFlightDate(resultList[index]['DepartureDate'])
+                                                                ),
+
+                                                                stopcount:
+                                                                resultList[index]
+                                                                [
+                                                                'StopCount'],
+                                                                traveltime:
+                                                                CommonUtils.convertMinutesToHoursMinutes(resultList[index]
+                                                                [
+                                                                'TravelTime']),
+                                                                totalamount:
+                                                                resultList[index]
+                                                                [
+                                                                'TotalPrice'],
+                                                              ),
+                                                        ),
+                                                      );
+                                                    },
+                                                    child: Padding(
+                                                      padding:
+                                                      const EdgeInsets
+                                                          .only(
+                                                          left:
+                                                          10),
+                                                      child: Text(
+                                                        'View Details',
+                                                        style:
+                                                        TextStyle(
+                                                          color: Colors
+                                                              .red,
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold,
+                                                          fontSize:
+                                                          12,
+                                                        ),
                                                       ),
                                                     ),
-                                                  ),
-                                                  Row(
-                                                    crossAxisAlignment:
-                                                        CrossAxisAlignment
-                                                            .center,
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.spaceBetween,
-                                                    children: [
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                right: 4,
-                                                                top: 6),
-                                                        child: Image(
-                                                          image: AssetImage(
-                                                              "assets/images/img.png"),
-                                                          width: 30,
-                                                        ),
-                                                      ),
-                                                      // Departure date and city code
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                left: 3,
-                                                                bottom: 0),
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(
-                                                                      top: 9),
-                                                              child: Text(
-                                                                '${CommonUtils.convertToFormattedTime(resultList[index]['DepartureDate']).toString().toUpperCase()}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 13,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(
-                                                                      left: 8),
-                                                              child: Text(
-                                                                resultList[
-                                                                        index][
-                                                                    'DepartCityCode'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: Color(
-                                                                      0xff777777),
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 12,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      // Travel time and stops
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                left: 15,
-                                                                bottom: 0),
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Text(
-                                                              CommonUtils.convertMinutesToHoursMinutes(
-                                                                  resultList[
-                                                                          index]
-                                                                      [
-                                                                      'TravelTime']),
-                                                              style: TextStyle(
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w400,
-                                                                fontSize: 11,
-                                                              ),
-                                                            ),
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(
-                                                                      left: 0,
-                                                                      bottom:
-                                                                          0),
-                                                              child:
-                                                                  Image.asset(
-                                                                (resultList[index]
-                                                                            [
-                                                                            'StopCount'] ==
-                                                                        '0')
-                                                                    ? "assets/images/NonStop.png"
-                                                                    : (resultList[index]['StopCount'] ==
-                                                                            '1')
-                                                                        ? "assets/images/oneStop.png"
-                                                                        : "assets/images/TwoStop.png",
-                                                                width: 70,
-                                                                fit: BoxFit
-                                                                    .fitWidth,
-                                                              ),
-                                                            ),
-                                                            Padding(
-                                                              padding: EdgeInsets
-                                                                  .only(
-                                                                      left: 10),
-                                                              child: Text(
-                                                                '${resultList[index]['StopCount']} stops',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontSize: 11,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w400,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      // Arrival date and city code
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-                                                                  right: 5,
-                                                                bottom: 0),
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(left:15,
-                                                                      top: 9),
-                                                              child: Text(
-                                                                '${CommonUtils.convertToFormattedTime(resultList[index]['ArrivalDate']).toString().toUpperCase()}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 13,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(
-                                                                      left: 10),
-                                                              child: Text(
-                                                                resultList[
-                                                                        index][
-                                                                    'ArriveCityCode'],
-                                                                style:
-                                                                    TextStyle(
-                                                                  color: Color(
-                                                                      0xff777777),
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 12,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-
-                                                      Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                .only(
-left: 15,
-                                                                bottom: 0),
-                                                        child: Column(
-                                                          crossAxisAlignment:
-                                                              CrossAxisAlignment
-                                                                  .start,
-                                                          children: [
-                                                            Padding(
-                                                              padding:
-                                                                  const EdgeInsets
-                                                                      .only(
-                                                                      left: 10,
-                                                                      top: 9),
-                                                              child: Text(
-                                                                '${resultList[index]['Currency']} ${resultList[index]['TotalPrice']}',
-                                                                style:
-                                                                    TextStyle(
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .bold,
-                                                                  fontSize: 13,
-                                                                ),
-                                                              ),
-                                                            ),
-                                                            GestureDetector(
-                                                              onTap: () {
-                                                                _deleteAllRecordsAndGoBack();
-                                                                _deleteAllRecordsChildren();
-                                                                _deleteAllRecordsInfant();
-                                                                print('Flight Details for index $index:');
-                                                                Navigator.push(
-                                                                  context,
-                                                                  MaterialPageRoute(
-                                                                    builder: (BuildContext
-                                                                            context) =>
-                                                                        OneWayBooking(
-                                                                      flightDetails:
-                                                                          resultList[
-                                                                              index],
-                                                                      adultCount:
-                                                                          widget
-                                                                              .adult,
-                                                                      childrenCount:
-                                                                          widget
-                                                                              .children,
-                                                                      infantCount:
-                                                                          widget
-                                                                              .infants,
-                                                                      userid: widget
-                                                                          .userId,
-                                                                      currency:
-                                                                          widget
-                                                                              .currency,
-                                                                      departDate:
-                                                                          fin_date
-                                                                              .toString(),
-                                                                      departcityname:
-                                                                          resultList[index]
-                                                                              [
-                                                                              'DepartCityName'],
-                                                                      arrivecityname:
-                                                                          resultList[index]
-                                                                              [
-                                                                              'ArriveCityName'],
-                                                                      departureDate:
-                                                                          formatDepartureDate(resultList[index]
-                                                                              [
-                                                                              'DepartureDate']),
-                                                                      stopcount:
-                                                                          resultList[index]
-                                                                              [
-                                                                              'StopCount'],
-                                                                      traveltime:
-                                                                          CommonUtils.convertMinutesToHoursMinutes(resultList[index]
-                                                                              [
-                                                                              'TravelTime']),
-                                                                      totalamount:
-                                                                          resultList[index]
-                                                                              [
-                                                                              'TotalPrice'],
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              },
-                                                              child: Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                        .only(
-                                                                        left:
-                                                                            10),
-                                                                child: Text(
-                                                                  'View Details',
-                                                                  style:
-                                                                      TextStyle(
-                                                                    color: Colors
-                                                                        .red,
-                                                                    fontWeight:
-                                                                        FontWeight
-                                                                            .bold,
-                                                                    fontSize:
-                                                                        12,
-                                                                  ),
-                                                                ),
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                    ],
                                                   ),
                                                 ],
                                               ),
                                             ),
                                           ],
                                         ),
+
                                         // Cheapest Text
                                         Padding(
                                           padding: const EdgeInsets.only(
-                                              left: 5,
+                                              left: 5,top: 6,
                                               bottom: 5), // Adjusted padding
                                           child: Container(
                                             decoration: BoxDecoration(
@@ -1601,7 +1497,11 @@ Divider(color: Colors.grey.shade400,),
   }
 
 
-
+  void printFullJson(List<dynamic> matchingRows) {
+    final encoder = JsonEncoder.withIndent('  ');
+    final prettyJson = encoder.convert(matchingRows);
+    developer.log(prettyJson, name: 'FilteredFlightDetails');
+  }
 
 }
 

@@ -92,7 +92,7 @@ class _BookingReportState extends State<NewBookings> {
             ),
             actions: [
               Image.asset(
-                'assets/images/lojologo.png',
+                'assets/images/lojologg.png',
                 width: 150,
                 height: 50,
               ),

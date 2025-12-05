@@ -445,8 +445,8 @@ class _TwoWayBoardingFlightsListState extends State<TwoWayBoardingFlightsList> {
                               ),
                             ),
                             onTap: () {
-                              navigate(TwoWayBooking(TotalPrice:'',departCity:'',adultCount: '',stopCount:'',childrenCount: '',departdate: '',infantCount: '',
-                                flightDetails: resultList[index],
+                              navigate(TwoWayBooking(stopCount:'',flightDetailsList:resultList[index],TotalPrice:'',departCity:'',adultCount: '',stopCountForward:'',stopCountReturn:'',childrenCount: '',departdate: '',infantCount: '',
+                                flightDetails: resultList[index],bookingapi: '',
                               ));
                             },
                           );

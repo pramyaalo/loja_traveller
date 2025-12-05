@@ -27,10 +27,10 @@ class _MyRechargePageState extends State<ClosedTickets> {
           "Closed Tickets",
           style: TextStyle(fontFamily: "Montserrat", fontSize: 17),
         ),
-        //title: Image.asset('assets/images/lojologo.png', width: 150, height: 30,),
+        //title: Image.asset('assets/images/lojologg.png', width: 150, height: 30,),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojologg.png',
             width: 150,
             height: 30,
           ),

@@ -301,7 +301,7 @@ class _HotelDescriptionState extends State<HotelDescription> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojologg.png',
             width: 100,
             height: 50,
           ),
@@ -532,8 +532,7 @@ class _HotelDescriptionState extends State<HotelDescription> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  widget.Checkindate.toString().substring(0, 10),
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                  DateFormat('dd-MM-yyyy').format(DateTime.parse(widget.Checkindate.toString())),                                  style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
                                 Text(
                                   nights.toString(),
@@ -541,7 +540,8 @@ class _HotelDescriptionState extends State<HotelDescription> {
                                       fontWeight: FontWeight.w500, fontSize: 16),
                                 ),
                                 Text(
-                                  widget.CheckoutDate.toString().substring(0, 10),
+                                  DateFormat('dd-MM-yyyy').format(DateTime.parse(widget.CheckoutDate.toString())),
+
                                   style: const TextStyle(fontWeight: FontWeight.w500),
                                 ),
                               ],

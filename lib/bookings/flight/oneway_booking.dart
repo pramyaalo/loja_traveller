@@ -27,7 +27,8 @@ import 'TravellerDetailsModel.dart';
 
 class OneWayBooking extends StatefulWidget {
   //same error
-  final dynamic flightDetails,
+  final dynamic flightDetailsList,
+      flightDetails,
       adultCount,
       childrenCount,
       infantCount,
@@ -43,6 +44,7 @@ class OneWayBooking extends StatefulWidget {
 
   const OneWayBooking(
       {super.key,
+        required this.flightDetailsList,
       required this.flightDetails,
       required this.infantCount,
       required this.childrenCount,
@@ -344,7 +346,47 @@ class _OneWayBookingState extends State<OneWayBooking> {
   final FocusNode _focusNode = FocusNode();
   FocusNode _firstNameFocusNode = FocusNode();
   FocusNode _lastNameFocusNode = FocusNode();
+  Map<String, dynamic>? fareSummary;
+  void parseFareSummary(String xmlResponse) {
+    try {
+      final document = xml.XmlDocument.parse(xmlResponse);
+      final strings = document.findAllElements('string').toList();
 
+      if (strings.length < 3) {
+        print("⚠️ Less than 3 <string> elements found.");
+        return;
+      }
+
+      final fareSummaryJson = strings[2].text; // 3rd <string>
+
+      if (fareSummaryJson.isEmpty) {
+        print("⚠️ Fare summary JSON is empty.");
+        return;
+      }
+
+      final decoded = jsonDecode(fareSummaryJson);
+
+      if (decoded == null || decoded is! List) {
+        print("⚠️ Fare summary JSON is not a List: $decoded");
+        return;
+      }
+
+      final List<dynamic> fareSummaryList = decoded;
+      if (fareSummaryList.isEmpty) {
+        print("⚠️ Fare summary list is empty.");
+        return;
+      }
+
+      fareSummary = fareSummaryList.first; // assign to class variable
+
+      print("Adult Fare: ${fareSummary!['AdualFare']}");
+      print("Tax: ${fareSummary!['AdualTaxFare']}");
+      print("Discount: ${fareSummary!['TotalDiscount']}");
+      print("Grand Total: ${fareSummary!['GrandTotal']}");
+    } catch (e) {
+      print("⚠️ Error parsing fare summary: $e");
+    }
+  }
   TextEditingController adultFname_controller = new TextEditingController();
   TextEditingController adultLname_controller = new TextEditingController();
   var selectedDate = DateTime.now().obs;
@@ -608,13 +650,47 @@ class _OneWayBookingState extends State<OneWayBooking> {
     super.initState();
     print('usefdgfgrID: ${widget.infantCount}');
     setState(() {
+      fetchCountries();
+      fetchNationalities();
       _fetchAdults();
       _fetchChildren();
       _fetchInfant();
       _retrieveSavedValues();
     });
   }
+  Future<void> fetchCountries() async {
+    final response = await http.post(
+      Uri.parse('https://boqoltravel.com/app/b2badminapi.asmx/GetCountries'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    );
 
+    if (response.statusCode == 200) {
+      final rawXml = response.body;
+
+      try {
+        final document = xml.XmlDocument.parse(rawXml);
+        final elements = document.findAllElements('string');
+        if (elements.isNotEmpty) {
+          final result = elements.first.text;
+
+          // Split and remove duplicates
+          final items = result.split(',').map((e) => e.trim()).toSet().toList();
+
+          setState(() {
+            countries = items;
+          });
+        } else {
+          print('No <string> tag found');
+        }
+      } catch (e) {
+        print('XML parse error: $e');
+      }
+    } else {
+      print('Request failed: ${response.statusCode}');
+    }
+  }
   Future<void> _fetchInfant() async {
     final dbHelper = InfantDatabaseHelper.instance;
     final adults = await dbHelper.getInfant(); // Fetch adults from the database
@@ -661,313 +737,156 @@ class _OneWayBookingState extends State<OneWayBooking> {
       return '';
     }
   }
+  String convertToApiFDate(String dateStr) {
+    if (dateStr.isEmpty) return "";
+
+    List<String> formats = [
+      "d MMMM yyyy", // e.g., 16 April 1997
+      "yyyy-MM-dd", // e.g., 2025-08-21
+      "yyyy/MM/dd", // e.g., 2024/05/14
+    ];
+
+    for (var format in formats) {
+      try {
+        DateTime dt = DateFormat(format).parse(dateStr);
+        return DateFormat("yyyy-MM-dd").format(dt); // API format
+      } catch (_) {
+        continue; // try next format
+      }
+    }
+
+    print("⚠️ Could not parse date: $dateStr");
+    return dateStr; // fallback
+  }
+  String buildPassengerJson({
+    required List<Map<String, dynamic>> adultsList,
+    required List<Map<String, dynamic>> childrenList,
+    required List<Map<String, dynamic>> infantsList,
+  })
+  {
+    List<Map<String, dynamic>> passengers = [];
+
+    // 🔹 Adults
+    for (var adult in adultsList) {
+      passengers.add({
+        "PassID": (passengers.length + 1).toString(),
+        "PaxType": "Adult",
+        "Title": adult["title"] ?? "",
+        "FirstName": adult["firstName"] ?? "",
+        "LastName": adult["surname"] ?? "",
+        "Gender": adult["gender"] ?? "",
+        "DateOfBirth": convertToApiFDate(adult["dob"]),
+        "DoumentType": "Passport",
+        "DoumentNo": adult["documentNumber"] ?? "",
+        "ExpiryDate": convertToApiFDate(adult["expiryDate"]),
+        "IssueDate": convertToApiFDate(adult["issueDate"]),
+        "Nationality": adult["nationality"] ?? "India - IN",
+        "BaseFare": resultFlightData[0]["BookingBaseFare"] ?? "0",
+        "TaxFare": resultFlightData[0]["BookingTax"] ?? "0",
+      });
+    }
+
+    // 🔹 Children
+    for (var child in childrenList) {
+      passengers.add({
+        "PassID": (passengers.length + 1).toString(),
+        "PaxType": "Child",
+        "Title": child["title"] ?? "",
+        "FirstName": child["firstName"] ?? "",
+        "LastName": child["surname"] ?? "",
+        "Gender": child["gender"] ?? "",
+        "DateOfBirth": convertToApiFDate(child["dob"]),
+        "DoumentType": "Passport",
+        "DoumentNo": child["documentNumber"] ?? "",
+        "ExpiryDate": convertToApiFDate(child["expiryDate"]),
+        "IssueDate": convertToApiFDate(child["issueDate"]),
+        "Nationality": child["nationality"] ?? "India - IN",
+        "BaseFare": child["baseFare"] ?? "0",
+        "TaxFare": child["taxFare"] ?? "0",
+      });
+    }
+
+    // 🔹 Infants
+    for (var infant in infantsList) {
+      passengers.add({
+        "PassID": (passengers.length + 1).toString(),
+        "PaxType": "Infant",
+        "Title": infant["title"] ?? "",
+        "FirstName": infant["firstName"] ?? "",
+        "LastName": infant["surname"] ?? "",
+        "Gender": infant["gender"] ?? "",
+        "DateOfBirth": convertToApiFDate(infant["dob"]),
+        "DoumentType": "Passport",
+        "DoumentNo": infant["documentNumber"] ?? "",
+        "ExpiryDate": convertToApiFDate(infant["expiryDate"]),
+        "IssueDate": convertToApiFDate(infant["issueDate"]),
+        "Nationality": infant["nationality"] ?? "India - IN",
+        "BaseFare": infant["baseFare"] ?? "0",
+        "TaxFare": infant["taxFare"] ?? "0",
+      });
+    }
+
+    return jsonEncode(passengers);
+  }
   Future<void> submitAdivahaFlightBooking() async {
     final url = Uri.parse(
-        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightBooking');
+        'https://lojatravel.com/app/b2badminapi.asmx/FlightBooking_Save');
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
-
-    String resultIndex = widget.flightDetails['ResultIndexID'];
-    String traceId = widget.flightDetails['ItemId'];
-
-    DateTime date = DateFormat('yyyy/MM/dd').parse(widget.departDate);
     String expDate = formatDate(expDateAdult1);
-    print(expDate);
-    // Format the date string with dashes
-    formattedFromDate = DateFormat('yyyy-MM-dd').format(date);
+    print(expDate); // Output: 2027-03-30
+
     String fullCountry = selectedCountry.toString(); // "India - IN"
     String onlyCountryName = fullCountry.split(' - ').first; // "India"
 
     String formattedDate = convertToApiDate(widget.departureDate);
-    print("formattedDateformattedDate"+formattedDate.toString());
-    print(formattedFromDate);
-    var reqBody = {
-      'ResultIndex': resultFlightData[0]['ResultIndexID'].toString(),
-      'TraceId': resultFlightData[0]['ItemId'].toString(),
-      'LCC': resultFlightData[0]['IsLCC'].toString(),
-      'TripType': 'OneWay',
-      'UserId': userID.toString(),
-      'UserTypeId': userTypeID.toString(),
-      'DefaultCurrency': resultFlightData[0]['BookingCurrency'].toString(),
-      'FromDate': formattedFromDate.toString(),
-      'AdultCount': widget.adultCount.toString(),
-      'ChildCount': widget.childrenCount.toString(),
-      'InfantCount': widget.infantCount.toString(),
-      'BookingCurrency': Currency.toString(),
-      'BookingBaseFare': resultFlightData[0]['BookingBaseFare'].toString(),
-      'BookingTax': resultFlightData[0]['BookingTax'].toString(),
-      'BookingYQTax': resultFlightData[0]['BookingYQTax'].toString(),
-      'BookingAdditionalTxnFeePub':
-          resultFlightData[0]['BookingAdditionalTxnFeePub'].toString(),
-      'BookingAdditionalTxnFeeOfrd':
-          resultFlightData[0]['BookingAdditionalTxnFeeOfrd'].toString(),
-      'BookingOtherCharges':
-          resultFlightData[0]['BookingOtherCharges'].toString(),
-      'BookingDiscount': resultFlightData[0]['BookingDiscount'].toString(),
-      'BookingPublishedFare':
-          resultFlightData[0]['BookingPublishedFare'].toString(),
-      'BookingOfferedFare':
-          resultFlightData[0]['BookingOfferedFare'].toString(),
-      'BookingTdsOnCommission':
-          resultFlightData[0]['BookingTdsOnCommission'].toString(),
-      'BookingTdsOnPLB': resultFlightData[0]['BookingTdsOnPLB'].toString(),
-      'BookingTdsOnIncentive':
-          resultFlightData[0]['BookingTdsOnIncentive'].toString(),
-      'BookingServiceFee': resultFlightData[0]['BookingServiceFee'].toString(),
-      'GSTCompanyAddress': '',
-      'GSTCompanyContactNumber': '',
-      'GSTCompanyName': '',
-      'GSTNumber': '',
-      'GSTCompanyEmail': '',
-      'TitleAdult1': TitleAdult1.toString(),
-      'FNameAdult1': FNameAdult1.toString(),
-      'MNameAdult1': MNameAdult1.toString(),
-      'LNameAdult1': LNameAdult1.toString(),
-      'LDOBAdult1': convertDate(LDOBAdult1).toString(),
-      'GenderAdult1': GenderAdult1.toString(),
-      'DocNumAdult1': DocNumAdult1.toString(),
-      'IssueDateAdult1': issueDateAdult1.toString(),
-      'ExpDateAdult1': expDate.toString(),
-      'TitleAdult2': TitleAdult2.toString(),
-      'FNameAdult2': FNameAdult2.toString(),
-      'MNameAdult2': MNameAdult2.toString(),
-      'LNameAdult2': LNameAdult2.toString(),
-      'LDOBAdult2': LDOBAdult2.toString(),
-      'GenderAdult2': GenderAdult2.toString(),
-      'DocNumAdult2': DocNumAdult2.toString(),
-      'IssueDateAdult2': IssueDateAdult2.toString(),
-      'ExpDateAdult2': ExpDateAdult2.toString(),
-      'TitleAdult3': TitleAdult3.toString(),
-      'FNameAdult3': FNameAdult3.toString(),
-      'MNameAdult3': MNameAdult3.toString(),
-      'LNameAdult3': LNameAdult3.toString(),
-      'LDOBAdult3': LDOBAdult3.toString(),
-      'GenderAdult3': GenderAdult3.toString(),
-      'DocNumAdult3': DocNumAdult3.toString(),
-      'IssueDateAdult3': IssueDateAdult3.toString(),
-      'ExpDateAdult3': ExpDateAdult3.toString(),
-      'TitleAdult4': TitleAdult4.toString(),
-      'FNameAdult4': FNameAdult4.toString(),
-      'MNameAdult4': MNameAdult4.toString(),
-      'LNameAdult4': LNameAdult4.toString(),
-      'LDOBAdult4': LDOBAdult4.toString(),
-      'GenderAdult4': GenderAdult4.toString(),
-      'DocNumAdult4': DocNumAdult4.toString(),
-      'IssueDateAdult4': IssueDateAdult4.toString(),
-      'ExpDateAdult4': ExpDateAdult4.toString(),
-      'TitleAdult5': TitleAdult5.toString(),
-      'FNameAdult5': FNameAdult5.toString(),
-      'MNameAdult5': MNameAdult5.toString(),
-      'LNameAdult5': LNameAdult5.toString(),
-      'LDOBAdult5': LDOBAdult5.toString(),
-      'GenderAdult5': GenderAdult5.toString(),
-      'DocNumAdult5': DocNumAdult5.toString(),
-      'IssueDateAdult5': IssueDateAdult5.toString(),
-      'ExpDateAdult5': ExpDateAdult5.toString(),
-      'TitleAdult6': TitleAdult6.toString(),
-      'FNameAdult6': FNameAdult6.toString(),
-      'MNameAdult6': MNameAdult6.toString(),
-      'LNameAdult6': LNameAdult6.toString(),
-      'LDOBAdult6': LDOBAdult6.toString(),
-      'GenderAdult6': GenderAdult6.toString(),
-      'DocNumAdult6': DocNumAdult6.toString(),
-      'IssueDateAdult6': IssueDateAdult6.toString(),
-      'ExpDateAdult6': ExpDateAdult6.toString(),
-      'TitleAdult7': TitleAdult7.toString(),
-      'FNameAdult7': FNameAdult7.toString(),
-      'MNameAdult7': MNameAdult7.toString(),
-      'LNameAdult7': LNameAdult7.toString(),
-      'LDOBAdult7': LDOBAdult7.toString(),
-      'GenderAdult7': GenderAdult7.toString(),
-      'DocNumAdult7': DocNumAdult7.toString(),
-      'IssueDateAdult7': IssueDateAdult7.toString(),
-      'ExpDateAdult7': ExpDateAdult7.toString(),
-      'TitleAdult8': TitleAdult8.toString(),
-      'FNameAdult8': FNameAdult8.toString(),
-      'MNameAdult8': MNameAdult8.toString(),
-      'LNameAdult8': LNameAdult8.toString(),
-      'LDOBAdult8': LDOBAdult8.toString(),
-      'GenderAdult8': GenderAdult8.toString(),
-      'DocNumAdult8': DocNumAdult8.toString(),
-      'IssueDateAdult8': IssueDateAdult8.toString(),
-      'ExpDateAdult8': ExpDateAdult8.toString(),
-      'TitleAdult9': TitleAdult9.toString(),
-      'FNameAdult9': FNameAdult9.toString(),
-      'MNameAdult9': MNameAdult9.toString(),
-      'LNameAdult9': LNameAdult9.toString(),
-      'LDOBAdult9': LDOBAdult9.toString(),
-      'GenderAdult9': GenderAdult9.toString(),
-      'DocNumAdult9': DocNumAdult9.toString(),
-      'IssueDateAdult9': IssueDateAdult9.toString(),
-      'ExpDateAdult9': ExpDateAdult9.toString(),
-      'TitleAdult10': TitleAdult10.toString(),
-      'FNameAdult10': FNameAdult10.toString(),
-      'MNameAdult10': MNameAdult10.toString(),
-      'LNameAdult10': LNameAdult10.toString(),
-      'LDOBAdult10': LDOBAdult10.toString(),
-      'GenderAdult10': GenderAdult10.toString(),
-      'DocNumAdult10': DocNumAdult10.toString(),
-      'IssueDateAdult10': IssueDateAdult10.toString(),
-      'ExpDateAdult10': ExpDateAdult10.toString(),
-      'TitleChild1': TitleChild1.toString(),
-      'FNameChild1': FNameChild1.toString(),
-      'MNameChild1': MNameChild1.toString(),
-      'LNameChild1': LNameChild1.toString(),
-      'LDOBChild1': LDOBChild1.toString(),
-      'GenderChild1': GenderChild1.toString(),
-      'DocNumChild1': DocNumChild1.toString(),
-      'IssueDateChild1': IssueDateChild1.toString(),
-      'ExpDateChild1': ExpDateChild1.toString(),
-      'TitleChild2': TitleChild2.toString(),
-      'FNameChild2': FNameChild2.toString(),
-      'MNameChild2': MNameChild2.toString(),
-      'LNameChild2': LNameChild2.toString(),
-      'LDOBChild2': LDOBChild2.toString(),
-      'GenderChild2': GenderChild2.toString(),
-      'DocNumChild2': DocNumChild2.toString(),
-      'IssueDateChild2': IssueDateChild2.toString(),
-      'ExpDateChild2': ExpDateChild2.toString(),
-      'TitleChild3': TitleChild3.toString(),
-      'FNameChild3': FNameChild3.toString(),
-      'MNameChild3': MNameChild3.toString(),
-      'LNameChild3': LNameChild3.toString(),
-      'LDOBChild3': LDOBChild3.toString(),
-      'GenderChild3': GenderChild3.toString(),
-      'DocNumChild3': DocNumChild3.toString(),
-      'IssueDateChild3': IssueDateChild3.toString(),
-      'ExpDateChild3': ExpDateChild3.toString(),
-      'TitleChild4': TitleChild4.toString(),
-      'FNameChild4': FNameChild4.toString(),
-      'MNameChild4': MNameChild4.toString(),
-      'LNameChild4': LNameChild4.toString(),
-      'LDOBChild4': LDOBChild4.toString(),
-      'GenderChild4': GenderChild4.toString(),
-      'DocNumChild4': DocNumChild4.toString(),
-      'IssueDateChild4': IssueDateChild4.toString(),
-      'ExpDateChild4': ExpDateChild4.toString(),
-      'TitleChild5': TitleChild5.toString(),
-      'FNameChild5': FNameChild5.toString(),
-      'MNameChild5': MNameChild5.toString(),
-      'LNameChild5': LNameChild5.toString(),
-      'LDOBChild5': LDOBChild5.toString(),
-      'GenderChild5': GenderChild5.toString(),
-      'DocNumChild5': DocNumChild5.toString(),
-      'IssueDateChild5': IssueDateChild5.toString(),
-      'ExpDateChild5': ExpDateChild5.toString(),
-      'TitleInfant1': TitleInfant1.toString(),
-      'FNameInfant1': FNameInfant1.toString(),
-      'MNameInfant1': MNameInfant1.toString(),
-      'LNameInfant1': LNameInfant1.toString(),
-      'LDOBInfant1': LDOBInfant1.toString(),
-      'GenderInfant1': GenderInfant1.toString(),
-      'DocNumInfant1': DocNumInfant1.toString(),
-      'IssueDateInfant1': IssueDateInfant1.toString(),
-      'ExpDateInfant1': ExpDateInfant1.toString(), // Infant 2
-      'TitleInfant2': TitleInfant2.toString(),
-      'FNameInfant2': FNameInfant2.toString(),
-      'MNameInfant2': MNameInfant2.toString(),
-      'LNameInfant2': LNameInfant2.toString(),
-      'LDOBInfant2': LDOBInfant2.toString(),
-      'GenderInfant2': GenderInfant2.toString(),
-      'DocNumInfant2': DocNumInfant2.toString(),
-      'IssueDateInfant2': IssueDateInfant2.toString(),
-      'ExpDateInfant2': ExpDateInfant2.toString(), // Infant 3
-      'TitleInfant3': TitleInfant3.toString(),
-      'FNameInfant3': FNameInfant3.toString(),
-      'MNameInfant3': MNameInfant3.toString(),
-      'LNameInfant3': LNameInfant3.toString(),
-      'LDOBInfant3': LDOBInfant3.toString(),
-      'GenderInfant3': GenderInfant3.toString(),
-      'DocNumInfant3': DocNumInfant3.toString(),
-      'IssueDateInfant3': IssueDateInfant3.toString(),
-      'ExpDateInfant3': ExpDateInfant3.toString(), // Infant 4
-      'TitleInfant4': TitleInfant4.toString(),
-      'FNameInfant4': FNameInfant4.toString(),
-      'MNameInfant4': MNameInfant4.toString(),
-      'LNameInfant4': LNameInfant4.toString(),
-      'LDOBInfant4': LDOBInfant4.toString(),
-      'GenderInfant4': GenderInfant4.toString(),
-      'DocNumInfant4': DocNumInfant4.toString(),
-      'IssueDateInfant4': IssueDateInfant4.toString(),
-      'ExpDateInfant4': ExpDateInfant4.toString(), // Infant 5
-      'TitleInfant5': TitleInfant5.toString(),
-      'FNameInfant5': FNameInfant5.toString(),
-      'MNameInfant5': MNameInfant5.toString(),
-      'LNameInfant5': LNameInfant5.toString(),
-      'LDOBInfant5': LDOBInfant5.toString(),
-      'GenderInfant5': GenderInfant5.toString(),
-      'DocNumInfant5': DocNumInfant5.toString(),
-      'IssueDateInfant5': IssueDateInfant5.toString(),
-      'ExpDateInfant5': ExpDateInfant5.toString(),
-      'Address': contactAddressController.text.toString(),
-      'City': contactCityController.text.toString(),
-      'CountryCode': selectedCountryCode.toString(),
-      'CountryName': onlyCountryName.toString(),
-      'MobileNumber': MobileNoController.text.toString(),
-      'Email': EmailController.text.toString(),
-      'IsPassportRequired': 'True',
-      'AdultTravellerID1': AdultTravellerId1.toString(),
-      'AdultTravellerID2': '',
-      'AdultTravellerID3': '',
-      'AdultTravellerID4': '',
-      'AdultTravellerID5': '',
-      'AdultTravellerID6': '',
-      'AdultTravellerID7': '',
-      'AdultTravellerID8': '',
-      'AdultTravellerID9': '',
-      'AdultTravellerID10': ''
-    };
-    developer.log('ResultIndex: $resultIndex');
-    print('TraceId: $traceId');
-    print('LCC: True');
-    print('TripType: OneWay');
-    print('UserId: $userID');
-    print('UserTypeId: $userTypeID');
-    print('DefaultCurrency: $Currency');
-    print('FromDate: ${formattedFromDate.toString()}');
-    print('AdultCount: ${widget.adultCount}');
-    print('ChildCount: ${widget.childrenCount}');
-    print('InfantCount: ${widget.infantCount}');
-    print('BookingCurrency: ${resultFlightData[0]['BookingCurrency']}');
-    print('BookingBaseFare: ${resultFlightData[0]['BookingBaseFare']}');
-    print('BookingTax: ${resultFlightData[0]['BookingTax']}');
-    print('BookingYQTax: ${resultFlightData[0]['BookingYQTax']}');
-    print(
-        'BookingAdditionalTxnFeePub: ${resultFlightData[0]['BookingAdditionalTxnFeePub']}');
-    print(
-        'BookingAdditionalTxnFeeOfrd: ${resultFlightData[0]['BookingAdditionalTxnFeeOfrd']}');
-    print('BookingOtherCharges: ${resultFlightData[0]['BookingOtherCharges']}');
-    print('BookingDiscount: ${resultFlightData[0]['BookingDiscount']}');
-    print(
-        'BookingPublishedFare: ${resultFlightData[0]['BookingPublishedFare']}');
-    print('BookingOfferedFare: ${resultFlightData[0]['BookingOfferedFare']}');
-    print(
-        'BookingTdsOnCommission: ${resultFlightData[0]['BookingTdsOnCommission']}');
-    print('BookingTdsOnPLB: ${resultFlightData[0]['BookingTdsOnPLB']}');
-    print(
-        'BookingTdsOnIncentive: ${resultFlightData[0]['BookingTdsOnIncentive']}');
-    print('BookingServiceFee: ${resultFlightData[0]['BookingServiceFee']}');
-    print('GSTCompanyAddress: ');
-    print('GSTCompanyContactNumber: ');
-    print('GSTCompanyName: ');
-    print('GSTNumber: ');
-    print('GSTCompanyEmail: ');
-    print('TitleAdult1: $selectedTitleAdult1');
-    print('FNameAdult1: $AdultName1');
-    print(
-        'LNameAdult1: ${adultLname_controller.text.isEmpty ? 'A' : adultLname_controller.text}');
-    print('LDOBAdult1: ${formattedDate.toString()}');
-    print('GenderAdult1: $Gendar');
-    print('DocNumAdult1: ${Documentnumber_controller.text}');
-    print('ExpDateAdult1: ${ExpiryDateController.text}');
-// Repeat this pattern for all other fields
+    print("formattedDateformattedDate" + formattedDate.toString());
+    String email = EmailController.text.trim();
+    String mobileNo = MobileNoController.text.trim();
+    String houseNo = HouseNoController.text.trim();
+    String street = StreetNoController.text.trim();
+    String city = CityController.text.trim();
 
-    print('Address: ${contactAddressController.text}');
-    print('City: ${contactCityController.text}');
-    print('CountryCode: IN');
-    print('CountryName: India');
-    print('MobileNumber: ${contactMobileController.text}');
-    print('Email: ${contactEmailController.text}');
-    print('AdultTravellerID1:${AdultTravellerId1}');
+    String country = selectedCountry ?? "";
+
+    // Build address by combining house + street (optional logic)
+    String address = "$houseNo, $street";
+
+    // Prepare JSON map
+    List<Map<String, dynamic>> contactDetails = [
+      {
+        "Email": email,
+        "MobileNo": mobileNo,
+        "Address": address,
+        "City": city,
+        "Country": country,
+      }
+    ];
+
+    // Convert to JSON string
+    String contactDetailJson = jsonEncode(contactDetails);
+
+    print("Final JSON: $contactDetailJson");
+
+    String passengerJson = buildPassengerJson(
+      adultsList: _adultsList,
+      childrenList: _childrenList,
+      infantsList: _infantList,
+    );
+
+    print(passengerJson);
+
+    var reqBody = {
+      'BookingJson': json.encode(widget.flightDetailsList),
+      'ContactDetailJson': contactDetailJson,
+      'ReqPassangerJson': passengerJson,
+    };
+    printFullJson(widget.flightDetailsList);
+
+    print("===== REQUEST BODY LOG =====");
+    reqBody.forEach((key, value) {
+      print("$key : $value");
+    });
+    print("===== END OF LOG =====");
 
     try {
       setState(() {
@@ -983,10 +902,16 @@ class _OneWayBookingState extends State<OneWayBooking> {
       setState(() {
         isBookingLoading = false;
       });
+
       if (response.statusCode == 200) {
         print("asdfsgg${response.body}");
         handleBookingResponse(response.body);
       } else {
+        print("⚠️ Server returned non-200 status code.");
+        print("Request URL: $url");
+        print("Request Headers: $headers");
+        print("Request Body: $reqBody");
+        print("Response Body: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Server error. Try again later.'),
@@ -995,7 +920,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
         );
       }
     } catch (error) {
-      print('Error sending request: $error');
+      print('⚠️ Error sending request: $error');
     }
   }
 
@@ -1421,35 +1346,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
   }
 
   var resultFlightData = [];
-  String formatTravelTime(String travelTime) {
-    if (travelTime.startsWith('PT')) {
-      travelTime = travelTime.substring(2); // remove 'PT'
 
-      int hours = 0;
-      int minutes = 0;
-
-      final hourMatch = RegExp(r'(\d+)H').firstMatch(travelTime);
-      final minuteMatch = RegExp(r'(\d+)M').firstMatch(travelTime);
-
-      if (hourMatch != null) {
-        hours = int.parse(hourMatch.group(1)!);
-      }
-
-      if (minuteMatch != null) {
-        minutes = int.parse(minuteMatch.group(1)!);
-      }
-
-      if (hours > 0 && minutes > 0) {
-        return '${hours}h ${minutes}m';
-      } else if (hours > 0) {
-        return '${hours}h';
-      } else {
-        return '${minutes}m';
-      }
-    }
-
-    return travelTime;
-  }
 
   String formatDepartureDate(String departureDate) {
     // Parse the date string into a DateTime object
@@ -1484,106 +1381,82 @@ class _OneWayBookingState extends State<OneWayBooking> {
   }
 
   Future<void> getAdivahaFlightDetails() async {
+
+
     final url = Uri.parse(
-        'https://traveldemo.org/travelapp/b2capi.asmx/AdivahaFlightDetailsGet');
+        'https://lojatravel.com/app/b2badminapi.asmx/FlightBooking_Details');
     final headers = {'Content-Type': 'application/x-www-form-urlencoded'};
-
-    print("ResultIndexID: " + widget.flightDetails['ResultIndexID']);
-    print("ItemId: " + widget.flightDetails['ItemId']);
-
-    String resultIndex = widget.flightDetails['ResultIndexID'].toString();
-    String traceId = widget.flightDetails['ItemId'].toString();
-
-    print(resultIndex);
-    print(traceId);
 
     try {
       setState(() {
-        isLoading = true;
-      });
-      print({
-        'ResultIndex': resultIndex,
-        'TraceId': traceId,
-        'TripType': 'Oneway',
-        'UserID': widget.userid.toString(),
-        'DefaultCurrency': 'KES',
+        isLoading = true; // Show loader for API call
       });
 
+      final bodyData = {
+        'JsonStrTP': json.encode(widget.flightDetailsList),
+        'JsonReturn': json.encode([]),
+      };
+
+      print("=== API Request Body ===");
+      bodyData.forEach((key, value) {
+        print("$key: $value");
+      });
+      printFullJson(widget.flightDetailsList);
       final response = await http.post(
         url,
         headers: headers,
-        body: {
-          'ResultIndex': resultIndex,
-          'TraceId': traceId,
-          'TripType': 'Oneway',
-          'UserID': widget.userid.toString(),
-          'DefaultCurrency': 'KES',
-        },
+        body: bodyData,
       );
 
-// print status code and response body
-      print('Status code : ${response.statusCode}');
-      print('Response body : ${response.body}');
-
-
-      setState(() {
-        isLoading = false;
-      });
+      print("=== API Response ===");
+      print("📡 Status Code: ${response.statusCode}");
+      print("📡 Response Body: ${response.body}");
 
       if (response.statusCode == 200) {
-        print('Request successful! Parsing response...');
+        try {
+          // Extract JSON string from XML
+          final extractedJson = extractJsonFromXml(response.body);
+          print("Extracted JSON: $extractedJson");
 
-        // Extract JSON from XML and parse the data
-        var parsedJson = extractJsonFromXml(response.body).toList();
+          final List<dynamic> parsedJson = extractedJson; // already a list
 
-        print('Full response:');
-        developer.log(parsedJson.toString());
+          developer.log("Full Response: $parsedJson");
 
-        // Filter rows where "RowType" == "SubRow" or "MainRow"
-        var filteredFlightData = parsedJson
-            .where((flight) =>
-                flight['RowType'] == 'SubRow' || flight['RowType'] == 'MainRow')
-            .toList();
+          // Filter rows
+          resultFlightData = parsedJson
+              .where((flight) =>
+          flight['RowType'] == 'SubRow' ||
+              flight['RowType'] == 'MainRow')
+              .toList();
 
-        // Update the state with filtered data
-        setState(() {
-          resultFlightData = filteredFlightData;
-          if (resultFlightData.isEmpty) {
-            print('No valid flight data returned');
+          setState(() {
+            resultFlightData = resultFlightData;
+          });
+          parseFareSummary(response.body);
+          // Apply stop count filtering
+          if (int.tryParse(widget.stopcount.toString()) == 0) {
+            resultFlightData = resultFlightData
+                .where((flight) => flight['RowType'] == 'MainRow')
+                .toList();
           } else {
-            print('Filtered Flight Data: ${resultFlightData.toString()}');
-
-            // Check stop count to differentiate MainRow and SubRow
-            if (int.parse(widget.stopcount.toString()) == 0) {
-              // Display only MainRow
-              resultFlightData = filteredFlightData
-                  .where((flight) => flight['RowType'] == 'MainRow')
-                  .toList();
-              print('Displaying MainRow only: ${resultFlightData.toString()}');
-            }
-            else if (int.parse(widget.stopcount.toString()) >= 1) {
-              // Filter and display only SubRow
-              resultFlightData = filteredFlightData
-                  .where((flight) => flight['RowType'] == 'SubRow')
-                  .toList();
-
-              print('Displaying SubRow: ${resultFlightData.toString()}');
-
-              if (resultFlightData.isEmpty) {
-                print('No SubRow data available');
-              }
-            }
+            resultFlightData = resultFlightData
+                .where((flight) => flight['RowType'] == 'SubRow')
+                .toList();
           }
-        });
+        } catch (err) {
+          print("❌ JSON Parse Error: $err");
+        }
+      } else {
+        print('❌ API failed with status: ${response.statusCode}');
+        _showErrorMessage('Server error. Try again later.');
       }
-      else {
-        print('Request failed with status: ${response.statusCode}');
-        _showErrorMessage('Server error, please try again later.');
-      }
-    } catch (error) {
-      print('Error sending request: $error');
-      _showErrorMessage(
-          'An error occurred. Please check your internet connection and try again.');
+    } catch (e) {
+      print("⚠️ Error calling API: $e");
+      _showErrorMessage('Something went wrong. Please try again.');
+    } finally {
+      setState(() {
+        isLoading = false; // Always hide loader
+      });
     }
   }
 
@@ -1607,13 +1480,34 @@ class _OneWayBookingState extends State<OneWayBooking> {
       },
     );
   }
+  String formatTravelTime(dynamic travelTime) {
+    if (travelTime == null) return '';
+    int totalMinutes = int.tryParse(travelTime.toString()) ?? 0;
+    int hours = totalMinutes ~/ 60;
+    int minutes = totalMinutes % 60;
 
+    return "${hours.toString().padLeft(2, '0')}h ${minutes.toString().padLeft(2, '0')}m";
+  }
   @override
   Widget build(BuildContext context) {
     int adultCountInt = int.parse(widget.adultCount);
     int childrenCount = int.parse(widget.childrenCount);
     int InfantCount = int.parse(widget.infantCount);
+    double adultFare = double.tryParse(fareSummary?['AdualFare'] ?? "0") ?? 0;
+    double adultTax = double.tryParse(fareSummary?['AdualTaxFare'] ?? "0") ?? 0;
+    double childFare = double.tryParse(fareSummary?['ChildFare'] ?? "0") ?? 0;
+    double childTax = double.tryParse(fareSummary?['ChildTaxFare'] ?? "0") ?? 0;
+    double infantFare = double.tryParse(fareSummary?['InfantFare'] ?? "0") ?? 0;
+    double infantTax =
+        double.tryParse(fareSummary?['InfantTaxFare'] ?? "0") ?? 0;
 
+    double totalFare = double.tryParse(fareSummary?['TotalFare'] ?? '0') ?? 0;
+    double gst = double.tryParse(fareSummary?['TotalGST'] ?? '0') ?? 0;
+    double convenience =
+        double.tryParse(fareSummary?['TotalConvenience'] ?? '0') ?? 0;
+    double discount =
+        double.tryParse(fareSummary?['TotalDiscount'] ?? '0') ?? 0;
+    double grandTotal = double.tryParse(fareSummary?['GrandTotal'] ?? '0') ?? 0;
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -1642,7 +1536,7 @@ class _OneWayBookingState extends State<OneWayBooking> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologo.png',
+            'assets/images/lojologg.png',
             width: 100,
             height: 50,
           ),
@@ -1752,1262 +1646,846 @@ class _OneWayBookingState extends State<OneWayBooking> {
                       ),
                     ),
                     resultFlightData.length > 1
-                        ? ListView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        itemCount: resultFlightData.length > 1
-                            ? resultFlightData.length - 1
-                            : 0, //Ipo non stio kuduthu paarunga
-                        itemBuilder: (BuildContext context, index) {
-                          DateTime arrivalDate = DateTime.parse(
-                              resultFlightData[index]['ArrivalDate']);
-                          DateTime nextDepartureDate = DateTime.parse(
-                              resultFlightData[index + 1]
-                              ['DepartureDate']);
+                        ?Column(
+                          children: [
+                            ListView.builder(
+                                                  shrinkWrap: true,
+                                                  physics: NeverScrollableScrollPhysics(),
+                                                  itemCount: resultFlightData.length,
+                                                  itemBuilder: (context, index) {
+                            final segment = resultFlightData[index];
 
-                          Duration layoverDuration = nextDepartureDate
-                              .difference(arrivalDate);
+                            // Split date-time into date & time
+                            final depDateTime = DateTime.parse(segment['DepartureDate']);
+                            final arrDateTime = DateTime.parse(segment['ArrivalDate']);
 
-                          String layoverHours =
-                          layoverDuration.inHours.toString();
-                          String layoverMinutes = (layoverDuration
-                              .inMinutes
-                              .remainder(60))
-                              .toString();
+                            final depDate = DateFormat('yyyy-MM-dd').format(depDateTime);
+                            final depTime = DateFormat('HH:mm').format(depDateTime);
+                            final arrDate = DateFormat('yyyy-MM-dd').format(arrDateTime);
+                            final arrTime = DateFormat('HH:mm').format(arrDateTime);
 
-// Get the layover airport code (e.g., ArriveCityCode of first segment)
-                          String layoverAirportCode =
-                          resultFlightData[index]
-                          ['ArriveCityCode'];
+                            final hasNextSegment = index < resultFlightData.length - 1;
+                            String layoverText = '';
 
-                          return Column(
-                            children: [
-                              Container(
-                                color: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),                                      child: Column(
-                                children: [
-                                  // Carrier Row
-                                  Row(
-                                    children: [
-                                      Image.asset('assets/images/img.png', cacheWidth: 25),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        resultFlightData[index]['CarrierName'],
-                                        style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
-                                      ),
-                                    ],
-                                  ),
-                                  SizedBox(height: 10),
-                                  // Main Flight Details Row
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // ✅ Left Column (Departure)
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(formatDepartureDate(resultFlightData[index]['DepartureDate'].toString().substring(0, 10))),
-                                            Text(
-                                              CommonUtils.convertToFormattedTime(resultFlightData[index]['DepartureDate']).toUpperCase(),
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                            ),
-                                            Text(resultFlightData[index]['DepartCityName']),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              resultFlightData[index]['DepartAirportName'],
-                                              style: TextStyle(color: Colors.black, fontSize: 13),
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                              softWrap: false,
-                                            ),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              'Terminal ${resultFlightData[index]['DepartureTerminal']}',
-                                              style: TextStyle(color: Colors.orange, fontSize: 14),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      // Middle Column
-                                      Column(
-                                        children: [
-                                          Padding(
-                                            padding: const EdgeInsets.only(top: 16),
-                                            child: Text(
-                                              CommonUtils.convertMinutesToHoursMinutes(
-                                                  resultFlightData[
-                                                  index][
-                                                  'TravelTime']),                                              style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
-                                            ),
-                                          ),
-                                          Image.asset('assets/images/oneStop.png', width: 60, fit: BoxFit.fitWidth),
-                                        ],
-                                      ),
-                                      SizedBox(width: 8),
-                                      // ✅ Right Column (Arrival)
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.end,
-                                          children: [
-                                            Text(formatDepartureDate(resultFlightData[index]['ArrivalDate'].toString().substring(0, 10))),
-                                            Text(
-                                              CommonUtils.convertToFormattedTime(resultFlightData[index]['ArrivalDate']).toUpperCase(),
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                            ),
-                                            Text(resultFlightData[index]['ArriveCityName']),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              resultFlightData[index]['ArrivalAirportName'],
-                                              style: TextStyle(color: Colors.black, fontSize: 13),
-                                              textAlign: TextAlign.end,
-                                              overflow: TextOverflow.ellipsis,
-                                              maxLines: 1,
-                                              softWrap: false,
-                                            ),
-                                            SizedBox(height: 2),
-                                            Text(
-                                              'Terminal ${resultFlightData[index]['ArrivalTerminal']}',
-                                              style: TextStyle(color: Colors.orange, fontSize: 14),
-                                              textAlign: TextAlign.end,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              ),
+                            if (hasNextSegment) {
+                              final nextSegment = resultFlightData[index + 1];
+                              if (nextSegment['DepartureDate'] != null) {
+                                final nextDep = DateTime.parse(nextSegment['DepartureDate']);
+                                final layoverDuration = nextDep.difference(arrDateTime);
 
-                              Container(
-                                color: Colors.white,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      left: 15, right: 5),
+                                final layoverHours = layoverDuration.inHours;
+                                final layoverMinutes = layoverDuration.inMinutes % 60;
+                                final layoverAirportCode = segment['ArriveCityName'] ?? '';
+
+                                layoverText =
+                                "Layover: $layoverHours hr $layoverMinutes min at $layoverAirportCode";
+                              }
+                            }
+
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // ==== Your Segment Container (Keep exact design) ====
+                                Container(
+                                  color: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
                                   child: Column(
                                     children: [
-                                      if (index <
-                                          (resultFlightData
-                                              .length)) ...[
-                                        // First row: Cabin Baggage details
-                                        Row(
+                                      // Carrier row, main flight row (your design exactly)
+                                      Row(
+                                        children: [
+                                          Image.asset('assets/images/img.png', cacheWidth: 25),
+                                          SizedBox(width: 4),
+                                          Text(segment['CarrierName'], style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14)),
+                                        ],
+                                      ),
+                                      SizedBox(height: 10),
+                                      Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          // Departure column
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(depDate),
+                                                Text(depTime, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                                Text(segment['DepartCityName']),
+                                                SizedBox(height: 2),
+                                                Text(segment['DepartAirportName'], style: TextStyle(color: Colors.black, fontSize: 13), overflow: TextOverflow.ellipsis, maxLines: 1, softWrap: false),
+                                                SizedBox(height: 2),
+                                                Text('Terminal ${segment['DepartureTerminal']}', style: TextStyle(color: Colors.orange, fontSize: 14)),
+                                              ],
+                                            ),
+                                          ),
+                                          // Middle column travel time + image
+                                          Column(
+                                            children: [
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 16),
+                                                child: Text(formatTravelTime(segment['TravelTime']), style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12)),
+                                              ),
+                                              Image.asset('assets/images/oneStop.png', width: 60, fit: BoxFit.fitWidth),
+                                            ],
+                                          ),
+                                          SizedBox(width: 8),
+                                          // Arrival column
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              children: [
+                                                Text(arrDate),
+                                                Text(arrTime, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                                Text(segment['ArriveCityName']),
+                                                SizedBox(height: 2),
+                                                Text(segment['ArrivalAirportName'], style: TextStyle(color: Colors.black, fontSize: 13), textAlign: TextAlign.end, overflow: TextOverflow.ellipsis, maxLines: 1, softWrap: false),
+                                                SizedBox(height: 2),
+                                                Text('Terminal ${segment['ArrivalTerminal']}', style: TextStyle(color: Colors.orange, fontSize: 14), textAlign: TextAlign.end),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                // Layover container (if applicable)
+                                if (hasNextSegment)
+                                  Container(
+                                    color: Colors.white,
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: EdgeInsets.all(10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.yellow.shade100,
+                                          border: Border.all(color: Colors.orange),
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: Text(layoverText, style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14)),
+                                      ),
+                                    ),
+                                  ),
+
+
+                                Container(
+                                  color: Colors.white,
+                                  padding: EdgeInsets.only(left: 15),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      // Cabin Baggage and Check-In: show only after last segment
+                                      if (index == resultFlightData.length - 1)
+                                        Column(
                                           children: [
-                                            Icon(
-                                              Icons.shopping_bag,
-                                              size: 16,
-                                              color: Colors
-                                                  .grey.shade500,
+                                            Row(
+                                              children: [
+                                                Icon(Icons.shopping_bag, size: 16, color: Colors.grey.shade500),
+                                                SizedBox(width: 5),
+                                                Text('Cabin Baggage: ', style: TextStyle(color: Colors.black, fontSize: 14)),
+                                                Text(resultFlightData[index]['CabinBaggage'], style: TextStyle(color: Colors.black, fontSize: 14)),
+                                              ],
                                             ),
-                                            SizedBox(width: 5),
-                                            Text(
-                                              'Cabin Baggage: ',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                              ),
+                                            SizedBox(height: 4),
+                                            Row(
+                                              children: [
+                                                Icon(Icons.shopping_bag, size: 16, color: Colors.grey.shade500),
+                                                SizedBox(width: 5),
+                                                Text('Check-In: ', style: TextStyle(color: Colors.black, fontSize: 14)),
+                                                Text(resultFlightData[index]['Baggage'], style: TextStyle(color: Colors.black, fontSize: 14)),
+                                              ],
                                             ),
-                                            Text(
-                                              resultFlightData[index]
-                                              ['CabinBaggage'],
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                              ),
-                                            ),
+                                            SizedBox(height: 4),
                                           ],
                                         ),
-                                        SizedBox(height: 4),
 
-                                        // Second row: Check-In baggage details
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.shopping_bag,
-                                              size: 16,
-                                              color: Colors
-                                                  .grey.shade500,
-                                            ),
-                                            SizedBox(width: 5),
+                                      // Passenger counts (always show only for first segment)
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          if (index == 0)
                                             Text(
-                                              'Check-In: ',
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                              ),
+                                              'Adults(${widget.adultCount}) Child(${widget.childrenCount}) Infants(${widget.infantCount})',
+                                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
                                             ),
-                                            Text(
-                                              resultFlightData[index]
-                                              ['Baggage'],
-                                              style: TextStyle(
-                                                color: Colors.black,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        Divider(),
-
-                                        // Row with A30 and View More/View Less button
-                                        Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            // Left side: A30 text
-                                            Text(
-                                              'A30',
-                                              style: TextStyle(
-                                                  color:
-                                                  Colors.black),
-                                            ),
-
-                                            // Right side: View More/View Less text with orange color
+                                          if (index == 0)
                                             TextButton(
                                               onPressed: () {
                                                 setState(() {
-                                                  isExpanded =
-                                                  !isExpanded;
+                                                  isExpanded1 = !isExpanded1;
                                                 });
                                               },
                                               child: Row(
                                                 children: [
-                                                  Text(
-                                                    isExpanded
-                                                        ? 'View Less'
-                                                        : 'View More',
-                                                    style: TextStyle(
-                                                        color: Colors
-                                                            .orange),
-                                                  ),
+                                                  Text(isExpanded1 ? 'View Less' : 'View Policy', style: TextStyle(color: Colors.orange)),
                                                   Icon(
-                                                    isExpanded
-                                                        ? Icons
-                                                        .keyboard_arrow_up
-                                                        : Icons
-                                                        .keyboard_arrow_down,
-                                                    color: Colors
-                                                        .orange, // Arrow icon color
+                                                    isExpanded1 ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                                                    color: Colors.orange,
                                                   ),
                                                 ],
                                               ),
                                             ),
+                                        ],
+                                      ),
+
+                                      // Expanded Policy Section only for first segment
+                                      if (index == 0 && isExpanded1)
+                                        Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Text("Cancellation Rules", style: TextStyle(fontSize: 18, color: Colors.blue)),
+                                            ),
+                                            Divider(thickness: 1, color: Colors.grey.shade400),
+                                            Text("Penalty Charges :", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.red)),
+                                            SizedBox(height: 8),
+                                            if (resultFlightData[0]['LastTicketingDate'] != null && resultFlightData[0]['LastTicketingDate'].toString().isNotEmpty)
+                                              _buildRule("Last Ticketing Date", resultFlightData[0]['LastTicketingDate'].toString()),
+                                            if (resultFlightData[0]['TicketAdvisory'] != null && resultFlightData[0]['TicketAdvisory'].toString().isNotEmpty)
+                                              _buildRule("Ticket Advisory", resultFlightData[0]['TicketAdvisory'].toString()),
+                                            if (resultFlightData[0]['PenaltyReissueCharge'] != null && resultFlightData[0]['PenaltyReissueCharge'].toString().isNotEmpty)
+                                              _buildRule("Penalty Reissue Charge", resultFlightData[0]['PenaltyReissueCharge'].toString()),
                                           ],
                                         ),
-
-                                        // Expanded content if isExpanded is true
-                                        if (isExpanded)
-                                          Column(
-                                            crossAxisAlignment:
-                                            CrossAxisAlignment
-                                                .start,
-                                            children: [
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                      Icons
-                                                          .signal_cellular_off,
-                                                      size: 16),
-                                                  SizedBox(width: 5),
-                                                  Text('Narrow'),
-                                                ],
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.wifi_off,
-                                                      size: 16),
-                                                  SizedBox(width: 5),
-                                                  Text('No WiFi'),
-                                                ],
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.fastfood,
-                                                      size: 16),
-                                                  SizedBox(width: 5),
-                                                  Text('Fresh Food'),
-                                                ],
-                                              ),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.power,
-                                                      size: 16),
-                                                  SizedBox(width: 5),
-                                                  Text('Outlet'),
-                                                ],
-                                              ),
-                                            ],
-                                          ),
-                                      ],
                                     ],
                                   ),
                                 ),
-                              ),
-                              index < (resultFlightData.length - 1)
-                                  ? Container(
-                                color: Colors.white,
-                                child: Padding(
-                                  padding: const EdgeInsets
-                                      .symmetric(
-                                      horizontal: 20),
-                                  child: Container(
-                                    width: double.infinity,
-                                    padding: EdgeInsets.all(10),
-                                    decoration: BoxDecoration(
-                                      color: Colors
-                                          .yellow.shade100,
-                                      border: Border.all(
-                                          color: Colors.orange),
-                                      borderRadius:
-                                      BorderRadius.circular(
-                                          6),
-                                    ),
-                                    child: Column(
+
+
+
+
+
+                              ],
+                            );
+                                                  },
+                                                ), Container(
+                              color: Colors.white,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                      MainAxisAlignment
+                                          .spaceBetween,
                                       children: [
                                         Text(
-                                          "Layover: $layoverHours hr $layoverMinutes min at $layoverAirportCode",
+                                          'Fare Summary',
                                           style: TextStyle(
-                                            fontWeight:
-                                            FontWeight.w400,
-                                            color: Colors.black,
-                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ),
-                                ),
-                              )
-                                  : Container(),
-                              Container(
-                                color: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // ✅ Departure Column
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            formatDepartureDate(resultFlightData[index + 1]['DepartureDate'].toString().substring(0, 10)),
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown, // ✅ Adjusts for small screens
-                                            child: Text(
-                                              CommonUtils.convertToFormattedTime(resultFlightData[index + 1]['DepartureDate']).toUpperCase(),
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                            ),
-                                          ),
-                                          Text(resultFlightData[index + 1]['DepartCityName'], style: TextStyle(fontSize: 13)),
-                                          SizedBox(height: 2),
-                                          Text(
-                                            resultFlightData[index + 1]['DepartAirportName'],
-                                            style: TextStyle(color: Colors.black, fontSize: 12),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                            softWrap: false,
-                                          ),
-                                          SizedBox(height: 2),
-                                          Text(
-                                            'Terminal ${resultFlightData[index + 1]['DepartureTerminal']}',
-                                            style: TextStyle(color: Colors.orange, fontSize: 13),
-                                          ),
-                                        ],
-                                      ),
+                                    SizedBox(
+                                      height: 4,
                                     ),
-                                    SizedBox(width: 8),
-                                    // ✅ Travel Time + Image
-                                    Column(
-                                      children: [
-                                        Padding(
-                                          padding: const EdgeInsets.only(top: 16),
-                                          child: Text(
-                                          CommonUtils.convertMinutesToHoursMinutes((resultFlightData[index + 1]['TravelTime'] ?? '')),
-                                            style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
-                                          ),
+                                    Container(
+                                      margin:
+                                      EdgeInsets.only(bottom: 0),
+                                      child: Padding(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 3,
+                                            vertical: 5),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                          children: [
+                                            // Base Fare Section
+                                            if (adultCountInt > 0)
+                                              Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                      "ADT x $adultCountInt"),
+                                                  Text(
+                                                      "${fareSummary?['AdualFare']}"),
+                                                ],
+                                              ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            if (childrenCount > 0)
+                                              Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                      "CHD x $childrenCount"),
+                                                  Text(
+                                                      "${fareSummary?['ChildFare']}"),
+                                                ],
+                                              ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            if (InfantCount > 0)
+                                              Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                      "INF x $InfantCount"),
+                                                  Text(
+                                                      "${fareSummary?['InfantFare']}"),
+                                                ],
+                                              ),
+
+                                            SizedBox(height: 10),
+                                            Text("Tax",
+                                                style: TextStyle(
+                                                    fontWeight:
+                                                    FontWeight
+                                                        .bold)),
+                                            SizedBox(height: 10),
+                                            // Tax Section
+                                            if (adultCountInt > 0)
+                                              Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                      "ADT x $adultCountInt"),
+                                                  Text(
+                                                      "${fareSummary?['AdualTaxFare']}"),
+                                                ],
+                                              ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            if (childrenCount > 0)
+                                              Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                      "CHD x $childrenCount"),
+                                                  Text(
+                                                      "${fareSummary?['ChildTaxFare']}"),
+                                                ],
+                                              ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            if (InfantCount > 0)
+                                              Row(
+                                                mainAxisAlignment:
+                                                MainAxisAlignment
+                                                    .spaceBetween,
+                                                children: [
+                                                  Text(
+                                                      "INF x $InfantCount"),
+                                                  Text(
+                                                      "${fareSummary?['InfantTaxFare']}"),
+                                                ],
+                                              ),
+
+                                            SizedBox(height: 10),
+
+                                            // Summary
+                                            Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                              children: [
+                                                Text("Total Fare"),
+                                                Text(totalFare
+                                                    .toStringAsFixed(
+                                                    2)),
+                                              ],
+                                            ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                              children: [
+                                                Text("GST(0.10%)"),
+                                                Text(
+                                                    gst.toStringAsFixed(
+                                                        2)),
+                                              ],
+                                            ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                              children: [
+                                                Text(
+                                                    "Convenience Fees"),
+                                                Text(convenience
+                                                    .toStringAsFixed(
+                                                    2)),
+                                              ],
+                                            ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                              children: [
+                                                Text("Discount"),
+                                                Text(
+                                                    "${discount.toStringAsFixed(2)}"),
+                                              ],
+                                            ),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Divider(),
+                                            SizedBox(
+                                              height: 5,
+                                            ),
+                                            Row(
+                                              mainAxisAlignment:
+                                              MainAxisAlignment
+                                                  .spaceBetween,
+                                              children: [
+                                                Text("Grand Total",
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                        FontWeight
+                                                            .bold,
+                                                        fontSize: 17)),
+                                                Text(
+                                                  grandTotal
+                                                      .toStringAsFixed(
+                                                      2),
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                      FontWeight
+                                                          .bold),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
                                         ),
-                                        Image.asset('assets/images/oneStop.png', width: 50, fit: BoxFit.fitWidth),
-                                      ],
-                                    ),
-                                    SizedBox(width: 8),
-                                    // ✅ Arrival Column
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.end,
-                                        children: [
-                                          Text(
-                                            formatDepartureDate(resultFlightData[index + 1]['ArrivalDate'].toString().substring(0, 10)),
-                                            style: TextStyle(fontSize: 14),
-                                          ),
-                                          FittedBox(
-                                            fit: BoxFit.scaleDown,
-                                            child: Text(
-                                              CommonUtils.convertToFormattedTime(resultFlightData[index + 1]['ArrivalDate']).toUpperCase(),
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                              textAlign: TextAlign.end,
-                                            ),
-                                          ),
-                                          Text(resultFlightData[index + 1]['ArriveCityName'], style: TextStyle(fontSize: 13)),
-                                          SizedBox(height: 2),
-                                          Text(
-                                            resultFlightData[index + 1]['ArrivalAirportName'],
-                                            style: TextStyle(color: Colors.black, fontSize: 12),
-                                            textAlign: TextAlign.end,
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                            softWrap: false,
-                                          ),
-                                          SizedBox(height: 2),
-                                          Text(
-                                            'Terminal ${resultFlightData[index + 1]['ArrivalTerminal']}',
-                                            style: TextStyle(color: Colors.orange, fontSize: 13),
-                                            textAlign: TextAlign.end,
-                                          ),
-                                        ],
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-
-
-                              Container(),
-                              if (index + 1 <
-                                  (resultFlightData.length)) ...[
-                                Container(
-                                  color: Colors.white,
-                                  // Set the background color to white
-                                  padding: EdgeInsets.only(left: 15),
-                                  // Add some padding for spacing
-                                  child: Column(
-                                    crossAxisAlignment:
-                                    CrossAxisAlignment.start,
-                                    children: [
-                                      // First row: Cabin Baggage details
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.shopping_bag,
-                                            size: 16,
-                                            color:
-                                            Colors.grey.shade500,
-                                          ),
-                                          SizedBox(width: 5),
-                                          Text(
-                                            'Cabin Baggage: ',
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          Text(
-                                            resultFlightData[index +
-                                                1]['CabinBaggage'],
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      SizedBox(height: 4),
-
-                                      // Second row: Check-In baggage details
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.shopping_bag,
-                                            size: 16,
-                                            color:
-                                            Colors.grey.shade500,
-                                          ),
-                                          SizedBox(width: 5),
-                                          Text(
-                                            'Check-In: ',
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                          Text(
-                                            resultFlightData[
-                                            index + 1]['Baggage'],
-                                            style: TextStyle(
-                                              color: Colors.black,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Divider(),
-
-                                      // Row with A30 and View More/View Less button
-                                      Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .spaceBetween,
-                                        children: [
-                                          // Left side: A30 text
-                                          Text(
-                                            'A30',
-                                            style: TextStyle(
-                                                color: Colors.black),
-                                          ),
-
-                                          // Right side: View More/View Less text with orange color
-                                          TextButton(
-                                            onPressed: () {
-                                              setState(() {
-                                                isExpanded1 =
-                                                !isExpanded1;
-                                              });
-                                            },
-                                            child: Row(
-                                              children: [
-                                                Text(
-                                                  isExpanded1
-                                                      ? 'View Less'
-                                                      : 'View More',
-                                                  style: TextStyle(
-                                                      color: Colors
-                                                          .orange),
-                                                ),
-                                                Icon(
-                                                  isExpanded1
-                                                      ? Icons
-                                                      .keyboard_arrow_up
-                                                      : Icons
-                                                      .keyboard_arrow_down,
-                                                  color: Colors
-                                                      .orange, // Arrow icon color
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-
-                                      // Expanded content if isExpanded is true
-                                      if (isExpanded1)
-                                        Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment
-                                              .start,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Icon(
-                                                    Icons
-                                                        .signal_cellular_off,
-                                                    size: 16),
-                                                SizedBox(width: 5),
-                                                Text('Narrow'),
-                                              ],
-                                            ),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.wifi_off,
-                                                    size: 16),
-                                                SizedBox(width: 5),
-                                                Text('No WiFi'),
-                                              ],
-                                            ),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.fastfood,
-                                                    size: 16),
-                                                SizedBox(width: 5),
-                                                Text('Fresh Food'),
-                                              ],
-                                            ),
-                                            Row(
-                                              children: [
-                                                Icon(Icons.power,
-                                                    size: 16),
-                                                SizedBox(width: 5),
-                                                Text('Outlet'),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                              SizedBox(
-                                height: 7,
-                              ),
-                              Container(
-                                color: Colors.white,
-                                child: Padding(
-                                  padding: const EdgeInsets.only(
-                                      right: 15, left: 15, top: 7),
-                                  child: Column(
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                        MainAxisAlignment
-                                            .spaceBetween,
-                                        children: [
-                                          Text(
-                                            'Fare Summary',
-                                            style: TextStyle(
-                                              fontWeight:
-                                              FontWeight.bold,
-                                              fontSize: 18,
-                                            ),
-                                          ),
-                                          Text(
-                                            'View Full Breakup',
-                                            style: TextStyle(
-                                              color:
-                                              Color(0xFF1C5870),
-                                              fontWeight:
-                                              FontWeight.bold,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-
-                                          // Add other pricing details or components as needed
-                                        ],
-                                      ),
-                                      SizedBox(
-                                        height: 4,
-                                      ),
-                                      Padding(
-                                        padding:
-                                        const EdgeInsets.only(
-                                            right: 0,
-                                            left: 0,
-                                            bottom: 4),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Base Price',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            Text(
-                                              //BookingCurrency
-                                              resultFlightData[0][
-                                              "BookingCurrency"] +
-                                                  resultFlightData[0][
-                                                  "BookingBaseFare"],
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding:
-                                        const EdgeInsets.only(
-                                            right: 0,
-                                            left: 0,
-                                            bottom: 4,
-                                            top: 4),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Tax Price',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            Text(
-                                              resultFlightData[0][
-                                              "BookingCurrency"] +
-                                                  resultFlightData[0]
-                                                  ["BookingTax"],
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                      Divider(),
-                                      Padding(
-                                        padding:
-                                        const EdgeInsets.only(
-                                            right: 0,
-                                            left: 0,
-                                            bottom: 5,
-                                            top: 4),
-                                        child: Row(
-                                          mainAxisAlignment:
-                                          MainAxisAlignment
-                                              .spaceBetween,
-                                          children: [
-                                            Text(
-                                              'Total Amount To Be Paid',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            Text(
-                                              widget.totalamount,
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                height: 7,
-                              ),
-                              Container(
-                                color: Colors.white,
-                                child: Column(
-                                  mainAxisAlignment:
-                                  MainAxisAlignment.start,
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: 15,
-                                          bottom: 5,
-                                          top: 5),
-                                      child: Text(
-                                        'Travellers',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 17,
-                                        ),
+                            ),
+                            SizedBox(height: 10,),
+                            Container(
+                              color: Colors.white,
+                              child: Column(
+                                mainAxisAlignment:
+                                MainAxisAlignment.start,
+                                crossAxisAlignment:
+                                CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 10, bottom: 5, top: 5),
+                                    child: Text(
+                                      'Travellers',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 19,
                                       ),
                                     ),
-                                    Padding(
-                                      padding: const EdgeInsets.only(
-                                          left: 15),
-                                      child: Text(
-                                        'Adults',
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 16,
-                                        ),
+                                  ),
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.only(left: 10),
+                                    child: Text(
+                                      'Adults',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w500,
+                                        fontSize: 16,
                                       ),
                                     ),
-                                    Column(
-                                      children: List.generate(
-                                          adultCountInt, (i) {
-                                        // Determine if there is valid adult data
-                                        bool hasAdultData = _adultsList
-                                            .length >
-                                            i &&
-                                            _adultsList[i] != null &&
-                                            _adultsList[i]
-                                            ['firstName'] !=
-                                                null;
-                                        if (hasAdultData) {
-                                          switch (i) {
-                                            case 0:
-                                              TitleAdult1 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult1 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult1 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult1 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult1 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult1 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult1 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              issueDateAdult1 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              expDateAdult1 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 1:
-                                              TitleAdult2 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult2 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult2 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult2 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult2 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult2 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult2 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult2 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult2 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 2:
-                                              TitleAdult3 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult3 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult3 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult3 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult3 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult3 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult3 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult3 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult3 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 3:
-                                              TitleAdult4 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult4 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult4 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult4 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult4 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult4 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult4 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult4 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult4 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 4:
-                                              TitleAdult5 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult5 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult5 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult5 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult5 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult5 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult5 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult5 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult5 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 5:
-                                              TitleAdult6 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult6 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult6 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult6 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult6 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult6 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult6 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult6 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult6 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 6:
-                                              TitleAdult7 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult7 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult7 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult7 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult7 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult7 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult7 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult7 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult7 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 7:
-                                              TitleAdult8 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult8 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult8 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult8 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult8 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult8 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult8 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult8 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult8 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 8:
-                                              TitleAdult9 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult9 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult9 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult9 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult9 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult9 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult9 = _adultsList[
-                                              i][
-                                              'documentNumber'] ??
-                                                  '';
-                                              IssueDateAdult9 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult9 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                            case 9:
-                                              TitleAdult10 =
-                                                  _adultsList[i]
-                                                  ['title'] ??
-                                                      '';
-                                              FNameAdult10 = _adultsList[
-                                              i]
-                                              ['firstName'] ??
-                                                  '';
-                                              MNameAdult10 = _adultsList[
-                                              i][
-                                              'middleName'] ??
-                                                  '';
-                                              LNameAdult10 =
-                                                  _adultsList[i][
-                                                  'surname'] ??
-                                                      '';
-                                              LDOBAdult10 =
-                                                  _adultsList[i]
-                                                  ['dob'] ??
-                                                      '';
-                                              GenderAdult10 =
-                                                  _adultsList[i][
-                                                  'gender'] ??
-                                                      '';
-                                              DocNumAdult10 =
-                                                  _adultsList[i][
-                                                  'documentNumber'] ??
-                                                      '';
-                                              IssueDateAdult10 =
-                                                  _adultsList[i][
-                                                  'issueDate'] ??
-                                                      '';
-                                              ExpDateAdult10 =
-                                                  _adultsList[i][
-                                                  'expiryDate'] ??
-                                                      '';
-                                              break;
-                                          }
+                                  ),
+                                  Column(
+                                    children: List.generate(
+                                        adultCountInt, (i) {
+                                      // Determine if there is valid adult data
+                                      bool hasAdultData =
+                                          _adultsList.length > i &&
+                                              _adultsList[i] != null &&
+                                              _adultsList[i]
+                                              ['firstName'] !=
+                                                  null;
+                                      if (hasAdultData) {
+                                        switch (i) {
+                                          case 0:
+                                            TitleAdult1 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult1 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult1 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult1 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult1 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult1 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult1 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            issueDateAdult1 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            expDateAdult1 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 1:
+                                            TitleAdult2 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult2 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult2 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult2 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult2 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult2 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult2 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult2 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult2 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 2:
+                                            TitleAdult3 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult3 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult3 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult3 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult3 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult3 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult3 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult3 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult3 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 3:
+                                            TitleAdult4 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult4 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult4 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult4 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult4 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult4 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult4 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult4 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult4 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 4:
+                                            TitleAdult5 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult5 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult5 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult5 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult5 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult5 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult5 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult5 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult5 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 5:
+                                            TitleAdult6 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult6 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult6 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult6 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult6 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult6 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult6 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult6 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult6 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 6:
+                                            TitleAdult7 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult7 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult7 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult7 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult7 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult7 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult7 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult7 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult7 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 7:
+                                            TitleAdult8 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult8 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult8 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult8 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult8 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult8 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult8 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult8 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult8 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 8:
+                                            TitleAdult9 = _adultsList[i]
+                                            ['title'] ??
+                                                '';
+                                            FNameAdult9 = _adultsList[i]
+                                            ['firstName'] ??
+                                                '';
+                                            MNameAdult9 = _adultsList[i]
+                                            ['middleName'] ??
+                                                '';
+                                            LNameAdult9 = _adultsList[i]
+                                            ['surname'] ??
+                                                '';
+                                            LDOBAdult9 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult9 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult9 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult9 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult9 = _adultsList[
+                                            i]['expiryDate'] ??
+                                                '';
+                                            break;
+                                          case 9:
+                                            TitleAdult10 =
+                                                _adultsList[i]
+                                                ['title'] ??
+                                                    '';
+                                            FNameAdult10 =
+                                                _adultsList[i]
+                                                ['firstName'] ??
+                                                    '';
+                                            MNameAdult10 = _adultsList[
+                                            i]['middleName'] ??
+                                                '';
+                                            LNameAdult10 =
+                                                _adultsList[i]
+                                                ['surname'] ??
+                                                    '';
+                                            LDOBAdult10 = _adultsList[i]
+                                            ['dob'] ??
+                                                '';
+                                            GenderAdult10 =
+                                                _adultsList[i]
+                                                ['gender'] ??
+                                                    '';
+                                            DocNumAdult10 = _adultsList[
+                                            i][
+                                            'documentNumber'] ??
+                                                '';
+                                            IssueDateAdult10 =
+                                                _adultsList[i]
+                                                ['issueDate'] ??
+                                                    '';
+                                            ExpDateAdult10 =
+                                                _adultsList[i][
+                                                'expiryDate'] ??
+                                                    '';
+                                            break;
                                         }
+                                      }
 
-                                        print('hasAdultData: ' +
-                                            hasAdultData.toString());
+                                      print('hasAdultData: ' +
+                                          hasAdultData.toString());
 
-                                        return Padding(
-                                          padding:
-                                          const EdgeInsets.only(
-                                              left: 14,
-                                              right: 15,
-                                              top: 7),
-                                          child: Row(
-                                            children: [
-                                              CircleAvatar(
-                                                backgroundColor:
-                                                hasAdultData
-                                                    ? Color(
-                                                    0xFF1C5870)
-                                                    : Colors.grey,
-                                              ),
-                                              SizedBox(width: 10),
-                                              Expanded(
-                                                child:
-                                                GestureDetector(
-                                                  onTap: !hasAdultData &&
-                                                      !isEditAdult
-                                                      ? () {
-                                                    // Navigate to the page to add an adult if there's no data
-                                                    Navigator
-                                                        .push(
-                                                      context,
-                                                      MaterialPageRoute(
-                                                        builder:
-                                                            (context) =>
-                                                            AddAdultScreen(
-                                                              isEdit:
-                                                              'Add',
-                                                              adultIndex:
-                                                              i,
-                                                              adultsList:
-                                                              _adultsList,
-                                                              flightDetails:
-                                                              '',
-                                                              resultFlightData:
-                                                              '',
-                                                              infantCount:
-                                                              0,
-                                                              childrenCount:
-                                                              0,
-                                                              adultCount:
-                                                              adultCountInt,
-                                                              departdate:
-                                                              '',
-                                                              userid:
-                                                              '',
-                                                              usertypeid:
-                                                              '',
-                                                            ),
-                                                      ),
-                                                    ).then((_) {
-                                                      // Fetch the updated adults list when returning to this page
-                                                      _fetchAdults();
-                                                    });
-                                                  }
-                                                      : null,
-                                                  // Disable if there is adult data or isEdit is true
-                                                  child: Text(
-                                                    hasAdultData
-                                                        ? '${_adultsList[i]['firstName']} ${_adultsList[i]['surname']}'
-                                                        : 'Select Adult ${i + 1}',
-                                                    style: TextStyle(
-                                                        fontSize: 16,
-                                                        color: hasAdultData
-                                                            ? Colors
-                                                            .black
-                                                            : Colors
-                                                            .black),
-                                                  ),
-                                                ),
-                                              ),
-                                              // Edit Button
-                                              IconButton(
-                                                icon: Icon(Icons.edit,
-                                                    color: Color(
-                                                        0xFF1C5870)),
-                                                onPressed: hasAdultData &&
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                            left: 14,
+                                            right: 15,
+                                            top: 7),
+                                        child: Row(
+                                          children: [
+                                            CircleAvatar(
+                                              backgroundColor:
+                                              hasAdultData
+                                                  ? Color(
+                                                  0xFF1C5870)
+                                                  : Colors.grey,
+                                            ),
+                                            SizedBox(width: 10),
+                                            Expanded(
+                                              child: GestureDetector(
+                                                onTap: !hasAdultData &&
                                                     !isEditAdult
                                                     ? () {
-                                                  // Navigate to edit screen if adult data exists and not in edit mode
-                                                  Navigator
-                                                      .push(
+                                                  // Navigate to the page to add an adult if there's no data
+                                                  Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
                                                       builder:
                                                           (context) =>
                                                           AddAdultScreen(
                                                             isEdit:
-                                                            'Edit',
+                                                            'Add',
                                                             adultIndex:
                                                             i,
                                                             adultsList:
@@ -3035,427 +2513,432 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                                     _fetchAdults();
                                                   });
                                                 }
-                                                    : null, // Disable if there is no adult data or isEdit is true
-                                              ),
-                                              // Delete Button
-                                              IconButton(
-                                                icon: Icon(
-                                                    Icons.delete,
-                                                    color:
-                                                    Colors.red),
-                                                onPressed: hasAdultData &&
-                                                    !isEditAdult
-                                                    ? () {
-                                                  // Show confirmation dialog
-                                                  showDialog(
-                                                    context:
-                                                    context,
-                                                    builder:
-                                                        (BuildContext
-                                                    context) {
-                                                      return AlertDialog(
-                                                        title: Text(
-                                                            'Confirm Deletion'),
-                                                        content:
-                                                        Text('Are you sure you want to delete this adult?'),
-                                                        actions: <Widget>[
-                                                          TextButton(
-                                                            child:
-                                                            Text('No'),
-                                                            onPressed:
-                                                                () {
-                                                              Navigator.of(context).pop(); // Close dialog
-                                                            },
-                                                          ),
-                                                          TextButton(
-                                                            child:
-                                                            Text('Yes'),
-                                                            onPressed:
-                                                                () {
-                                                              _deleteAdult(i); // Call delete method
-                                                              Navigator.of(context).pop(); // Close dialog
-                                                            },
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
-                                                  );
-                                                }
-                                                    : null, // Disable if there is no adult data or isEdit is true
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      }),
-                                    ),
-                                    if (childrenCount >= 1) Divider(),
-                                    if (childrenCount >= 1)
-                                      Padding(
-                                        padding:
-                                        const EdgeInsets.only(
-                                            left: 15, top: 5),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment
-                                              .start,
-                                          children: [
-                                            Text(
-                                              'Children',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
+                                                    : null,
+                                                // Disable if there is adult data or isEdit is true
+                                                child: Text(
+                                                  hasAdultData
+                                                      ? '${_adultsList[i]['firstName']} ${_adultsList[i]['surname']}'
+                                                      : 'Select Adult ${i + 1}',
+                                                  style: TextStyle(
+                                                      fontSize: 16,
+                                                      color: hasAdultData
+                                                          ? Colors.black
+                                                          : Colors
+                                                          .black),
+                                                ),
                                               ),
                                             ),
-                                            Column(
-                                              children: List.generate(
-                                                  childrenCount, (i) {
-                                                // Determine if there is valid child data
-                                                bool hasChildData =
-                                                    _childrenList
-                                                        .length >
-                                                        i &&
-                                                        _childrenList[
-                                                        i] !=
-                                                            null &&
-                                                        _childrenList[
-                                                        i]
-                                                        [
-                                                        'firstName'] !=
-                                                            null;
-                                                if (hasChildData) {
-                                                  switch (i) {
-                                                    case 0:
-                                                      TitleChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'title'] ??
-                                                              '';
-                                                      FNameChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'firstName'] ??
-                                                              '';
-                                                      MNameChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'middleName'] ??
-                                                              '';
-                                                      LNameChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'surname'] ??
-                                                              '';
-                                                      LDOBChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'dob'] ??
-                                                              '';
-                                                      GenderChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'gender'] ??
-                                                              '';
-                                                      DocNumChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'documentNumber'] ??
-                                                              '';
-                                                      IssueDateChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'issueDate'] ??
-                                                              '';
-                                                      ExpDateChild1 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'expiryDate'] ??
-                                                              '';
-                                                      break;
-                                                    case 1:
-                                                      TitleChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'title'] ??
-                                                              '';
-                                                      FNameChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'firstName'] ??
-                                                              '';
-                                                      MNameChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'middleName'] ??
-                                                              '';
-                                                      LNameChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'surname'] ??
-                                                              '';
-                                                      LDOBChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'dob'] ??
-                                                              '';
-                                                      GenderChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'gender'] ??
-                                                              '';
-                                                      DocNumChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'documentNumber'] ??
-                                                              '';
-                                                      IssueDateChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'issueDate'] ??
-                                                              '';
-                                                      ExpDateChild2 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'expiryDate'] ??
-                                                              '';
-                                                      break;
-                                                    case 2:
-                                                      TitleChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'title'] ??
-                                                              '';
-                                                      FNameChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'firstName'] ??
-                                                              '';
-                                                      MNameChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'middleName'] ??
-                                                              '';
-                                                      LNameChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'surname'] ??
-                                                              '';
-                                                      LDOBChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'dob'] ??
-                                                              '';
-                                                      GenderChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'gender'] ??
-                                                              '';
-                                                      DocNumChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'documentNumber'] ??
-                                                              '';
-                                                      IssueDateChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'issueDate'] ??
-                                                              '';
-                                                      ExpDateChild3 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'expiryDate'] ??
-                                                              '';
-                                                      break;
-                                                    case 3:
-                                                      TitleChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'title'] ??
-                                                              '';
-                                                      FNameChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'firstName'] ??
-                                                              '';
-                                                      MNameChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'middleName'] ??
-                                                              '';
-                                                      LNameChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'surname'] ??
-                                                              '';
-                                                      LDOBChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'dob'] ??
-                                                              '';
-                                                      GenderChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'gender'] ??
-                                                              '';
-                                                      DocNumChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'documentNumber'] ??
-                                                              '';
-                                                      IssueDateChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'issueDate'] ??
-                                                              '';
-                                                      ExpDateChild4 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'expiryDate'] ??
-                                                              '';
-                                                      break;
-                                                    case 4:
-                                                      TitleChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'title'] ??
-                                                              '';
-                                                      FNameChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'firstName'] ??
-                                                              '';
-                                                      MNameChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'middleName'] ??
-                                                              '';
-                                                      LNameChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'surname'] ??
-                                                              '';
-                                                      LDOBChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'dob'] ??
-                                                              '';
-                                                      GenderChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'gender'] ??
-                                                              '';
-                                                      DocNumChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'documentNumber'] ??
-                                                              '';
-                                                      IssueDateChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'issueDate'] ??
-                                                              '';
-                                                      ExpDateChild5 =
-                                                          _childrenList[i]
-                                                          [
-                                                          'expiryDate'] ??
-                                                              '';
-                                                      break;
-                                                  }
-                                                }
-
-                                                print('hasChildData: ' +
-                                                    hasChildData
-                                                        .toString());
-
-                                                return Padding(
-                                                  padding:
-                                                  const EdgeInsets
-                                                      .all(8.0),
-                                                  child: Row(
-                                                    children: [
-                                                      CircleAvatar(
-                                                        backgroundColor: hasChildData
-                                                            ? Colors
-                                                            .green
-                                                            : Colors
-                                                            .grey,
-                                                      ),
-                                                      SizedBox(
-                                                          width: 10),
-                                                      Expanded(
-                                                        child:
-                                                        GestureDetector(
-                                                          onTap: !hasChildData &&
-                                                              !isEditChild
-                                                              ? () {
-                                                            // Navigate to the page to add a child if there's no data
-                                                            Navigator.push(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                builder: (context) => AddChildScreen(
-                                                                  isEdit: 'Add',
-                                                                  childIndex: i,
-                                                                  childrenList: _childrenList,
-                                                                  flightDetails: '',
-                                                                  resultFlightData: '',
-                                                                  infantCount: 0,
-                                                                  childrenCount: childrenCount,
-                                                                  adultCount: 0,
-                                                                  departdate: '',
-                                                                  userid: '',
-                                                                  usertypeid: '',
-                                                                ),
-                                                              ),
-                                                            ).then((_) {
-                                                              // Fetch the updated children list when returning to this page
-                                                              _fetchChildren();
-                                                            });
-                                                          }
-                                                              : null,
-                                                          // Disable if there is child data or isEdit is true
-                                                          child: Text(
-                                                            hasChildData
-                                                                ? '${_childrenList[i]['firstName']} ${_childrenList[i]['surname']}'
-                                                                : 'Select Child ${i + 1}',
-                                                            style:
-                                                            TextStyle(
-                                                              fontSize:
-                                                              16,
-                                                              color: hasChildData
-                                                                  ? Colors.black
-                                                                  : Colors.black,
-                                                            ),
-                                                          ),
+                                            // Edit Button
+                                            IconButton(
+                                              icon: Icon(Icons.edit,
+                                                  color: Color(
+                                                      0xFF1C5870)),
+                                              onPressed: hasAdultData &&
+                                                  !isEditAdult
+                                                  ? () {
+                                                // Navigate to edit screen if adult data exists and not in edit mode
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder:
+                                                        (context) =>
+                                                        AddAdultScreen(
+                                                          isEdit:
+                                                          'Edit',
+                                                          adultIndex:
+                                                          i,
+                                                          adultsList:
+                                                          _adultsList,
+                                                          flightDetails:
+                                                          '',
+                                                          resultFlightData:
+                                                          '',
+                                                          infantCount:
+                                                          0,
+                                                          childrenCount:
+                                                          0,
+                                                          adultCount:
+                                                          adultCountInt,
+                                                          departdate:
+                                                          '',
+                                                          userid: '',
+                                                          usertypeid:
+                                                          '',
                                                         ),
-                                                      ),
-                                                      // Edit Button
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons
-                                                                .edit,
-                                                            color: Colors
-                                                                .blue),
-                                                        onPressed: hasChildData &&
+                                                  ),
+                                                ).then((_) {
+                                                  // Fetch the updated adults list when returning to this page
+                                                  _fetchAdults();
+                                                });
+                                              }
+                                                  : null, // Disable if there is no adult data or isEdit is true
+                                            ),
+                                            // Delete Button
+                                            IconButton(
+                                              icon: Icon(Icons.delete,
+                                                  color: Colors.red),
+                                              onPressed: hasAdultData &&
+                                                  !isEditAdult
+                                                  ? () {
+                                                // Show confirmation dialog
+                                                showDialog(
+                                                  context:
+                                                  context,
+                                                  builder:
+                                                      (BuildContext
+                                                  context) {
+                                                    return AlertDialog(
+                                                      title: Text(
+                                                          'Confirm Deletion'),
+                                                      content: Text(
+                                                          'Are you sure you want to delete this adult?'),
+                                                      actions: <Widget>[
+                                                        TextButton(
+                                                          child: Text(
+                                                              'No'),
+                                                          onPressed:
+                                                              () {
+                                                            Navigator.of(context)
+                                                                .pop(); // Close dialog
+                                                          },
+                                                        ),
+                                                        TextButton(
+                                                          child: Text(
+                                                              'Yes'),
+                                                          onPressed:
+                                                              () {
+                                                            _deleteAdult(
+                                                                i); // Call delete method
+                                                            Navigator.of(context)
+                                                                .pop(); // Close dialog
+                                                          },
+                                                        ),
+                                                      ],
+                                                    );
+                                                  },
+                                                );
+                                              }
+                                                  : null, // Disable if there is no adult data or isEdit is true
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                  if (childrenCount > 1) Divider(),
+                                  if (childrenCount > 1)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 15, top: 5),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Children',
+                                            style: TextStyle(
+                                              fontWeight:
+                                              FontWeight.w500,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Column(
+                                            children: List.generate(
+                                                childrenCount, (i) {
+                                              // Determine if there is valid child data
+                                              bool hasChildData =
+                                                  _childrenList.length >
+                                                      i &&
+                                                      _childrenList[
+                                                      i] !=
+                                                          null &&
+                                                      _childrenList[i][
+                                                      'firstName'] !=
+                                                          null;
+                                              if (hasChildData) {
+                                                switch (i) {
+                                                  case 0:
+                                                    TitleChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'title'] ??
+                                                            '';
+                                                    FNameChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateChild1 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+                                                  case 1:
+                                                    TitleChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'title'] ??
+                                                            '';
+                                                    FNameChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateChild2 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+                                                  case 2:
+                                                    TitleChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'title'] ??
+                                                            '';
+                                                    FNameChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateChild3 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+                                                  case 3:
+                                                    TitleChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'title'] ??
+                                                            '';
+                                                    FNameChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateChild4 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+                                                  case 4:
+                                                    TitleChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'title'] ??
+                                                            '';
+                                                    FNameChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateChild5 =
+                                                        _childrenList[i]
+                                                        [
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+                                                }
+                                              }
+
+                                              print('hasChildData: ' +
+                                                  hasChildData
+                                                      .toString());
+
+                                              return Padding(
+                                                padding:
+                                                const EdgeInsets
+                                                    .all(8.0),
+                                                child: Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      backgroundColor:
+                                                      hasChildData
+                                                          ? Colors
+                                                          .green
+                                                          : Colors
+                                                          .grey,
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Expanded(
+                                                      child:
+                                                      GestureDetector(
+                                                        onTap: !hasChildData &&
                                                             !isEditChild
                                                             ? () {
-                                                          // Navigate to edit screen if child data exists and not in edit mode
+                                                          // Navigate to the page to add a child if there's no data
                                                           Navigator
                                                               .push(
                                                             context,
                                                             MaterialPageRoute(
-                                                              builder: (context) => AddChildScreen(
-                                                                isEdit: 'Edit',
-                                                                childIndex: i,
-                                                                childrenList: _childrenList,
-                                                                flightDetails: '',
-                                                                resultFlightData: '',
-                                                                infantCount: 0,
-                                                                childrenCount: childrenCount,
-                                                                adultCount: 0,
-                                                                departdate: '',
-                                                                userid: '',
-                                                                usertypeid: '',
-                                                              ),
+                                                              builder: (context) =>
+                                                                  AddChildScreen(
+                                                                    isEdit: 'Add',
+                                                                    childIndex: i,
+                                                                    childrenList: _childrenList,
+                                                                    flightDetails: '',
+                                                                    resultFlightData: '',
+                                                                    infantCount: 0,
+                                                                    childrenCount: childrenCount,
+                                                                    adultCount: 0,
+                                                                    departdate: '',
+                                                                    userid: '',
+                                                                    usertypeid: '',
+                                                                  ),
                                                             ),
                                                           ).then(
                                                                   (_) {
@@ -3463,183 +2946,397 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                                                 _fetchChildren();
                                                               });
                                                         }
-                                                            : null, // Disable if there is no child data or isEdit is true
-                                                      ),
-                                                      // Delete Button
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons
-                                                                .delete,
-                                                            color: Colors
-                                                                .red),
-                                                        onPressed: hasChildData &&
-                                                            !isEditChild
-                                                            ? () {
-                                                          // Show confirmation dialog
-                                                          showDialog(
-                                                            context:
-                                                            context,
-                                                            builder:
-                                                                (BuildContext context) {
-                                                              return AlertDialog(
-                                                                title: Text('Confirm Deletion'),
-                                                                content: Text('Are you sure you want to delete this child?'),
-                                                                actions: <Widget>[
-                                                                  TextButton(
-                                                                    child: Text('No'),
-                                                                    onPressed: () {
-                                                                      Navigator.of(context).pop(); // Close dialog
-                                                                    },
-                                                                  ),
-                                                                  TextButton(
-                                                                    child: Text('Yes'),
-                                                                    onPressed: () {
-                                                                      _deleteChild(i); // Call delete method for child
-                                                                      Navigator.of(context).pop(); // Close dialog
-                                                                    },
-                                                                  ),
-                                                                ],
-                                                              );
-                                                            },
-                                                          );
-                                                        }
-                                                            : null, // Disable if there is no child data or isEdit is true
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              }),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    if (InfantCount >= 1) Divider(),
-                                    if (InfantCount >= 1)
-                                      Padding(
-                                        padding:
-                                        const EdgeInsets.only(
-                                            left: 15, top: 5),
-                                        child: Column(
-                                          crossAxisAlignment:
-                                          CrossAxisAlignment
-                                              .start,
-                                          children: [
-                                            Text(
-                                              'Infants',
-                                              style: TextStyle(
-                                                fontWeight:
-                                                FontWeight.w500,
-                                                fontSize: 16,
-                                              ),
-                                            ),
-                                            Column(
-                                              children: List.generate(
-                                                  InfantCount, (i) {
-                                                // Determine if there is valid child data
-                                                bool hasInfantData =
-                                                    _infantList.length >
-                                                        i &&
-                                                        _infantList[
-                                                        i] !=
-                                                            null &&
-                                                        _infantList[i]
-                                                        [
-                                                        'firstName'] !=
-                                                            null;
-
-                                                print('hasChildData: ' +
-                                                    hasInfantData
-                                                        .toString());
-
-                                                return Padding(
-                                                  padding:
-                                                  const EdgeInsets
-                                                      .all(8.0),
-                                                  child: Row(
-                                                    children: [
-                                                      CircleAvatar(
-                                                        backgroundColor: hasInfantData
-                                                            ? Colors
-                                                            .green
-                                                            : Colors
-                                                            .grey,
-                                                      ),
-                                                      SizedBox(
-                                                          width: 10),
-                                                      Expanded(
-                                                        child:
-                                                        GestureDetector(
-                                                          onTap: !hasInfantData &&
-                                                              !isEditInfant
-                                                              ? () {
-                                                            // Navigate to the page to add a child if there's no data
-                                                            Navigator.push(
-                                                              context,
-                                                              MaterialPageRoute(
-                                                                builder: (context) => AddInfantScreen(
-                                                                  isEdit: 'Add',
-                                                                  InfantIndex: i,
-                                                                  InfantList: _infantList,
-                                                                  flightDetails: '',
-                                                                  resultFlightData: '',
-                                                                  infantCount: 0,
-                                                                  childrenCount: InfantCount,
-                                                                  adultCount: 0,
-                                                                  departdate: '',
-                                                                  userid: '',
-                                                                  usertypeid: '',
-                                                                ),
-                                                              ),
-                                                            ).then((_) {
-                                                              // Fetch the updated children list when returning to this page
-                                                              _fetchInfant();
-                                                            });
-                                                          }
-                                                              : null,
-                                                          // Disable if there is child data or isEdit is true
-                                                          child: Text(
-                                                            hasInfantData
-                                                                ? '${_infantList[i]['firstName']} ${_infantList[i]['surname']}'
-                                                                : 'Select Infant ${i + 1}',
-                                                            style:
-                                                            TextStyle(
-                                                              fontSize:
-                                                              16,
-                                                              color: hasInfantData
-                                                                  ? Colors.black
-                                                                  : Colors.black,
-                                                            ),
+                                                            : null,
+                                                        // Disable if there is child data or isEdit is true
+                                                        child: Text(
+                                                          hasChildData
+                                                              ? '${_childrenList[i]['firstName']} ${_childrenList[i]['surname']}'
+                                                              : 'Select Child ${i + 1}',
+                                                          style:
+                                                          TextStyle(
+                                                            fontSize:
+                                                            16,
+                                                            color: hasChildData
+                                                                ? Colors
+                                                                .black
+                                                                : Colors
+                                                                .black,
                                                           ),
                                                         ),
                                                       ),
-                                                      // Edit Button
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons
-                                                                .edit,
-                                                            color: Colors
-                                                                .blue),
-                                                        onPressed: hasInfantData &&
+                                                    ),
+                                                    // Edit Button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.edit,
+                                                          color: Colors
+                                                              .blue),
+                                                      onPressed: hasChildData &&
+                                                          !isEditChild
+                                                          ? () {
+                                                        // Navigate to edit screen if child data exists and not in edit mode
+                                                        Navigator
+                                                            .push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                AddChildScreen(
+                                                                  isEdit:
+                                                                  'Edit',
+                                                                  childIndex:
+                                                                  i,
+                                                                  childrenList:
+                                                                  _childrenList,
+                                                                  flightDetails:
+                                                                  '',
+                                                                  resultFlightData:
+                                                                  '',
+                                                                  infantCount:
+                                                                  0,
+                                                                  childrenCount:
+                                                                  childrenCount,
+                                                                  adultCount:
+                                                                  0,
+                                                                  departdate:
+                                                                  '',
+                                                                  userid:
+                                                                  '',
+                                                                  usertypeid:
+                                                                  '',
+                                                                ),
+                                                          ),
+                                                        ).then(
+                                                                (_) {
+                                                              // Fetch the updated children list when returning to this page
+                                                              _fetchChildren();
+                                                            });
+                                                      }
+                                                          : null, // Disable if there is no child data or isEdit is true
+                                                    ),
+                                                    // Delete Button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.delete,
+                                                          color: Colors
+                                                              .red),
+                                                      onPressed: hasChildData &&
+                                                          !isEditChild
+                                                          ? () {
+                                                        // Show confirmation dialog
+                                                        showDialog(
+                                                          context:
+                                                          context,
+                                                          builder:
+                                                              (BuildContext
+                                                          context) {
+                                                            return AlertDialog(
+                                                              title:
+                                                              Text('Confirm Deletion'),
+                                                              content:
+                                                              Text('Are you sure you want to delete this child?'),
+                                                              actions: <Widget>[
+                                                                TextButton(
+                                                                  child: Text('No'),
+                                                                  onPressed: () {
+                                                                    Navigator.of(context).pop(); // Close dialog
+                                                                  },
+                                                                ),
+                                                                TextButton(
+                                                                  child: Text('Yes'),
+                                                                  onPressed: () {
+                                                                    _deleteChild(i); // Call delete method for child
+                                                                    Navigator.of(context).pop(); // Close dialog
+                                                                  },
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
+                                                      }
+                                                          : null, // Disable if there is no child data or isEdit is true
+                                                    ),
+                                                  ],
+                                                ),
+                                              );
+                                            }),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  if (InfantCount > 1) Divider(),
+                                  if (InfantCount > 1)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 15, top: 5),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Infants',
+                                            style: TextStyle(
+                                              fontWeight:
+                                              FontWeight.w500,
+                                              fontSize: 16,
+                                            ),
+                                          ),
+                                          Column(
+                                            children: List.generate(
+                                                InfantCount, (i) {
+                                              // Determine if there is valid child data
+                                              bool hasInfantData =
+                                                  _infantList.length >
+                                                      i &&
+                                                      _infantList[i] !=
+                                                          null &&
+                                                      _infantList[i][
+                                                      'firstName'] !=
+                                                          null;
+                                              if (hasInfantData) {
+                                                switch (i) {
+                                                  case 0:
+                                                    TitleInfant1 =
+                                                        _infantList[i][
+                                                        'title'] ??
+                                                            '';
+                                                    FNameInfant1 =
+                                                        _infantList[i][
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameInfant1 =
+                                                        _infantList[i][
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameInfant1 =
+                                                        _infantList[i][
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBInfant1 =
+                                                        _infantList[i][
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderInfant1 =
+                                                        _infantList[i][
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumInfant1 =
+                                                        _infantList[i][
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateInfant1 =
+                                                        _infantList[i][
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateInfant1 =
+                                                        _infantList[i][
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+
+                                                  case 1:
+                                                    TitleInfant2 =
+                                                        _infantList[i][
+                                                        'title'] ??
+                                                            '';
+                                                    FNameInfant2 =
+                                                        _infantList[i][
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameInfant2 =
+                                                        _infantList[i][
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameInfant2 =
+                                                        _infantList[i][
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBInfant2 =
+                                                        _infantList[i][
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderInfant2 =
+                                                        _infantList[i][
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumInfant2 =
+                                                        _infantList[i][
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateInfant2 =
+                                                        _infantList[i][
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateInfant2 =
+                                                        _infantList[i][
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+
+                                                  case 2:
+                                                    TitleInfant3 =
+                                                        _infantList[i][
+                                                        'title'] ??
+                                                            '';
+                                                    FNameInfant3 =
+                                                        _infantList[i][
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameInfant3 =
+                                                        _infantList[i][
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameInfant3 =
+                                                        _infantList[i][
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBInfant3 =
+                                                        _infantList[i][
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderInfant3 =
+                                                        _infantList[i][
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumInfant3 =
+                                                        _infantList[i][
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateInfant3 =
+                                                        _infantList[i][
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateInfant3 =
+                                                        _infantList[i][
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+
+                                                  case 3:
+                                                    TitleInfant4 =
+                                                        _infantList[i][
+                                                        'title'] ??
+                                                            '';
+                                                    FNameInfant4 =
+                                                        _infantList[i][
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameInfant4 =
+                                                        _infantList[i][
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameInfant4 =
+                                                        _infantList[i][
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBInfant4 =
+                                                        _infantList[i][
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderInfant4 =
+                                                        _infantList[i][
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumInfant4 =
+                                                        _infantList[i][
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateInfant4 =
+                                                        _infantList[i][
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateInfant4 =
+                                                        _infantList[i][
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+
+                                                  case 4:
+                                                    TitleInfant5 =
+                                                        _infantList[i][
+                                                        'title'] ??
+                                                            '';
+                                                    FNameInfant5 =
+                                                        _infantList[i][
+                                                        'firstName'] ??
+                                                            '';
+                                                    MNameInfant5 =
+                                                        _infantList[i][
+                                                        'middleName'] ??
+                                                            '';
+                                                    LNameInfant5 =
+                                                        _infantList[i][
+                                                        'surname'] ??
+                                                            '';
+                                                    LDOBInfant5 =
+                                                        _infantList[i][
+                                                        'dob'] ??
+                                                            '';
+                                                    GenderInfant5 =
+                                                        _infantList[i][
+                                                        'gender'] ??
+                                                            '';
+                                                    DocNumInfant5 =
+                                                        _infantList[i][
+                                                        'documentNumber'] ??
+                                                            '';
+                                                    IssueDateInfant5 =
+                                                        _infantList[i][
+                                                        'issueDate'] ??
+                                                            '';
+                                                    ExpDateInfant5 =
+                                                        _infantList[i][
+                                                        'expiryDate'] ??
+                                                            '';
+                                                    break;
+                                                }
+                                              }
+
+                                              print('hasChildData: ' +
+                                                  hasInfantData
+                                                      .toString());
+
+                                              return Padding(
+                                                padding:
+                                                const EdgeInsets
+                                                    .only(
+                                                  right: 10,
+                                                ),
+                                                child: Row(
+                                                  children: [
+                                                    CircleAvatar(
+                                                      backgroundColor:
+                                                      hasInfantData
+                                                          ? Colors
+                                                          .green
+                                                          : Colors
+                                                          .grey,
+                                                    ),
+                                                    SizedBox(width: 10),
+                                                    Expanded(
+                                                      child:
+                                                      GestureDetector(
+                                                        onTap: !hasInfantData &&
                                                             !isEditInfant
                                                             ? () {
-                                                          // Navigate to edit screen if child data exists and not in edit mode
+                                                          // Navigate to the page to add a child if there's no data
                                                           Navigator
                                                               .push(
                                                             context,
                                                             MaterialPageRoute(
-                                                              builder: (context) => AddInfantScreen(
-                                                                isEdit: 'Edit',
-                                                                InfantIndex: i,
-                                                                InfantList: _infantList,
-                                                                flightDetails: '',
-                                                                resultFlightData: '',
-                                                                infantCount: 0,
-                                                                childrenCount: InfantCount,
-                                                                adultCount: 0,
-                                                                departdate: '',
-                                                                userid: '',
-                                                                usertypeid: '',
-                                                              ),
+                                                              builder: (context) =>
+                                                                  AddInfantScreen(
+                                                                    isEdit: 'Add',
+                                                                    InfantIndex: i,
+                                                                    InfantList: _infantList,
+                                                                    flightDetails: '',
+                                                                    resultFlightData: '',
+                                                                    infantCount: 0,
+                                                                    childrenCount: InfantCount,
+                                                                    adultCount: 0,
+                                                                    departdate: '',
+                                                                    userid: '',
+                                                                    usertypeid: '',
+                                                                  ),
                                                             ),
                                                           ).then(
                                                                   (_) {
@@ -3647,531 +3344,129 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                                                 _fetchInfant();
                                                               });
                                                         }
-                                                            : null, // Disable if there is no child data or isEdit is true
+                                                            : null,
+                                                        // Disable if there is child data or isEdit is true
+                                                        child: Text(
+                                                          hasInfantData
+                                                              ? '${_infantList[i]['firstName']} ${_infantList[i]['surname']}'
+                                                              : 'Select Infant ${i + 1}',
+                                                          style:
+                                                          TextStyle(
+                                                            fontSize:
+                                                            16,
+                                                            color: hasInfantData
+                                                                ? Colors
+                                                                .black
+                                                                : Colors
+                                                                .black,
+                                                          ),
+                                                        ),
                                                       ),
-                                                      // Delete Button
-                                                      IconButton(
-                                                        icon: Icon(
-                                                            Icons
-                                                                .delete,
-                                                            color: Colors
-                                                                .red),
-                                                        onPressed: hasInfantData &&
-                                                            !isEditInfant
-                                                            ? () {
-                                                          // Show confirmation dialog
-                                                          showDialog(
-                                                            context:
-                                                            context,
-                                                            builder:
-                                                                (BuildContext context) {
-                                                              return AlertDialog(
-                                                                title: Text('Confirm Deletion'),
-                                                                content: Text('Are you sure you want to delete this child?'),
-                                                                actions: <Widget>[
-                                                                  TextButton(
-                                                                    child: Text('No'),
-                                                                    onPressed: () {
-                                                                      Navigator.of(context).pop(); // Close dialog
-                                                                    },
-                                                                  ),
-                                                                  TextButton(
-                                                                    child: Text('Yes'),
-                                                                    onPressed: () {
-                                                                      _deleteInfant(i); // Call delete method for child
-                                                                      Navigator.of(context).pop(); // Close dialog
-                                                                    },
-                                                                  ),
-                                                                ],
-                                                              );
-                                                            },
-                                                          );
-                                                        }
-                                                            : null, // Disable if there is no child data or isEdit is true
-                                                      ),
-                                                    ],
-                                                  ),
-                                                );
-                                              }),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(
-                                height: 10,
-                              ),
-
-                              Container(
-                                color: Colors.white,
-                                child: Column(
-                                  crossAxisAlignment:
-                                  CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0,vertical: 10),
-                                      child: Text(
-                                        "Contact Details",
-                                        style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight:
-                                            FontWeight.bold),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "Enter Your Email:",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.all(10.0),
-                                      // Padding 10 on all sides
-                                      child: TextField(
-                                        controller: EmailController,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter Email',
-                                          contentPadding:
-                                          EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal: 10),
-                                          border: OutlineInputBorder(
-                                            // Add border
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            // Optional: rounded corners
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          enabledBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          focusedBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "Select Country",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 8),
-                                      child: Container(
-                                        padding: const EdgeInsets
-                                            .symmetric(
-                                            horizontal: 10),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color: Colors.grey),
-                                          // Border color
-                                          borderRadius:
-                                          BorderRadius.circular(
-                                              8), // Rounded corners
-                                        ),
-                                        child:
-                                        DropdownButtonHideUnderline(
-                                          child:
-                                          DropdownButton<String>(
-                                              value: selectedCountry,
-                                              hint: Text(
-                                                  'Select a country'),
-                                              isExpanded: true,
-                                              // Optional: makes the dropdown take full width
-                                              items: countries.map((String value) {
-                                                final parts = value.split(' - ');
-                                                final countryName = parts[0].trim();
-                                                final countryCode = parts.length > 1 ? parts[1].trim() : '';
-                                                final phoneCode = countryPhoneMap[countryName] ?? '';
-
-                                                final displayText = phoneCode.isNotEmpty
-                                                    ? '$countryName - $countryCode ($phoneCode)'
-                                                    : '$countryName - $countryCode';
-
-                                                return DropdownMenuItem<String>(
-                                                  value: value,
-                                                  child: Text(displayText),
-                                                );
-                                              }).toList(),
-
-                                              onChanged: (newValue) {
-                                                final parts = newValue!.split(' - ');
-                                                final countryName = parts[0].trim();
-                                                final countryCode = parts.length > 1 ? parts[1].trim() : '';
-                                                final phoneCode = countryPhoneMap[countryName] ?? '';
-
-                                                setState(() {
-                                                  selectedCountry = newValue;
-                                                  selectedCountryCode = countryCode;
-                                                  selectedPhoneCode = phoneCode;
-                                                });
-
-                                                print('Country Code: $selectedCountryCode');
-                                                print('Phone Code: $selectedPhoneCode');
-                                              }
-
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "Enter Your Mobile:",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.all(10.0),
-                                      // Padding 10 on all sides
-                                      child: TextField(
-                                        controller:
-                                        MobileNoController,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter Mobile',
-                                          contentPadding:
-                                          EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal: 10),
-                                          border: OutlineInputBorder(
-                                            // Add border
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            // Optional: rounded corners
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          enabledBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          focusedBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "House No:",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.all(10.0),
-                                      // Padding 10 on all sides
-                                      child: TextField(
-                                        controller: HouseNoController,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter House No',
-                                          contentPadding:
-                                          EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal: 10),
-                                          border: OutlineInputBorder(
-                                            // Add border
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            // Optional: rounded corners
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          enabledBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          focusedBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "Street:",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.all(10.0),
-                                      // Padding 10 on all sides
-                                      child: TextField(
-                                        controller:
-                                        StreetNoController,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter Street No',
-                                          contentPadding:
-                                          EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal: 10),
-                                          border: OutlineInputBorder(
-                                            // Add border
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            // Optional: rounded corners
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          enabledBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          focusedBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "City:",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.all(10.0),
-                                      // Padding 10 on all sides
-                                      child: TextField(
-                                        controller: CityController,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter City',
-                                          contentPadding:
-                                          EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal: 10),
-                                          border: OutlineInputBorder(
-                                            // Add border
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            // Optional: rounded corners
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          enabledBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          focusedBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    SizedBox(height: 8),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "Zip Code:",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.all(10.0),
-                                      // Padding 10 on all sides
-                                      child: TextField(
-                                        controller: zipCodeController,
-                                        decoration: InputDecoration(
-                                          hintText: 'Enter Zip Code',
-                                          contentPadding:
-                                          EdgeInsets.symmetric(
-                                              vertical: 15,
-                                              horizontal: 10),
-                                          border: OutlineInputBorder(
-                                            // Add border
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            // Optional: rounded corners
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          enabledBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey),
-                                          ),
-                                          focusedBorder:
-                                          OutlineInputBorder(
-                                            borderRadius:
-                                            BorderRadius.circular(
-                                                8.0),
-                                            borderSide: BorderSide(
-                                                color: Colors.blue),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10.0),
-                                      child: Text(
-                                        "Country",
-                                        style:
-                                        TextStyle(fontSize: 16),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding:
-                                      const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 8),
-                                      child: Container(
-                                        padding: const EdgeInsets
-                                            .symmetric(
-                                            horizontal: 10),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                              color: Colors.grey),
-                                          borderRadius:
-                                          BorderRadius.circular(
-                                              8),
-                                        ),
-                                        child:
-                                        DropdownButtonHideUnderline(
-                                          child:
-                                          DropdownButton<String>(
-                                            value:
-                                            selectedNationality,
-                                            hint: Text(
-                                                'Select Nationality'),
-                                            isExpanded: true,
-                                            items: nationalityList
-                                                .map((String value) {
-                                              return DropdownMenuItem<
-                                                  String>(
-                                                value: value,
-                                                child: Text(value
-                                                    .split(' - ')[
-                                                0]), // Show only name
+                                                    ),
+                                                    // Edit Button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.edit,
+                                                          color: Color(
+                                                              0xFF1C5870)),
+                                                      onPressed: hasInfantData &&
+                                                          !isEditInfant
+                                                          ? () {
+                                                        // Navigate to edit screen if child data exists and not in edit mode
+                                                        Navigator
+                                                            .push(
+                                                          context,
+                                                          MaterialPageRoute(
+                                                            builder: (context) =>
+                                                                AddInfantScreen(
+                                                                  isEdit:
+                                                                  'Edit',
+                                                                  InfantIndex:
+                                                                  i,
+                                                                  InfantList:
+                                                                  _infantList,
+                                                                  flightDetails:
+                                                                  '',
+                                                                  resultFlightData:
+                                                                  '',
+                                                                  infantCount:
+                                                                  0,
+                                                                  childrenCount:
+                                                                  InfantCount,
+                                                                  adultCount:
+                                                                  0,
+                                                                  departdate:
+                                                                  '',
+                                                                  userid:
+                                                                  '',
+                                                                  usertypeid:
+                                                                  '',
+                                                                ),
+                                                          ),
+                                                        ).then(
+                                                                (_) {
+                                                              // Fetch the updated children list when returning to this page
+                                                              _fetchInfant();
+                                                            });
+                                                      }
+                                                          : null, // Disable if there is no child data or isEdit is true
+                                                    ),
+                                                    // Delete Button
+                                                    IconButton(
+                                                      icon: Icon(
+                                                          Icons.delete,
+                                                          color: Colors
+                                                              .red),
+                                                      onPressed: hasInfantData &&
+                                                          !isEditInfant
+                                                          ? () {
+                                                        // Show confirmation dialog
+                                                        showDialog(
+                                                          context:
+                                                          context,
+                                                          builder:
+                                                              (BuildContext
+                                                          context) {
+                                                            return AlertDialog(
+                                                              title:
+                                                              Text('Confirm Deletion'),
+                                                              content:
+                                                              Text('Are you sure you want to delete this child?'),
+                                                              actions: <Widget>[
+                                                                TextButton(
+                                                                  child: Text('No'),
+                                                                  onPressed: () {
+                                                                    Navigator.of(context).pop(); // Close dialog
+                                                                  },
+                                                                ),
+                                                                TextButton(
+                                                                  child: Text('Yes'),
+                                                                  onPressed: () {
+                                                                    _deleteInfant(i); // Call delete method for child
+                                                                    Navigator.of(context).pop(); // Close dialog
+                                                                  },
+                                                                ),
+                                                              ],
+                                                            );
+                                                          },
+                                                        );
+                                                      }
+                                                          : null, // Disable if there is no child data or isEdit is true
+                                                    ),
+                                                  ],
+                                                ),
                                               );
-                                            }).toList(),
-                                            onChanged: (newValue) {
-                                              setState(() {
-                                                selectedNationality =
-                                                    newValue;
-                                              });
-                                            },
+                                            }),
                                           ),
-                                        ),
+                                        ],
                                       ),
                                     ),
-                                    SizedBox(
-                                      height: 10,
-                                    ),
-                                  ],
-                                ),
+                                ],
                               ),
-                              SizedBox(
-                                height: 100,
-                              ),
-                            ],
-                          );
-                        })
-                        : Container(
+                            ),
+                            SizedBox(height: 10,),
+                          ],
+                        ) : Container(
                       child: Column(
                         children: [
                           Container(
@@ -4180,20 +3475,32 @@ class _OneWayBookingState extends State<OneWayBooking> {
                               children: [
                                 Container(
                                   color: Colors.white,
-                                  padding: const EdgeInsets.symmetric(vertical: 15,horizontal: 15),
+                                  padding:
+                                  const EdgeInsets.symmetric(
+                                      vertical: 15,
+                                      horizontal: 15),
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
                                     children: [
                                       // Top Row (Carrier Name)
                                       Row(
                                         children: [
-                                          Image.asset('assets/images/img.png', cacheWidth: 25),
+                                          Image.asset(
+                                              'assets/images/img.png',
+                                              cacheWidth: 25),
                                           SizedBox(width: 4),
                                           Expanded(
                                             child: Text(
-                                              resultFlightData[0]['CarrierName'],
-                                              style: TextStyle(fontWeight: FontWeight.w400, fontSize: 14),
-                                              overflow: TextOverflow.ellipsis,
+                                              resultFlightData[0]
+                                              ['CarrierName'],
+                                              style: TextStyle(
+                                                  fontWeight:
+                                                  FontWeight
+                                                      .w400,
+                                                  fontSize: 14),
+                                              overflow: TextOverflow
+                                                  .ellipsis,
                                               maxLines: 1,
                                             ),
                                           ),
@@ -4202,30 +3509,63 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                       SizedBox(height: 20),
                                       // Flight Details Row
                                       Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                        CrossAxisAlignment
+                                            .start,
                                         children: [
                                           // ✅ Departure Column
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                              CrossAxisAlignment
+                                                  .start,
                                               children: [
-                                                Text(formatDepartureDate(resultFlightData[0]['DepartureDate'].substring(0, 10))),
+                                                Text(formatDepartureDate(
+                                                    resultFlightData[
+                                                    0][
+                                                    'DepartureDate']
+                                                        .substring(
+                                                        0,
+                                                        10))),
                                                 Text(
-                                                  CommonUtils.convertToFormattedTime(resultFlightData[0]['DepartureDate']).toUpperCase(),
-                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                                                  CommonUtils.convertToFormattedTime(
+                                                      resultFlightData[
+                                                      0]
+                                                      [
+                                                      'DepartureDate'])
+                                                      .toUpperCase(),
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                      FontWeight
+                                                          .bold,
+                                                      fontSize: 18),
                                                 ),
-                                                Text(resultFlightData[0]['DepartCityName']),
+                                                Text(resultFlightData[
+                                                0][
+                                                'DepartCityName']),
                                                 SizedBox(height: 2),
                                                 Text(
-                                                  resultFlightData[0]['DepartAirportName'],
-                                                  style: TextStyle(color: Colors.black, fontSize: 13),
-                                                  overflow: TextOverflow.ellipsis,
+                                                  resultFlightData[
+                                                  0][
+                                                  'DepartAirportName'],
+                                                  style: TextStyle(
+                                                      color: Colors
+                                                          .black,
+                                                      fontSize: 13),
+                                                  overflow:
+                                                  TextOverflow
+                                                      .ellipsis,
                                                   maxLines: 1,
                                                   softWrap: false,
                                                 ),
                                                 SizedBox(height: 2),
-                                                Text('Terminal ${resultFlightData[0]['DepartureTerminal']}',
-                                                    style: TextStyle(color: Colors.orange, fontSize: 14)),
+                                                Text(
+                                                    'Terminal ${resultFlightData[0]['DepartureTerminal']}',
+                                                    style: TextStyle(
+                                                        color: Colors
+                                                            .orange,
+                                                        fontSize:
+                                                        14)),
                                               ],
                                             ),
                                           ),
@@ -4233,41 +3573,90 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                           Column(
                                             children: [
                                               Padding(
-                                                padding: const EdgeInsets.only(top: 16),
+                                                padding:
+                                                const EdgeInsets
+                                                    .only(
+                                                    top: 16),
                                                 child: Text(
-                                                  (resultFlightData[0]['TravelTime'] ?? '').replaceFirst('PT', ''),
-                                                  style: TextStyle(fontWeight: FontWeight.w400, fontSize: 12),
+                                                  formatTravelTime (resultFlightData[
+                                                  0]
+                                                  [
+                                                  'TravelTime']),
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                      FontWeight
+                                                          .w400,
+                                                      fontSize: 12),
                                                 ),
                                               ),
-                                              Image.asset('assets/images/oneStop.png', width: 60, fit: BoxFit.fitWidth),
+                                              Image.asset(
+                                                  'assets/images/oneStop.png',
+                                                  width: 60,
+                                                  fit: BoxFit
+                                                      .fitWidth),
                                             ],
                                           ),
                                           SizedBox(width: 6),
                                           // ✅ Arrival Column
                                           Expanded(
                                             child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.end,
+                                              crossAxisAlignment:
+                                              CrossAxisAlignment
+                                                  .end,
                                               children: [
-                                                Text(formatDepartureDate(resultFlightData[0]['ArrivalDate'].substring(0, 10))),
+                                                Text(formatDepartureDate(
+                                                    resultFlightData[
+                                                    0][
+                                                    'ArrivalDate']
+                                                        .substring(
+                                                        0,
+                                                        10))),
                                                 Text(
-                                                  CommonUtils.convertToFormattedTime(resultFlightData[0]['ArrivalDate']).toUpperCase(),
-                                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                                                  textAlign: TextAlign.end,
+                                                  CommonUtils.convertToFormattedTime(
+                                                      resultFlightData[
+                                                      0]
+                                                      [
+                                                      'ArrivalDate'])
+                                                      .toUpperCase(),
+                                                  style: TextStyle(
+                                                      fontWeight:
+                                                      FontWeight
+                                                          .bold,
+                                                      fontSize: 18),
+                                                  textAlign:
+                                                  TextAlign.end,
                                                 ),
-                                                Text(resultFlightData[0]['ArriveCityName']),
+                                                Text(resultFlightData[
+                                                0][
+                                                'ArriveCityName']),
                                                 SizedBox(height: 2),
                                                 Text(
-                                                  resultFlightData[0]['ArrivalAirportName'],
-                                                  style: TextStyle(color: Colors.black, fontSize: 13),
-                                                  textAlign: TextAlign.end,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  resultFlightData[
+                                                  0][
+                                                  'ArrivalAirportName'],
+                                                  style: TextStyle(
+                                                      color: Colors
+                                                          .black,
+                                                      fontSize: 13),
+                                                  textAlign:
+                                                  TextAlign.end,
+                                                  overflow:
+                                                  TextOverflow
+                                                      .ellipsis,
                                                   maxLines: 1,
                                                   softWrap: false,
                                                 ),
                                                 SizedBox(height: 2),
-                                                Text('Terminal ${resultFlightData[0]['ArrivalTerminal']}',
-                                                    style: TextStyle(color: Colors.orange, fontSize: 14),
-                                                    textAlign: TextAlign.end),
+                                                Text(
+                                                    'Terminal ${resultFlightData[0]['ArrivalTerminal']}',
+                                                    style: TextStyle(
+                                                        color: Colors
+                                                            .orange,
+                                                        fontSize:
+                                                        14),
+                                                    textAlign:
+                                                    TextAlign
+                                                        .end),
                                               ],
                                             ),
                                           ),
@@ -4275,77 +3664,168 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                       ),
                                       SizedBox(height: 10),
                                       Divider(),
-                                      // ✅ Baggage Info & View More
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(Icons.shopping_bag, size: 16, color: Colors.grey.shade500),
+                                              Icon(
+                                                  Icons
+                                                      .shopping_bag,
+                                                  size: 16,
+                                                  color: Colors.grey
+                                                      .shade500),
                                               SizedBox(width: 5),
-                                              Text('Cabin Baggage: ', style: TextStyle(fontSize: 14)),
-                                              Text(resultFlightData[0]['CabinBaggage'], style: TextStyle(fontSize: 14)),
+                                              Text(
+                                                  'Cabin Baggage: ',
+                                                  style: TextStyle(
+                                                      fontSize:
+                                                      14)),
+                                              Text(
+                                                  resultFlightData[
+                                                  0][
+                                                  'CabinBaggage'],
+                                                  style: TextStyle(
+                                                      fontSize:
+                                                      14)),
                                             ],
                                           ),
                                         ],
                                       ),
                                       SizedBox(height: 4),
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .spaceBetween,
                                         children: [
                                           Row(
                                             children: [
-                                              Icon(Icons.shopping_bag, size: 16, color: Colors.grey.shade500),
+                                              Icon(
+                                                  Icons
+                                                      .shopping_bag,
+                                                  size: 16,
+                                                  color: Colors.grey
+                                                      .shade500),
                                               SizedBox(width: 5),
-                                              Text('Check-In: ', style: TextStyle(fontSize: 14)),
-                                              Text(resultFlightData[0]['Baggage'], style: TextStyle(fontSize: 14)),
+                                              Text('Check-In: ',
+                                                  style: TextStyle(
+                                                      fontSize:
+                                                      14)),
+                                              Text(
+                                                  resultFlightData[
+                                                  0]['Baggage'],
+                                                  style: TextStyle(
+                                                      fontSize:
+                                                      14)),
                                             ],
                                           ),
                                         ],
                                       ),
                                       Divider(),
-                                      // A30 and View More
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        mainAxisAlignment:
+                                        MainAxisAlignment
+                                            .end,
                                         children: [
-                                          Text('A30', style: TextStyle(color: Colors.black)),
+
                                           TextButton(
                                             onPressed: () {
                                               setState(() {
-                                                isExpanded = !isExpanded;
+                                                isExpanded =
+                                                !isExpanded;
                                               });
                                             },
                                             child: Row(
                                               children: [
-                                                Text(isExpanded ? 'View Less' : 'View More', style: TextStyle(color: Colors.orange)),
-                                                Icon(isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.orange),
+                                                Text(
+                                                    isExpanded
+                                                        ? 'View Less'
+                                                        : 'View Policy',
+                                                    style: TextStyle(
+                                                        color: Colors
+                                                            .orange)),
+                                                Icon(
+                                                    isExpanded
+                                                        ? Icons
+                                                        .keyboard_arrow_up
+                                                        : Icons
+                                                        .keyboard_arrow_down,
+                                                    color: Colors
+                                                        .orange),
                                               ],
                                             ),
                                           ),
                                         ],
                                       ),
                                       if (isExpanded)
-                                        Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                        Column(crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Row(children: [Icon(Icons.signal_cellular_off, size: 16), SizedBox(width: 5), Text('Narrow')]),
-                                            Row(children: [Icon(Icons.wifi_off, size: 16), SizedBox(width: 5), Text('No WiFi')]),
-                                            Row(children: [Icon(Icons.fastfood, size: 16), SizedBox(width: 5), Text('Fresh Food')]),
-                                            Row(children: [Icon(Icons.power, size: 16), SizedBox(width: 5), Text('Outlet')]),
+                                            Text(
+                                              "Cancellation Charges",
+                                              style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight:
+                                                  FontWeight
+                                                      .bold),
+                                            ),
+                                            Divider(
+                                                thickness: 1,
+                                                color: Colors
+                                                    .grey.shade400),
+                                            SizedBox(height: 8),
+                                            if (resultFlightData[0][
+                                            'LastTicketingDate'] !=
+                                                null &&
+                                                resultFlightData[0][
+                                                'LastTicketingDate']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              _buildRule(
+                                                "Last Ticketing Date",
+                                                resultFlightData[0][
+                                                'LastTicketingDate']
+                                                    .toString(),
+                                              ),
+                                            if (resultFlightData[0][
+                                            'TicketAdvisory'] !=
+                                                null &&
+                                                resultFlightData[0][
+                                                'TicketAdvisory']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              _buildRule(
+                                                "Ticket Advisory",
+                                                resultFlightData[0][
+                                                'TicketAdvisory']
+                                                    .toString(),
+                                              ),
+                                            if (resultFlightData[0][
+                                            'PenaltyReissueCharge'] !=
+                                                null &&
+                                                resultFlightData[0][
+                                                'PenaltyReissueCharge']
+                                                    .toString()
+                                                    .isNotEmpty)
+                                              _buildRule(
+                                                "Penalty Reissue Charge",
+                                                resultFlightData[0][
+                                                'PenaltyReissueCharge']
+                                                    .toString(),
+                                              ),
                                           ],
                                         ),
                                     ],
                                   ),
                                 ),
-
                                 SizedBox(
                                   height: 5,
                                 ),
                                 Container(
                                   color: Colors.white,
                                   child: Padding(
-                                    padding:
-                                    const EdgeInsets.all(8.0),
+                                    padding: const EdgeInsets.all(8.0),
                                     child: Column(
                                       children: [
                                         Row(
@@ -4356,151 +3836,208 @@ class _OneWayBookingState extends State<OneWayBooking> {
                                             Text(
                                               'Fare Summary',
                                               style: TextStyle(
-                                                color: Colors.black,
-                                                fontWeight:
-                                                FontWeight.bold,
+                                                fontWeight: FontWeight.bold,
                                                 fontSize: 18,
                                               ),
                                             ),
-                                            Text(
-                                              'View Full Breakup',
-                                              style: TextStyle(
-                                                color: Color(
-                                                    0xFF1C5870),
-                                                fontWeight:
-                                                FontWeight.bold,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-
-                                            // Add other pricing details or components as needed
                                           ],
                                         ),
                                         SizedBox(
                                           height: 4,
                                         ),
-                                        Padding(
-                                          padding:
-                                          const EdgeInsets.only(
-                                              right: 0,
-                                              left: 0,
-                                              bottom: 4),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment
-                                                .spaceBetween,
-                                            children: [
-                                              Text(
-                                                'Base Price',
-                                                style: TextStyle(
-                                                  color:
-                                                  Colors.black,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w500,
-                                                  fontSize: 14,
+                                        Container(
+                                          margin:
+                                          EdgeInsets.only(bottom: 0),
+                                          child: Padding(
+                                            padding: EdgeInsets.symmetric(
+                                                horizontal: 3,
+                                                vertical: 5),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                              children: [
+                                                // Base Fare Section
+                                                if (adultCountInt > 0)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                          "ADT x $adultCountInt"),
+                                                      Text(
+                                                          "${fareSummary?['AdualFare']}"),
+                                                    ],
+                                                  ),
+                                                SizedBox(
+                                                  height: 5,
                                                 ),
-                                              ),
-                                              Text(
-                                                resultFlightData[0][
-                                                "BookingCurrency"] +
-                                                    " " +
-                                                    resultFlightData[
-                                                    0][
-                                                    "BookingBaseFare"],
-                                                style: TextStyle(
-                                                  color:
-                                                  Colors.black,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w500,
-                                                  fontSize: 16,
+                                                if (childrenCount > 0)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                          "CHD x $childrenCount"),
+                                                      Text(
+                                                          "${fareSummary?['ChildFare']}"),
+                                                    ],
+                                                  ),
+                                                SizedBox(
+                                                  height: 5,
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Padding(
-                                          padding:
-                                          const EdgeInsets.only(
-                                              right: 0,
-                                              left: 0,
-                                              bottom: 4,
-                                              top: 4),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment
-                                                .spaceBetween,
-                                            children: [
-                                              Text(
-                                                'Tax Price',
-                                                style: TextStyle(
-                                                  color:
-                                                  Colors.black,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w500,
-                                                  fontSize: 16,
+                                                if (InfantCount > 0)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                          "INF x $InfantCount"),
+                                                      Text(
+                                                          "${fareSummary?['InfantFare']}"),
+                                                    ],
+                                                  ),
+
+                                                SizedBox(height: 10),
+                                                Text("Tax",
+                                                    style: TextStyle(
+                                                        fontWeight:
+                                                        FontWeight
+                                                            .bold)),
+                                                SizedBox(height: 10),
+                                                // Tax Section
+                                                if (adultCountInt > 0)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                          "ADT x $adultCountInt"),
+                                                      Text(
+                                                          "${fareSummary?['AdualTaxFare']}"),
+                                                    ],
+                                                  ),
+                                                SizedBox(
+                                                  height: 5,
                                                 ),
-                                              ),
-                                              Text(
-                                                resultFlightData[0][
-                                                "BookingCurrency"] +
-                                                    " " +
-                                                    resultFlightData[
-                                                    0][
-                                                    "BookingTax"],
-                                                style: TextStyle(
-                                                  color:
-                                                  Colors.black,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w500,
-                                                  fontSize: 16,
+                                                if (childrenCount > 0)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                          "CHD x $childrenCount"),
+                                                      Text(
+                                                          "${fareSummary?['ChildTaxFare']}"),
+                                                    ],
+                                                  ),
+                                                SizedBox(
+                                                  height: 5,
                                                 ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        Divider(),
-                                        Padding(
-                                          padding:
-                                          const EdgeInsets.only(
-                                              right: 0,
-                                              left: 0,
-                                              bottom: 5,
-                                              top: 4),
-                                          child: Row(
-                                            mainAxisAlignment:
-                                            MainAxisAlignment
-                                                .spaceBetween,
-                                            children: [
-                                              Text(
-                                                'Total Amount To Be Paid',
-                                                style: TextStyle(
-                                                  color:
-                                                  Colors.black,
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w500,
-                                                  fontSize: 16,
+                                                if (InfantCount > 0)
+                                                  Row(
+                                                    mainAxisAlignment:
+                                                    MainAxisAlignment
+                                                        .spaceBetween,
+                                                    children: [
+                                                      Text(
+                                                          "INF x $InfantCount"),
+                                                      Text(
+                                                          "${fareSummary?['InfantTaxFare']}"),
+                                                    ],
+                                                  ),
+
+                                                SizedBox(height: 10),
+
+                                                // Summary
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  children: [
+                                                    Text("Total Fare"),
+                                                    Text(totalFare
+                                                        .toStringAsFixed(
+                                                        2)),
+                                                  ],
                                                 ),
-                                              ),
-                                              Text(
-                                                resultFlightData[0][
-                                                "BookingCurrency"] +
-                                                    " " +
-                                                    resultFlightData[
-                                                    0][
-                                                    "TotalPrice"],
-                                                style: TextStyle(
-                                                  fontWeight:
-                                                  FontWeight
-                                                      .w500,
-                                                  fontSize: 20,
+                                                SizedBox(
+                                                  height: 5,
                                                 ),
-                                              ),
-                                            ],
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  children: [
+                                                    Text("GST(0.10%)"),
+                                                    Text(
+                                                        gst.toStringAsFixed(
+                                                            2)),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                        "Convenience Fees"),
+                                                    Text(convenience
+                                                        .toStringAsFixed(
+                                                        2)),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  children: [
+                                                    Text("Discount"),
+                                                    Text(
+                                                        "${discount.toStringAsFixed(2)}"),
+                                                  ],
+                                                ),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
+                                                Divider(),
+                                                SizedBox(
+                                                  height: 5,
+                                                ),
+                                                Row(
+                                                  mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
+                                                  children: [
+                                                    Text("Grand Total",
+                                                        style: TextStyle(
+                                                            fontWeight:
+                                                            FontWeight
+                                                                .bold,
+                                                            fontSize: 17)),
+                                                    Text(
+                                                      grandTotal
+                                                          .toStringAsFixed(
+                                                          2),
+                                                      style: TextStyle(
+                                                          fontWeight:
+                                                          FontWeight
+                                                              .bold),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -5266,6 +4803,471 @@ class _OneWayBookingState extends State<OneWayBooking> {
                         ],
                       ),
                     ),
+
+// ==== Contact Details (only once, after all segments) ====
+
+
+                    Container(
+                      color: Colors.white,
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0,vertical: 10),
+                            child: Text(
+                              "Contact Details",
+                              style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight:
+                                  FontWeight.bold),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Enter Your Email:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: EmailController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Email',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Select Country",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8),
+                            child: Container(
+                              padding: const EdgeInsets
+                                  .symmetric(
+                                  horizontal: 10),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: Colors.grey),
+                                // Border color
+                                borderRadius:
+                                BorderRadius.circular(
+                                    8), // Rounded corners
+                              ),
+                              child:
+                              DropdownButtonHideUnderline(
+                                child:
+                                DropdownButton<String>(
+                                    value: selectedCountry,
+                                    hint: Text(
+                                        'Select a country'),
+                                    isExpanded: true,
+                                    // Optional: makes the dropdown take full width
+                                    items: countries.map((String value) {
+                                      final parts = value.split(' - ');
+                                      final countryName = parts[0].trim();
+                                      final countryCode = parts.length > 1 ? parts[1].trim() : '';
+                                      final phoneCode = countryPhoneMap[countryName] ?? '';
+
+                                      final displayText = phoneCode.isNotEmpty
+                                          ? '$countryName - $countryCode ($phoneCode)'
+                                          : '$countryName - $countryCode';
+
+                                      return DropdownMenuItem<String>(
+                                        value: value,
+                                        child: Text(displayText),
+                                      );
+                                    }).toList(),
+
+                                    onChanged: (newValue) {
+                                      final parts = newValue!.split(' - ');
+                                      final countryName = parts[0].trim();
+                                      final countryCode = parts.length > 1 ? parts[1].trim() : '';
+                                      final phoneCode = countryPhoneMap[countryName] ?? '';
+
+                                      setState(() {
+                                        selectedCountry = newValue;
+                                        selectedCountryCode = countryCode;
+                                        selectedPhoneCode = phoneCode;
+                                      });
+
+                                      print('Country Code: $selectedCountryCode');
+                                      print('Phone Code: $selectedPhoneCode');
+                                    }
+
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Enter Your Mobile:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller:
+                              MobileNoController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Mobile',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "House No:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: HouseNoController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter House No',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Street:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller:
+                              StreetNoController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Street No',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "City:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: CityController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter City',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Zip Code:",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.all(10.0),
+                            // Padding 10 on all sides
+                            child: TextField(
+                              controller: zipCodeController,
+                              decoration: InputDecoration(
+                                hintText: 'Enter Zip Code',
+                                contentPadding:
+                                EdgeInsets.symmetric(
+                                    vertical: 15,
+                                    horizontal: 10),
+                                border: OutlineInputBorder(
+                                  // Add border
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  // Optional: rounded corners
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                enabledBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.grey),
+                                ),
+                                focusedBorder:
+                                OutlineInputBorder(
+                                  borderRadius:
+                                  BorderRadius.circular(
+                                      8.0),
+                                  borderSide: BorderSide(
+                                      color: Colors.blue),
+                                ),
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10.0),
+                            child: Text(
+                              "Country",
+                              style:
+                              TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          Padding(
+                            padding:
+                            const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 8),
+                            child: Container(
+                              padding: const EdgeInsets
+                                  .symmetric(
+                                  horizontal: 10),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: Colors.grey),
+                                borderRadius:
+                                BorderRadius.circular(
+                                    8),
+                              ),
+                              child:
+                              DropdownButtonHideUnderline(
+                                child:
+                                DropdownButton<String>(
+                                  value:
+                                  selectedNationality,
+                                  hint: Text(
+                                      'Select Nationality'),
+                                  isExpanded: true,
+                                  items: nationalityList
+                                      .map((String value) {
+                                    return DropdownMenuItem<
+                                        String>(
+                                      value: value,
+                                      child: Text(value
+                                          .split(' - ')[
+                                      0]), // Show only name
+                                    );
+                                  }).toList(),
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      selectedNationality =
+                                          newValue;
+                                    });
+                                  },
+                                ),
+                              ),
+                            ),
+                          ),
+                          SizedBox(
+                            height: 10,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -5307,12 +5309,11 @@ class _OneWayBookingState extends State<OneWayBooking> {
                         padding:
                         const EdgeInsets.only(right: 10.0, top: 8),
                         child: ElevatedButton(
-
                           onPressed: () {
                             submitAdivahaFlightBooking();
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Color(0xFF00ADEE),
+                            backgroundColor: Color(0xFF1C5870),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10.0),
                             ),
@@ -5340,5 +5341,26 @@ class _OneWayBookingState extends State<OneWayBooking> {
       ),
     );
   }
-
+  Widget _buildRule(String title, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6.0),
+      child: RichText(
+        text: TextSpan(
+          style: TextStyle(fontSize: 15, color: Colors.black),
+          children: [
+            TextSpan(
+              text: "• $title : ",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+            TextSpan(text: value),
+          ],
+        ),
+      ),
+    );
+  }
+  void printFullJson(List<dynamic> matchingRows) {
+    final encoder = JsonEncoder.withIndent('  ');
+    final prettyJson = encoder.convert(matchingRows);
+    developer.log(prettyJson, name: 'FilteredFlighsddfdftDetails');
+  }
 }
