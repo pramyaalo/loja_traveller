@@ -21,9 +21,13 @@ import '../../Models/passenger_ddl_model.dart';
 
 import '../../utils/response_handler.dart';
 import '../../utils/shared_preferences.dart';
+import '../Car/CarListScreen.dart';
+import '../flight/AddTravellers_Flight.dart';
 import '../flight/Children_DatabaseHelper.dart';
 import '../flight/FlightScreenModel.dart';
 import '../flight/InfantDatabaseHelper.dart';
+import '../flight/multicity_flight_list.dart';
+import '../flight/one_way_flight_list.dart';
 
 class BusScreen extends StatefulWidget {
   const BusScreen({Key? key}) : super(key: key);
@@ -34,7 +38,6 @@ class BusScreen extends StatefulWidget {
 
 class _FlightsScreenState extends State<BusScreen> {
   bool isSwapped = false;
-  bool __shouldShowReturn = true;
   bool __ToDestination = true;
   final PageController _pageController = PageController(viewportFraction: 0.85);
   int _currentPage = 0;
@@ -119,6 +122,15 @@ class _FlightsScreenState extends State<BusScreen> {
       // Optionally, show a snackbar or error dialog to the user
     }
   }
+  List<String> dropOffTimes = [
+    "12:00 AM",
+    "1:00 AM", "2:00 AM", "3:00 AM", "4:00 AM", "5:00 AM", "6:00 AM",
+    "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+    "12:00 PM",
+    "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM",
+    "7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM", "11:00 PM",
+  ];
+
   void _deleteAllRecordsInfant() async {
     try {
       // Initialize the database helper
@@ -197,7 +209,7 @@ class _FlightsScreenState extends State<BusScreen> {
     //searchBookingTravellers();
     tTripType = '1';
     isSelected = true;
-    __shouldShowReturn = false;
+
     __ToDestination = false;
     //_loadSavedString();
     if (selectedClass == '') {
@@ -274,6 +286,7 @@ class _FlightsScreenState extends State<BusScreen> {
   DateTime selecteddDate = DateTime.now();
   DateTime selectedDate = DateTime.now();
   DateTime selectedReturnDate = DateTime.now();
+  String selectedDropOffTime = "6:00 PM";
 
   DateTime selecteddDate1 = DateTime.now();
   DateTime selecteddDate2 = DateTime.now();
@@ -343,7 +356,7 @@ class _FlightsScreenState extends State<BusScreen> {
       // Call sendFlightSearchRequest() here after SharedPreferences values are retrieved
     });
   }
-
+  String selectedTime = "6:00 AM";
   bool isSelected = false;
   bool isSelected1 = false;
   bool isSelected2 = false;
@@ -383,6 +396,16 @@ class _FlightsScreenState extends State<BusScreen> {
       'Policy 1',
       'Policy 2',
     ];
+    List<String> timeList = [
+      "12:00 AM",
+      "1:00 AM", "2:00 AM", "3:00 AM", "4:00 AM", "5:00 AM", "6:00 AM",
+      "7:00 AM", "8:00 AM", "9:00 AM", "10:00 AM", "11:00 AM",
+      "12:00 PM",
+      "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM",
+      "7:00 PM", "8:00 PM", "9:00 PM", "10:00 PM", "11:00 PM",
+    ];
+
+    // default (optional)
 
     var travelPolicy = ['-- Select --'];
 
@@ -409,7 +432,7 @@ class _FlightsScreenState extends State<BusScreen> {
             ),
             SizedBox(width: 1),
             Text(
-              "Flight Booking",
+              "Bus Booking",
               style: TextStyle(
                 color: Colors.white,
                 fontFamily: "Montserrat",
@@ -437,7 +460,317 @@ class _FlightsScreenState extends State<BusScreen> {
                       width: double.infinity,
                       color: Theme.of(context).primaryColor,
                     ),
+                    Container(
+                      margin: EdgeInsets.fromLTRB(20, 30, 20, 20),
+                      child: Material(
+                        elevation: 5,
+                        borderRadius: BorderRadius.circular(15),
+                        child: Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.only(top: 10, right: 10, left: 10),
+                            decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(15),
+                                color: Colors.white),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
 
+
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      margin: EdgeInsets.only(
+                                          left: 10, right: 10, top: 8),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            "From City",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Colors.black,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: 5),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 10),
+                                      child: Container(
+                                        height: 27,
+                                        child: Autocomplete<FlightScreenModel>(
+                                          // Autocomplete widget for "From"
+                                          optionsBuilder: (TextEditingValue
+                                          textEditingValue) async {
+                                            if (textEditingValue.text.isEmpty) {
+                                              return const Iterable<
+                                                  FlightScreenModel>.empty();
+                                            }
+                                            return await fetchAutocompleteData(
+                                                textEditingValue.text);
+                                          },
+                                          displayStringForOption: (FlightScreenModel
+                                          option) =>
+                                          '${option.name}, ${option.id}, ${option.iso_country}',
+                                          onSelected: (FlightScreenModel?
+                                          selectedOption) {
+                                            if (selectedOption != null) {
+                                              print(
+                                                  'Selecteidd: ${selectedOption.municipality} (${selectedOption.id})');
+                                              setState(() {
+                                                OriginPlace = selectedOption.id;
+                                                SelectionValue =
+                                                    selectedOption.municipality;
+                                              });
+                                              // Do something with the selected option
+                                            }
+                                          },
+                                          fieldViewBuilder: (context, controller,
+                                              focusNode, onFieldSubmitted) {
+                                            return TextFormField(
+                                              controller: controller,
+                                              focusNode: focusNode,
+                                              onFieldSubmitted: (String value) {
+                                                // Your logic here
+                                              },
+                                              maxLines: 2,
+                                              style: TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              decoration: InputDecoration(
+                                                hintText: 'Type From City',
+                                                isDense: true,
+                                                contentPadding:
+                                                EdgeInsets.only(top: 0),
+                                                border: InputBorder.none,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: double.infinity,
+                                      height: 0.1,
+                                      color: Colors.grey,
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          right: 10, left: 10, top: 8),
+                                      child: Text(
+                                        "To City",
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.black,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      height: 5,
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.only(left: 10),
+                                      child: Container(
+                                        height: 27,
+                                        child: Autocomplete<FlightScreenModel>(
+                                          // Autocomplete widget for "To"
+                                          optionsBuilder: (TextEditingValue
+                                          textEditingValue) async {
+                                            if (textEditingValue.text.isEmpty) {
+                                              return const Iterable<
+                                                  FlightScreenModel>.empty();
+                                            }
+                                            return await fetchAutocompleteData(
+                                                textEditingValue.text);
+                                          },
+                                          displayStringForOption: (FlightScreenModel
+                                          option) =>
+                                          '${option.name}, ${option.id}, ${option.iso_country}',
+                                          onSelected: (FlightScreenModel?
+                                          selectedOption) {
+                                            if (selectedOption != null) {
+                                              print(
+                                                  'Selected: ${selectedOption.name} (${selectedOption.id})');
+                                              setState(() {
+                                                DestinationPlace = selectedOption.id;
+                                              });
+                                              // Do something with the selected option
+                                            }
+                                          },
+                                          fieldViewBuilder: (context, controller,
+                                              focusNode, onFieldSubmitted) {
+                                            return TextFormField(
+                                              controller: controller,
+                                              focusNode: focusNode,
+                                              onFieldSubmitted: (String value) {
+                                                // Your logic here
+                                              },
+                                              maxLines: 2,
+                                              style: TextStyle(
+                                                color: Colors.black54,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                              decoration: InputDecoration(
+                                                hintText: 'Type To City',
+                                                isDense: true,
+                                                contentPadding:
+                                                EdgeInsets.only(top: 0),
+                                                border: InputBorder.none,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
+                                    Container(
+                                      width: double.infinity,
+                                      height: 0.1,
+                                      color: Colors.grey,
+                                    ),
+                                    Container(
+                                      margin: EdgeInsets.all(10),
+                                      child: Row(
+                                        mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Column(
+                                            mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                            crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                "Departs On",
+                                                style: TextStyle(
+                                                    fontFamily: "Montserrat",
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.black54),
+                                              ),
+                                              SizedBox(
+                                                height: 9,
+                                              ),
+                                              GestureDetector(
+                                                  onTap: () {
+                                                    _selectDate(context, 1);
+                                                  },
+                                                  child: Text(
+                                                    "${selecteddDate.toLocal()}"
+                                                        .split(' ')[0],
+                                                    style: TextStyle(
+                                                        fontFamily: "Montserrat",
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                        FontWeight.bold),
+                                                  )),
+                                              SizedBox(
+                                                height: 9,
+                                              ),
+
+
+
+
+
+                                            ],
+                                          ),
+
+
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                Container(
+                                  width: double.infinity,
+                                  height: 0.1,
+                                  color: Colors.grey,
+                                ),
+
+
+
+
+                                Container(
+                                  width: double.infinity,
+                                  height: 0.1,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(
+                                  height: 10,
+                                ),
+                                Center(
+                                  child: Container(
+                                    width: 300,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.center,
+                                      children: [
+                                        Container(
+                                          width: 300,
+                                          height: 46,
+                                          child: ElevatedButton(
+                                            onPressed: () {
+                                              _deleteAllRecordsAndGoBack();
+                                              _deleteAllRecordsChildren();
+                                              _deleteAllRecordsInfant();
+
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => CarListScreen(
+                                                    add: 'ADD',
+                                                    adult: AdultCount.toString(),
+                                                    children: childrenCount.toString(),
+                                                    infants: infantsCount.toString(),
+                                                    Pickup: OriginPlace.toString(),
+                                                    dropoff: DestinationPlace.toString(),
+                                                    pickupdate: selecteddDate.toString(),
+                                                    dropoffdate:selectedReturnDate.toString(),
+                                                    pickuptime:selectedTime.toString(),
+                                                    dropoftime:selectedDropOffTime.toString(),
+                                                    userId: userID,
+                                                    currency: Currency,
+                                                    classtype: selectedClass,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+
+                                            child: Text(
+                                              "SEARCH",
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold),
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:  Color(0xFF00ADEE),
+
+                                              // Background color of the button
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(
+                                                    20), // Circular radius of 20
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(
+                                  height: 20,
+                                ),
+                              ],
+                            )),
+                      ),
+                    )
                   ],
                 ),
                 Column(
@@ -532,41 +865,7 @@ class _FlightsScreenState extends State<BusScreen> {
   }
 }
 
-Widget buildDropdown(
-    List<String> items, String value, Function(Object?) onChanged) {
-  return Container(
-    width: 150,
-    height: 30,
-    padding: EdgeInsets.fromLTRB(5, 0, 5, 0),
-    decoration: BoxDecoration(
-      border: Border.all(
-        width: 1,
-        color: Colors.white,
-      ),
-      borderRadius: BorderRadius.circular(10.0),
-      color: Colors.white,
-    ),
-    child: DropdownButton(
-      dropdownColor: Colors.white,
-      underline: SizedBox(),
-      value: value,
-      iconSize: 0.0,
-      items: items.map((item) {
-        return DropdownMenuItem(
-          value: item,
-          child: Text(
-            item,
-            style: TextStyle(
-              fontFamily: "Montserrat",
-              fontSize: 13,
-            ),
-          ),
-        );
-      }).toList(),
-      onChanged: onChanged,
-    ),
-  );
-}
+
 
 class TripData {
   String from = '';
@@ -575,3 +874,43 @@ class TripData {
 
   TripData({required this.from, required this.to, required this.date});
 }
+Widget buildDropdown({
+  required String value,
+  required List<String> items,
+  required Function(String?) onChanged,
+}) {
+  return Container(
+    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    decoration: BoxDecoration(
+      border: Border.all(color: Colors.grey),
+      borderRadius: BorderRadius.circular(5),
+    ),
+    child: DropdownButtonHideUnderline(
+      child: DropdownButton<String>(
+        value: value,
+        isExpanded: false, // ❗ Very important → fixes arrow position
+        icon: Icon(Icons.keyboard_arrow_down),
+        alignment: Alignment.centerRight, // ❗ Arrow on right side
+        items: items.map((item) {
+          return DropdownMenuItem(
+            value: item,
+            child: Center(
+              child: Text(
+                item,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: "Montserrat",
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+        onChanged: onChanged,
+      ),
+    ),
+  );
+}
+
