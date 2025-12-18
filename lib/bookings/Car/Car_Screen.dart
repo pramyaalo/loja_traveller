@@ -520,11 +520,9 @@ class _FlightsScreenState extends State<CarScreen> {
                                             selectedOption) {
                                               if (selectedOption != null) {
                                                 print(
-                                                    'Selected: ${selectedOption.municipality} (${selectedOption.id})');
+                                                    'Selecteidd: ${selectedOption.municipality} (${selectedOption.id})');
                                                 setState(() {
-                                                  FinalOutput = selectedOption.id;
-                                                  OriginPlace =
-                                                      selectedOption.iso_country;
+                                                  OriginPlace = selectedOption.id;
                                                   SelectionValue =
                                                       selectedOption.municipality;
                                                 });
@@ -599,11 +597,9 @@ class _FlightsScreenState extends State<CarScreen> {
                                             selectedOption) {
                                               if (selectedOption != null) {
                                                 print(
-                                                    'Selected: ${selectedOption.municipality} (${selectedOption.id})');
+                                                    'Selected: ${selectedOption.name} (${selectedOption.id})');
                                                 setState(() {
-                                                  FinalOutPut1 = selectedOption.id;
-                                                  DestinationPlace =
-                                                      selectedOption.municipality;
+                                                  DestinationPlace = selectedOption.id;
                                                 });
                                                 // Do something with the selected option
                                               }
@@ -913,7 +909,7 @@ class _FlightsScreenState extends State<CarScreen> {
                                                     adult: AdultCount.toString(),
                                                     children: childrenCount.toString(),
                                                     infants: infantsCount.toString(),
-                                                    Pickup: SelectionValue.toString(),
+                                                    Pickup: OriginPlace.toString(),
                                                     dropoff: DestinationPlace.toString(),
                                                     pickupdate: selecteddDate.toString(),
                                                     dropoffdate:selectedReturnDate.toString(),

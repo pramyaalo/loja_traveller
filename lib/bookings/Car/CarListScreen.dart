@@ -20,6 +20,7 @@ import '../flight/Children_DatabaseHelper.dart';
 import '../flight/FilterPage.dart';
 import '../flight/InfantDatabaseHelper.dart';
 import '../flight/oneway_booking.dart';
+import 'CarBookingPage.dart';
 
 
 class CarListScreen extends StatefulWidget {
@@ -170,7 +171,7 @@ class _OnewayFlightsListState extends State<CarListScreen> {
       // Optionally, show a snackbar or error dialog to the user
     }
   }
-
+  List allVehicleMakeList = [];
   void _deleteAllRecordsChildren() async {
     try {
       // Initialize the database helper
@@ -197,113 +198,80 @@ class _OnewayFlightsListState extends State<CarListScreen> {
       // Optionally, show a snackbar or error dialog to the user
     }
   }
-
+  String formatTimeString(String time) {
+    final parsed = DateFormat('h:mm a').parse(time);
+    return DateFormat('hh:mm a').format(parsed);
+  }
   void sendFlightSearchRequest(Map<String, dynamic> filters) async {
-
-    DateTime parsedDate = DateTime.parse(widget.pickupdate); // String → DateTime
+    DateTime parsedDate = DateTime.parse(widget.pickupdate);
     String finDate = DateFormat('dd-MM-yyyy').format(parsedDate);
 
+    DateTime parsedDate1 = DateTime.parse(widget.dropoffdate);
+    String dropoffdate = DateFormat('dd-MM-yyyy').format(parsedDate1);
+    String pickuptime = formatTimeString(widget.pickuptime);
+    String dropoftime = formatTimeString(widget.dropoftime);
 
-    String origin = widget.Pickup; // Fixe
-
-    // d typo: 'orgin' to 'origin'
-    String destination = widget.dropoff;
-    String travelClass = widget.classtype.toString();
-    // Include filters in the request body
     var requestBody = {
-      'pickupLocation': widget.adult.toString(),
-      'returnLocation': widget.children.toString(),
-      'pickupDate': widget.infants.toString(),
-      'pickupTime': finDate,
-      'returnDate': "2",
-      'returnTime': origin,
+      'pickupLocation': widget.Pickup,
+      'returnLocation': widget.dropoff,
+      'pickupDate': finDate,
+      'pickupTime': pickuptime,
+      'returnDate': dropoffdate,
+      'returnTime': dropoftime,
     };
-
-    // Check and include the refundable filter
-    if (filters['isRefundable'] == 'Refundable') {
-      requestBody['Refundable'] = 'Refundable';
-    } else if (filters['isNonRefundable'] == 'Non-Refundable') {
-      requestBody['Refundable'] = 'Non-refundable';
-    }
-    selectedCount = filters['selectedCount'] ?? 0;
-    print('Sending flightselectedCount: $selectedCount');
-    print('Sending flight search request with parameters: $requestBody');
-
+    print("📤 Sending Request Body:");
+    requestBody.forEach((key, value) {
+      print("➡️ $key : $value");
+    });
     var url = Uri.parse(
         'https://lojatravel.com/app/b2badminapi.asmx/Car1_List');
 
     try {
       setState(() {
         isLoading = true;
-        resultList.clear(); // Clear previous results
+        resultList.clear();
       });
 
-      // Adding a timeout of 60 seconds for the HTTP request
       var response = await http.post(
         url,
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: requestBody,
       );
 
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
 
       if (response.statusCode == 200) {
+        print("✅ API Success");
 
+        var document = xml.XmlDocument.parse(response.body);
 
+        // ---------------------------------------------------
+        // ⭐ ONLY THIRD STRING → MAIN CAR COMPLETE DATA ⭐
+        // ---------------------------------------------------
+        var carListJsonString =
+            document.findAllElements('string').elementAt(2).text;
 
-        print('✅ Reqasdadfsduest successful: ${response.statusCode}');
+        print("📌 Extracted Car List JSON:\n$carListJsonString");
 
-        try {
-          // Parse XML response
-          var document = xml.XmlDocument.parse(response.body);
+        List<Map<String, dynamic>> carList =
+        List<Map<String, dynamic>>.from(json.decode(carListJsonString));
 
-          // Second <string> element text
-          var flightsJsonString = document.findAllElements('string').elementAt(1).text;
+        // Save full list
+        fullResultList = carList;
 
-          if (kDebugMode) print('🔍 Extracted Flights JSON: $flightsJsonString');
+        // Display list
+        resultList = List.from(fullResultList);
 
-          var flightsJson = json.decode(flightsJsonString);
-
-          if (flightsJson is List) {
-            fullResultList = flightsJson.map((e) => Map<String, dynamic>.from(e)).toList();
-            resultList = fullResultList.where((item) => item['RowType'] == 'MainRow').toList();
-
-            // Extract unique CarrierName
-            Set<String> carrierNames = {};
-            for (var item in resultList) {
-              if (item['CarrierName'] != null) carrierNames.add(item['CarrierName']);
-            }
-
-            // Initialize airline checkboxes
-            airlineCheckboxes = {
-              for (var name in carrierNames)
-                name: airlineCheckboxes.containsKey(name) ? airlineCheckboxes[name]! : false
-            };
-
-            print('✅ Airline Checkbox Map: $airlineCheckboxes');
-
-            filters['selectedCount'] =
-                airlineCheckboxes.values.where((v) => v == true).length;
-            _applyFiltersToResult(resultList, filters);
-          } else {
-            print('❌ Unexpected JSON format: $flightsJson');
-          }
-        } catch (e) {
-          print('❌ ParsingSDdds error: $e');
-        }
+        print("🚗 FINAL RESULT LIST:");
+        print(resultList);
       }
-      else {
-        print('❌ Request failed: ${response.statusCode}');
-      }
-    } catch (error) {
-      setState(() {
-        isLoading = false; // Stop loading if an error occurs
-        print('Error sending request: $error');
-      });
+    } catch (e) {
+      setState(() => isLoading = false);
+      print("❌ Error: $e");
     }
   }
+
+
 
 
   void _applyStopCountFilter(
@@ -573,6 +541,8 @@ class _OnewayFlightsListState extends State<CarListScreen> {
       return dateStr; // fallback
     }
   }
+  bool _isExpanded = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -594,7 +564,7 @@ class _OnewayFlightsListState extends State<CarListScreen> {
 
             SizedBox(width: 1), // Set the desired width
             Text(
-              "Available Flights",
+              "Available Car",
               style: TextStyle(
                   color: Colors.white, fontFamily: "Montserrat",
                   fontSize: 18),
@@ -603,7 +573,7 @@ class _OnewayFlightsListState extends State<CarListScreen> {
         ),
         actions: [
           Image.asset(
-            'assets/images/lojologg.png',
+              'assets/images/lojologg.png',
             width: 100,
             height: 50,
           ),
@@ -613,563 +583,238 @@ class _OnewayFlightsListState extends State<CarListScreen> {
       ),
       body: isLoading
           ? ListView.builder(
-          itemCount: 10, // Number of skeleton items
-          itemBuilder: (context, index) {
-            return Shimmer.fromColors(
-              baseColor: Colors.grey[300]!,
-              highlightColor: Colors.grey[100]!,
-              child: ListTile(
-                leading: Container(
-                  width: 64.0,
-                  height: 64.0,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                  ),
+        itemCount: 10,
+        itemBuilder: (context, index) {
+          return Shimmer.fromColors(
+            baseColor: Colors.grey[300]!,
+            highlightColor: Colors.grey[100]!,
+            child: ListTile(
+              leading: Container(
+                width: 64,
+                height: 64,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
                 ),
-                title: Column(
+              ),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(height: 16, color: Colors.white),
+                  const SizedBox(height: 6),
+                  Container(height: 12, color: Colors.white),
+                  const SizedBox(height: 6),
+                  Container(height: 12, color: Colors.white),
+                ],
+              ),
+            ),
+          );
+        },
+      )
+          :ListView.builder(
+        controller: _scrollController,
+        itemCount: resultList.length,
+        itemBuilder: (context, index) {
+          final item = resultList[index];
+
+          return Container(
+            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            child: Material(
+              elevation: 6,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(10),
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      height: 16.0,
-                      margin: EdgeInsets.symmetric(vertical: 4.0),
-                      color: Colors.white,
+
+                    /// CAR NAME
+                    Text(
+                      "${item['VehicleMake']} • ${item['VehicleClassName']}",
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    Container(
-                      width: double.infinity,
-                      height: 12.0,
-                      margin: EdgeInsets.symmetric(vertical: 4.0),
-                      color: Colors.white,
+
+                    const SizedBox(height: 4),
+
+                    /// TAG
+                    Text(
+                      "Automatic • ${item['Seats']} Seats • ${item['BagCount']} Bags",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                      ),
                     ),
-                    Container(
-                      width: double.infinity,
-                      height: 12.0,
-                      margin: EdgeInsets.symmetric(vertical: 4.0),
-                      color: Colors.white,
+
+                    const SizedBox(height: 10),
+
+                    /// MAIN ROW
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        /// IMAGE (LEFT)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: SizedBox(
+                            width: 90,
+                            height: 110,
+                            child: Image.network(
+                              item['ImageUrl'],
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(width: 10),
+
+                        /// RIGHT CONTENT
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                  Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+
+                    /// 1️⃣ FULL WIDTH
+                    Text("Vendor Code : ${item['VendorCode']}"),
+
+                    const SizedBox(height: 2),
+
+                    /// 2️⃣ LEFT TEXT + RIGHT PRICE
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        Expanded(
+                          child: Text(
+                            "Extra Mileage Charge :${item['APICurrency']} ${item['ExtraMileageCharge']}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+
+
+
+                      ],
+                    ),
+
+                    const SizedBox(height: 2),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        Expanded(
+                          child: Text(
+                            "Rate Availability : ${item['RateAvailability']}",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: item['RateAvailability'] == "Available"
+                                  ? Colors.green
+                                  : Colors.red,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+
+
+
+
+
+                      ],
+                    ),
+
+
+                    const SizedBox(height: 2),
+
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+
+                        Expanded(
+                          child: Text("No Of Doors : ${item['NumberOfDoors']}"),
+                        ),
+
+
+                        const SizedBox(width: 8),
+
+                        Text(
+                          "${item['APICurrency']} ${item['VisitorsRate']}",
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                  ],
+                ),
+
+
+                  const SizedBox(height: 6),
+
+                    /// DIVIDER (RIGHT SIDE ONLY)
+                    const Divider(thickness: 1),
+
+                    /// Seats + Book Now
+                    Row(
+                      children: [
+                        Text(
+                          "Seats : ${item['Seats']}",
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+
+                        const Spacer(),
+
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => CarDetailsPage(
+                                  carJson: jsonEncode(item),
+                                ),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "Book Now",
+                            style: TextStyle(
+                              color: Colors.orange,
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            );
-          })
-          : Stack(
-        children: [
-          Column(
-            children: [
-              Expanded(
-                  child: ListView.builder(
-                      controller: _scrollController,
-                      itemCount: resultList.length,
-                      itemBuilder: (BuildContext context, index) {
-                        return InkWell(
-                          child: Container(
-                            color: Colors.grey.shade300,
-                            padding: EdgeInsets.only(left: 6, right: 6),
-                            child: Container(
-                              color: Colors.white,
-                              margin: EdgeInsets.only(top: 4),
-                              child: Column(
-                                crossAxisAlignment:
-                                CrossAxisAlignment.start,
-                                children: [
-                                  Padding(
-                                    padding:
-                                    const EdgeInsets.only(
-                                        left: 5, top: 4,bottom: 7),
-                                    child: Text(
-                                      resultList[index]
-                                      ['CarrierName'],
-                                      style: TextStyle(
-                                        fontWeight:
-                                        FontWeight.bold,
-                                        fontSize: 15,
-                                      ),
-                                    ),
-                                  ),
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      // Carrier Icon
-                                      Padding(
-                                        padding: const EdgeInsets.only(right: 4, top: 6),
-                                        child: Image.asset(
-                                          "assets/images/img.png",
-                                          width: 30,
-                                        ),
-                                      ),
 
-                                      // Departure info
-                                      Expanded(
-                                        flex: 2,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              formattedDate(resultList[index]['DepartureDate'].toString().toUpperCase()),
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              resultList[index]['DepartCityCode'],
-                                              style: TextStyle(color: Color(0xff777777), fontWeight: FontWeight.bold, fontSize: 12),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                      // Travel time & stops
-                                      Expanded(
-                                        flex: 2,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.center,
-                                          children: [
-                                            Text(
-                                              CommonUtils.convertMinutesToHoursMinutes(resultList[index]['TravelTime']),
-                                              style: TextStyle(fontWeight: FontWeight.w400, fontSize: 11),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Image.asset(
-                                              (resultList[index]['StopCount'] == '0')
-                                                  ? "assets/images/NonStop.png"
-                                                  : (resultList[index]['StopCount'] == '1')
-                                                  ? "assets/images/oneStop.png"
-                                                  : "assets/images/TwoStop.png",
-                                              width: 70,
-                                              fit: BoxFit.fitWidth,
-                                            ),
-                                            Text(
-                                              '${resultList[index]['StopCount']} stops',
-                                              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w400),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                      // Arrival info
-                                      Expanded(
-                                        flex: 2,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              formattedDate(resultList[index]['ArrivalDate'].toString().toUpperCase()),
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            Text(
-                                              resultList[index]['ArriveCityCode'],
-                                              style: TextStyle(color: Color(0xff777777), fontWeight: FontWeight.bold, fontSize: 12),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-
-                                      // Price & View Details
-                                      Expanded(
-                                        flex: 2,
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              '${resultList[index]['Currency']} ${resultList[index]['TotalPrice']}',
-                                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            GestureDetector(
-                                              onTap: () {
-                                                final selectedMainRowNumber =
-                                                resultList[
-                                                index]
-                                                ['MainRowNumber'];
-
-                                                final matchingRows = fullResultList.where((item) =>
-                                                item['MainRowNumber'] == selectedMainRowNumber
-                                                ).toList();
-                                                printFullJson(
-                                                    matchingRows);
-                                                print(
-                                                    "Flight Details: ${fullResultList[index]}");
-                                                _deleteAllRecordsAndGoBack();
-                                                _deleteAllRecordsChildren();
-                                                _deleteAllRecordsInfant();
-                                                print(
-                                                    'Flight Details for index $index:');
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (BuildContext
-                                                    context) =>
-                                                        OneWayBooking(
-                                                          flightDetailsList:
-                                                          matchingRows,
-                                                          flightDetails:
-                                                          resultList[
-                                                          index],
-                                                          adultCount:
-                                                          widget
-                                                              .adult,
-                                                          childrenCount:
-                                                          widget
-                                                              .children,
-                                                          infantCount:
-                                                          widget
-                                                              .infants,
-                                                          userid: widget
-                                                              .userId,
-                                                          currency:
-                                                          widget
-                                                              .currency,
-                                                          departDate:
-                                                          fin_date
-                                                              .toString(),
-                                                          departcityname:
-                                                          resultList[index]
-                                                          [
-                                                          'DepartCityName'],
-                                                          arrivecityname:
-                                                          resultList[index]
-                                                          [
-                                                          'ArriveCityName'],
-                                                          departureDate: DateFormat("dd-MM-yyyy HH:mm").format(
-                                                              parseFlightDate(resultList[index]['DepartureDate'])
-                                                          ),
-
-                                                          stopcount:
-                                                          resultList[index]
-                                                          [
-                                                          'StopCount'],
-                                                          traveltime:
-                                                          CommonUtils.convertMinutesToHoursMinutes(resultList[index]
-                                                          [
-                                                          'TravelTime']),
-                                                          totalamount:
-                                                          resultList[index]
-                                                          [
-                                                          'TotalPrice'],
-                                                        ),
-                                                  ),
-                                                );
-                                              },
-                                              child: Padding(
-                                                padding:
-                                                const EdgeInsets
-                                                    .only(
-                                                    left:
-                                                    10),
-                                                child: Text(
-                                                  'View Details',
-                                                  style:
-                                                  TextStyle(
-                                                    color: Colors
-                                                        .red,
-                                                    fontWeight:
-                                                    FontWeight
-                                                        .bold,
-                                                    fontSize:
-                                                    12,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  // Cheapest Text
-                                  Padding(
-                                    padding: const EdgeInsets.only(
-                                        left: 5,top: 6,
-                                        bottom: 5), // Adjusted padding
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        border: Border.all(
-                                            color: Color(0xFF152238)),
-                                        // Blue border
-                                        borderRadius:
-                                        BorderRadius.circular(
-                                            10), // Rounded corners
-                                      ),
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 4, vertical: 2),
-                                      // Padding inside the container
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        // Ensures the container adjusts to the content
-                                        children: [
-                                          Icon(
-                                            Icons
-                                                .airplane_ticket_outlined,
-                                            // Choose the desired icon
-                                            color:
-                                            Color(0xFF152238), // Icon color
-                                            size: 13, // Icon size
-                                          ),
-                                          // Spacing between the icon and text
-                                          Text(
-                                            resultList[index]
-                                            ['Refundable'],
-                                            style: TextStyle(
-                                              color: Color(0xFF152238),
-                                              fontWeight: FontWeight.w500,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                          onTap: () {},
-                        );
-                      }))
-            ],
-          ),
-          if (_isBottomBarVisible)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                color: Colors.white,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      // Filter Icon and Text
-
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () async {
-
-
-
-
-                              final result = await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FilterPage(
-                                    airlineCheckboxes: airlineCheckboxes,
-                                    Refundable: isRefundable,
-                                    NonRefundable: isNonRefundable,
-                                    NonStop: isNonStop,
-                                    oneStop: isOneStop,
-                                    twoStop: isTwoPlusStops,
-                                    DepartisEarlySelected: DepartisEarlySelected,
-                                    DepartisMorningSelected: DepartisMorningSelected,
-                                    DepartisNoonSelected: DepartisNoonSelected,
-                                    DepartisEveningSelected: DepartisEveningSelected,
-                                    ArrivalisEarlySelected: ArrivalisEarlySelected,
-                                    ArrivalisMorningSelected: ArrivalisMorningSelected,
-                                    ArrivalisNoonSelected: ArrivalisNoonSelected,
-                                    ArrivalisEveningSelected: ArrivalisEveningSelected,
-                                    add: widget.add,
-                                  ),
-                                ),
-                              );
-                              print('✅ Selected Airlines updatedAirlineCheckboxes Returning: $airlineCheckboxes');
-
-                              // ✅ If user applied filters
-                              if (result != null) {
-                                setState(() {
-                                  selectedCount = result['selectedCount'] ?? 0;
-
-                                  isRefundable = result['isRefundable'] == 'Refundable';
-                                  isNonRefundable = result['isNonRefundable'] == 'Non-Refundable';
-                                  isNonStop = result['isNonStop'] == 'Yes';
-                                  isOneStop = result['isOneStop'] == 'Yes';
-                                  isTwoPlusStops = result['isTwoPlusStops'] == 'Yes';
-
-                                  // ✅ Update airline checkboxes from result
-                                  airlineCheckboxes = Map<String, bool>.from(result['airlineCheckboxes'] ?? {});
-                                  print('✅ Selected Airlines After Returning: $airlineCheckboxes');
-                                  airlineCheckboxes.forEach((airline, selected) {
-                                    if (selected) print("✔ $airline");
-                                  });
-
-                                  // ✅ Other filters for departure/arrival time
-                                  DepartisEarlySelected = result['isEarlyDeparture'] == 'Yes';
-                                  DepartisMorningSelected = result['isMorningDeparture'] == 'Yes';
-                                  DepartisNoonSelected = result['isNoonDeparture'] == 'Yes';
-                                  DepartisEveningSelected = result['isEveningDeparture'] == 'Yes';
-                                  ArrivalisEarlySelected = result['ArrivalIsEarlyDeparture'] == 'Yes';
-                                  ArrivalisMorningSelected = result['ArrivalIsMorningDeparture'] == 'Yes';
-                                  ArrivalisNoonSelected = result['ArrivalIsNoonDeparture'] == 'Yes';
-                                  ArrivalisEveningSelected = result['ArrivalIsEveningDeparture'] == 'Yes';
-
-                                  print('Selected filter count: $selectedCount');
-
-                                  // ✅ Call API again with filters
-                                  sendFlightSearchRequest(result);
-                                });
-                              }
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.filter_alt_outlined,
-                                  size: 20,
-                                  color: Colors.grey.shade600,
-                                ),
-                                SizedBox(height: 7),
-                                Text(
-                                  "Filter",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                        ],
-                      ),
-
-                      // Time Icon and Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              _showTimeBottomSheet(context);
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min, // Ensures the row only takes necessary space
-                              children: [
-                                Icon(
-                                  Icons.schedule,
-                                  size: 20, // Adjust the size of the icon as needed
-                                  color: Colors.grey.shade600, // Match the icon color with the text
-                                ),
-                                SizedBox(height: 7), // Optional: Add a tiny width for spacing
-                                Text(
-                                  "Time",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-
-                      // NonStop Icon and Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                isNonStopSelected = !isNonStopSelected; // Toggle switch state
-                                // Call filter function if necessary
-                                Map<String, dynamic> filters = {
-                                  'isNonStop': isNonStopSelected, // Non-stop filter
-                                };
-                                _applyStopCountFilter(fullResultList, filters);
-                              });
-                            },
-                            child: Container(
-                              width: 35, // Adjusted width
-                              height: 20, // Adjusted height
-                              decoration: BoxDecoration(
-                                color: isNonStopSelected ? Colors.pink.shade200 : Colors.grey, // Change color based on state
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                              child: Stack(
-                                children: [
-                                  // White circle
-                                  AnimatedAlign(
-                                    alignment: isNonStopSelected ? Alignment.centerRight : Alignment.centerLeft,
-                                    duration: Duration(milliseconds: 200),
-                                    child: Container(
-                                      width: 15, // Adjusted width for the white circle
-                                      height: 15, // Adjusted height for the white circle
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Center(
-                                        child: Icon(
-                                          isNonStopSelected ? Icons.check : Icons.close, // Display tick or close icon
-                                          size: 14, // Adjusted icon size
-                                          color: isNonStopSelected ? Colors.pink.shade200 : Colors.red,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          SizedBox(height: 7,),
-                          Text(
-                            "NonStop",
-                            style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w500),
-                          ),
-                        ],
-                      ),
-
-                      // Sort Icon and Text
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              _showSortBottomSheet(context);
-                              print("Sort tapped");
-                            },
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min, // Ensure no extra space is taken
-                              children: [
-                                Icon(
-                                  Icons.sort,
-                                  size: 20, // Adjust the size as needed
-                                  color: Colors.grey.shade600,
-                                ),
-                                SizedBox(height: 7,),
-                                Text(
-                                  "Sort",
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 12.5,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-
-                    ],
-                  ),
+              ],
+                    ),
+                  ],
                 ),
               ),
             ),
-        ],
+          );
+
+
+        },
       ),
+
     );
   }
   void _showTimeBottomSheet(BuildContext context) {
