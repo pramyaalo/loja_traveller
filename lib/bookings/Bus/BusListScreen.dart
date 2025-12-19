@@ -140,6 +140,28 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
       }
     });
   }
+  List<Map<String, String>> parseBoardingPoints(String? data) {
+    if (data == null || data.isEmpty) return [];
+
+    return data.split(',').map((e) {
+      final parts = e.trim().split(RegExp(r'\s(?=\d)'));
+      // splits before time (08:40 PM)
+
+      return {
+        'location': parts.isNotEmpty ? parts[0] : '',
+        'time': parts.length > 1 ? parts[1] : '',
+      };
+    }).toList();
+  }
+
+  final List<Map<String, String>> boardingPoints = [
+    {"location": "Koyambedu", "time": "06:25 PM"},
+    {"location": "Porur", "time": "06:55 PM"},
+    {"location": "Kilambakkam Bus Stand", "time": "07:40 PM"},
+    {"location": "SRM University", "time": "07:50 PM"},
+    {"location": "Chengalpattu", "time": "08:10 PM"},
+    {"location": "Villupuram Bypass", "time": "10:10 PM"},
+  ];
 
   Future<void> _retrieveSavedValues() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -212,8 +234,8 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
     String dropoftime = formatTimeString(widget.dropoftime);
 
     var requestBody = {
-      'Origin': widget.Pickup,
-      'Destination': widget.dropoff,
+      'Origin': "2069",
+      'Destination': "5504",
       'TravelDate': finDate,
     };
     print("📤 Sending Request Body:");
@@ -242,26 +264,29 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
 
         var document = xml.XmlDocument.parse(response.body);
 
-        // ---------------------------------------------------
-        // ⭐ ONLY THIRD STRING → MAIN CAR COMPLETE DATA ⭐
-        // ---------------------------------------------------
-        var carListJsonString =
-            document.findAllElements('string').elementAt(2).text;
+        // Get all <string> nodes
+        final stringNodes = document.findAllElements('string').toList();
 
-        print("📌 Extracted Car List JSON:\n$carListJsonString");
+        // 🔹 Bus Operators (optional)
+        var operatorJson = stringNodes[0].text;
+        List operatorList = json.decode(operatorJson);
 
-        List<Map<String, dynamic>> carList =
-        List<Map<String, dynamic>>.from(json.decode(carListJsonString));
+        // 🔹 MAIN BUS RESULT DATA (IMPORTANT)
+        var busResultJson = stringNodes[3].text;
 
-        // Save full list
-        fullResultList = carList;
+        print("🚌 Bus Result JSON:\n$busResultJson");
 
-        // Display list
-        resultList = List.from(fullResultList);
+        List<Map<String, dynamic>> busList =
+        List<Map<String, dynamic>>.from(json.decode(busResultJson));
 
-        print("🚗 FINAL RESULT LIST:");
-        print(resultList);
+        setState(() {
+          fullResultList = busList;
+          resultList = List.from(busList);
+        });
+
+        print("🚍 FINAL BUS LIST COUNT: ${busList.length}");
       }
+
     } catch (e) {
       setState(() => isLoading = false);
       print("❌ Error: $e");
@@ -538,7 +563,28 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
       return dateStr; // fallback
     }
   }
-  bool _isExpanded = false;
+  String formatDateTime(String dateTime) {
+    DateTime dt = DateTime.parse(dateTime);
+    return DateFormat('dd/MM/yyyy hh:mm a').format(dt);
+  }
+  String safeFormatDateTime(dynamic value) {
+    if (value == null) return '--';
+    try {
+      return DateFormat('dd/MM/yyyy hh:mm a')
+          .format(DateTime.parse(value.toString()));
+    } catch (e) {
+      return '--';
+    }
+  }
+
+  int expandedIndex = -1; // -1 = none expanded
+
+
+  String safeText(dynamic value, [String fallback = '-']) {
+    if (value == null) return fallback;
+    if (value.toString().isEmpty) return fallback;
+    return value.toString();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -561,7 +607,7 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
 
             SizedBox(width: 1), // Set the desired width
             Text(
-              "Available Car",
+              "Available Bus",
               style: TextStyle(
                   color: Colors.white, fontFamily: "Montserrat",
                   fontSize: 18),
@@ -614,20 +660,26 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
         itemBuilder: (context, index) {
           final item = resultList[index];
 
+          final boardingPoints =
+          parseBoardingPoints(item['BoardingPointsDetails']);
+
+          final droppingPoints =
+          parseBoardingPoints(item['DroppingPointsDetails']);
+
           return Container(
             margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             child: Material(
               elevation: 6,
               borderRadius: BorderRadius.circular(12),
               child: Padding(
-                padding: const EdgeInsets.all(10),
+                padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
 
-                    /// CAR NAME
+                    /// 🚌 TRAVEL NAME
                     Text(
-                      "${item['VehicleMake']} • ${item['VehicleClassName']}",
+                      safeText(item['TravelName']),
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -636,115 +688,57 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
 
                     const SizedBox(height: 4),
 
-                    /// TAG
+                    /// BUS TYPE
                     Text(
-                      "Automatic • ${item['Seats']} Seats • ${item['BagCount']} Bags",
+                      safeText(item['BusType']),
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.grey[700],
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
 
-                    /// MAIN ROW
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-
-                        /// IMAGE (LEFT)
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: SizedBox(
-                            width: 90,
-                            height: 110,
-                            child: Image.network(
-                              item['ImageUrl'],
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(width: 10),
-
-                        /// RIGHT CONTENT
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                  Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    /// 1️⃣ FULL WIDTH
-                    Text("Vendor Code : ${item['VendorCode']}"),
-
-                    const SizedBox(height: 2),
-
-                    /// 2️⃣ LEFT TEXT + RIGHT PRICE
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-
-                        Expanded(
-                          child: Text(
-                            "Extra Mileage Charge :${item['APICurrency']} ${item['ExtraMileageCharge']}",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-
-
-
-                      ],
+                    /// ⏰ DEPARTURE
+                    Text(
+                      "Departure: ${safeFormatDateTime(item['DepartureTimeFormat'])}",
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    Text(
+                      safeText(item['CityPointName']),
+                      style: const TextStyle(fontSize: 12),
                     ),
 
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 6),
 
+                    /// ARRIVAL + PRICE
                     Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         Expanded(
-                          child: Text(
-                            "Rate Availability : ${item['RateAvailability']}",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: item['RateAvailability'] == "Available"
-                                  ? Colors.green
-                                  : Colors.red,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Arrival: ${safeFormatDateTime(item['ArrivalTimeFormat'])}",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                ),
+                              ),
+                              Text(
+                                safeText(item['Drop_CityPointName']),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ],
                           ),
                         ),
-
-
-
-
-
-                      ],
-                    ),
-
-
-                    const SizedBox(height: 2),
-
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-
-                        Expanded(
-                          child: Text("No Of Doors : ${item['NumberOfDoors']}"),
-                        ),
-
-
                         const SizedBox(width: 8),
-
                         Text(
-                          "${item['APICurrency']} ${item['VisitorsRate']}",
+                          "${safeText(item['CurrencyCode'], 'INR')} ${safeText(item['BasePrice'], '0')}",
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
                             color: Colors.orange,
                           ),
@@ -752,20 +746,14 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
                       ],
                     ),
 
-                  ],
-                ),
+                    const Divider(),
 
-
-                  const SizedBox(height: 6),
-
-                    /// DIVIDER (RIGHT SIDE ONLY)
-                    const Divider(thickness: 1),
-
-                    /// Seats + Book Now
+                    /// 🔽 SEATS | BOOK | BOARDING
                     Row(
                       children: [
+
                         Text(
-                          "Seats : ${item['Seats']}",
+                          "Seats: ${safeText(item['AvailableSeats'], '0')}",
                           style: const TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -774,39 +762,169 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
 
                         const Spacer(),
 
+                        const Text(
+                          "Book Now",
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const Spacer(),
+
                         GestureDetector(
                           onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => CarDetailsPage(
-                                  carJson: jsonEncode(item),
+                            setState(() {
+                              expandedIndex =
+                              expandedIndex == index ? -1 : index;
+                            });
+                          },
+                          child: Row(
+                            children: [
+                              const Text(
+                                "Boarding & Dropping",
+                                style: TextStyle(fontSize: 12),
+                              ),
+                              AnimatedRotation(
+                                turns: expandedIndex == index ? 0.5 : 0.0,
+                                duration: const Duration(milliseconds: 200),
+                                child: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  size: 18,
                                 ),
                               ),
-                            );
-                          },
-                          child: const Text(
-                            "Book Now",
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                  ],
-                ),
-              ),
 
-              ],
+                    /// 🔽 EXPAND CONTENT
+                    AnimatedCrossFade(
+                      firstChild: const SizedBox.shrink(),
+                      secondChild: Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+
+                            /// 🚏 BOARDING POINTS
+                            const Text(
+                              "Boarding Points",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+
+                            boardingPoints.isNotEmpty
+                                ? Column(
+                              children: boardingPoints.map((point) {
+                                return Padding(
+                                  padding:
+                                  const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          safeText(point['location']),
+                                          style:
+                                          const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Text(
+                                        safeText(point['time']),
+                                        style:
+                                        const TextStyle(fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            )
+                                : const Text(
+                              "No boarding points available",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+
+                            const Divider(),
+
+                            /// 🏁 DROPPING POINT
+                            const Text(
+                              "Dropping Points",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+
+                            const SizedBox(height: 6),
+                            droppingPoints.isNotEmpty
+                                ? Column(
+                              children: droppingPoints.map((point) {
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          safeText(point['location']),
+                                          style: const TextStyle(fontSize: 12),
+                                        ),
+                                      ),
+                                      Text(
+                                        safeText(point['time']),
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                            )
+                                : const Text(
+                              "No dropping points available",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    safeText(item['Drop_CityPointLocation']),
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                                Text(
+                                  safeFormatDateTime(
+                                      item['Drop_CityPointTime']),
+                                  style: const TextStyle(fontSize: 12),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      crossFadeState: expandedIndex == index
+                          ? CrossFadeState.showSecond
+                          : CrossFadeState.showFirst,
+                      duration: const Duration(milliseconds: 200),
                     ),
                   ],
                 ),
               ),
             ),
           );
+
+
+
 
 
         },

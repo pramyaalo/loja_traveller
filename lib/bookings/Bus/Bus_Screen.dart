@@ -28,6 +28,7 @@ import '../flight/FlightScreenModel.dart';
 import '../flight/InfantDatabaseHelper.dart';
 import '../flight/multicity_flight_list.dart';
 import '../flight/one_way_flight_list.dart';
+import 'BusListScreen.dart';
 
 class BusScreen extends StatefulWidget {
   const BusScreen({Key? key}) : super(key: key);
@@ -724,7 +725,7 @@ class _FlightsScreenState extends State<BusScreen> {
                                               Navigator.push(
                                                 context,
                                                 MaterialPageRoute(
-                                                  builder: (context) => CarListScreen(
+                                                  builder: (context) => Buslistscreen(
                                                     add: 'ADD',
                                                     adult: AdultCount.toString(),
                                                     children: childrenCount.toString(),
