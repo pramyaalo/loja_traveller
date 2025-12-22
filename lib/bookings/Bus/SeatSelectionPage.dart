@@ -21,46 +21,20 @@ import '../flight/Children_DatabaseHelper.dart';
 import '../flight/FilterPage.dart';
 import '../flight/InfantDatabaseHelper.dart';
 import '../flight/oneway_booking.dart';
-import 'SeatSelectionPage.dart';
+import 'SeatModel.dart';
 
 
-class Buslistscreen extends StatefulWidget {
-  final add,
-      adult,
-      Pickup,
-      dropoff,
-      pickupdate,
-      dropoffdate,
-      pickuptime,
-      dropoftime,
-      children,
-      infants,
-      userId,
-      currency,
-      classtype;
+class SeatSelectionPage extends StatefulWidget {
 
-  const Buslistscreen({
-    super.key,
-    required this.add,
-    required this.adult,
-    required this.children,
-    required this.infants,
-    required this.Pickup,
-    required this.dropoff,
-    required this.pickupdate,
-    required this.dropoffdate,
-    required this.pickuptime,
-    required this.dropoftime,
-    required this.userId,
-    required this.currency,
-    required this.classtype,
-  });
+
 
   @override
-  State<Buslistscreen> createState() => _OnewayFlightsListState();
+  State<SeatSelectionPage> createState() => _OnewayFlightsListState();
 }
 
-class _OnewayFlightsListState extends State<Buslistscreen> {
+class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTickerProviderStateMixin  {
+  late List<Seat> lowerDeckSeats;
+  late List<Seat> upperDeckSeats;
   bool isLoading = false;
   String? selectedSortOption = "Low to High";
   int selectedCount = 0;
@@ -69,7 +43,7 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
   bool DepartisMorningSelected = false;
   bool DepartisNoonSelected = false;
   bool DepartisEveningSelected = false;
-
+  late TabController _tabController;
   bool ArrivalisEarlySelected = false;
   bool ArrivalisMorningSelected = false;
   bool ArrivalisNoonSelected = false;
@@ -111,36 +85,235 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
   late ScrollController _scrollController;
   bool _isBottomBarVisible = true;
 
+
   @override
   void initState() {
     super.initState();
-    print('userID: ${widget.infants}');
-    _scrollController = ScrollController();
+    _tabController = TabController(length: 2, vsync: this);
+    /// Dummy seats (API la irundhu varum)
+    lowerDeckSeats = List.generate(
+      16, // ✅ FIXED
+          (i) => Seat(
+        seatNo: "L${i + 1}",
+        isSleeper: true,
+        price: 899,
+        status: i == 2 || i == 5
+            ? SeatStatus.booked
+            : SeatStatus.available,
+      ),
+    );
 
-    _retrieveSavedValues();
-    setState(() {
-      filteredResults = List.from(resultList);
-    });
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.reverse) {
-        if (_isBottomBarVisible) {
-          setState(() {
-            _isBottomBarVisible = false;
-          });
-        }
-      } else if (_scrollController.position.userScrollDirection ==
-          ScrollDirection.forward) {
-        // User is scrolling up, show the bottom bar
-        if (!_isBottomBarVisible) {
-          setState(() {
-            _isBottomBarVisible = true;
-          });
-        }
-      }
-    });
+    upperDeckSeats = List.generate(
+      16,
+          (i) => Seat(
+        seatNo: "U${i + 1}",
+        isSleeper: true,
+        price: 699,
+        status: i == 3
+            ? SeatStatus.femaleOnly
+            : SeatStatus.available,
+      ),
+    );
+
   }
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+  /// Selected seats
+  List<Seat> get selectedSeats => [
+    ...lowerDeckSeats.where((e) => e.isSelected),
+    ...upperDeckSeats.where((e) => e.isSelected),
+  ];
+  Widget seatItem(Seat seat) {
+    Color borderColor;
+    Color bgColor = Colors.white;
+    IconData? icon;
+
+    switch (seat.status) {
+      case SeatStatus.available:
+        borderColor = Colors.green;
+        break;
+      case SeatStatus.booked:
+        borderColor = Colors.grey;
+        bgColor = Colors.grey.shade200;
+        break;
+      case SeatStatus.femaleOnly:
+        borderColor = Colors.pink;
+        icon = Icons.female;
+        break;
+      case SeatStatus.femaleOnly:
+        borderColor = Colors.blue;
+        icon = Icons.male;
+        break;
+    }
+
+    if (seat.isSelected) {
+      bgColor = Colors.green.withOpacity(0.15);
+    }
+
+    return GestureDetector(
+      onTap: seat.status == SeatStatus.booked
+          ? null
+          : () {
+        setState(() {
+          seat.isSelected = !seat.isSelected;
+        });
+      },
+      child: Column(
+        children: [
+          Container(
+            height: seat.isSleeper ? 60 : 40,
+            width: 35,
+            decoration: BoxDecoration(
+              color: bgColor,
+              border: Border.all(color: borderColor, width: 1.5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: icon != null
+                ? Icon(icon, size: 16, color: borderColor)
+                : null,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            "₹${seat.price.toInt()}",
+            style: const TextStyle(fontSize: 10),
+          )
+        ],
+      ),
+    );
+  }
+  Widget sleeperBerth(Seat seat) {
+    final bool isBooked = seat.status == SeatStatus.booked;
+
+    return GestureDetector(
+      onTap: isBooked
+          ? null
+          : () {
+        setState(() {
+          seat.isSelected = !seat.isSelected;
+        });
+      },
+      child: Column(
+        children: [
+          Container(
+            margin: const EdgeInsets.all(2  ),
+            height: 60,
+            width: 50,
+            decoration: BoxDecoration(
+              color: seat.isSelected
+                  ? Colors.green.withOpacity(0.25)
+                  : isBooked
+                  ? Colors.grey.shade300
+                  : Colors.white,
+              border: Border.all(
+                color: seat.isSelected
+                    ? Colors.green
+                    : isBooked
+                    ? Colors.grey
+                    : Colors.green,
+                width: 1.5,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                seat.seatNo,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+            ),
+          ),
+          Text(
+            "₹${seat.price.toInt()}",
+            style: const TextStyle(fontSize: 12),
+          ),
+        ],
+      ),
+    );
+  }
+  static const double seatWidth = 60;
+  static const double smallGap = 16;
+  static const double aisleGap = 28;
+
+  static const double leftBlockWidth =
+      seatWidth * 3 + smallGap; // ✅ FIXED
+
+  Widget sleeperRow({
+    Widget? left1,
+    Widget? left2,
+    Widget? right,
+    bool isLastRow = false, // 👈 ADD THIS
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LEFT BLOCK
+          SizedBox(
+            width: isLastRow
+                ? seatWidth // 👈 ONLY ONE SEAT WIDTH
+                : leftBlockWidth, // normal rows
+            child: Row(
+              children: [
+                if (left1 != null) left1,
+                if (!isLastRow && left2 != null)
+                  SizedBox(width: smallGap),
+                if (!isLastRow && left2 != null) left2,
+              ],
+            ),
+          ),
+
+          // AISLE (only for normal rows)
+          if (!isLastRow) SizedBox(width: aisleGap),
+
+          // RIGHT SIDE (only for normal rows)
+          if (!isLastRow)
+            SizedBox(
+              width: seatWidth,
+              child: right ?? const SizedBox(),
+            ),
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+
+
+
+
+  Widget seatGrid(List<Seat> seats) {
+    final isSleeperBus = seats.isNotEmpty && seats.first.isSleeper;
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: isSleeperBus ? 3 : 4,
+
+        // 🔥 IMPORTANT FIX
+        mainAxisExtent: isSleeperBus ? 80 : 40,
+
+        // 🔥 NO GAP
+        mainAxisSpacing: 25,
+        crossAxisSpacing: 0,
+      ),
+      itemCount: seats.length,
+      itemBuilder: (context, index) {
+        return seatItem(seats[index]);
+      },
+    );
+  }
+
+
+
   List<Map<String, String>> parseBoardingPoints(String? data) {
     if (data == null || data.isEmpty) return [];
 
@@ -226,18 +399,11 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
     return DateFormat('hh:mm a').format(parsed);
   }
   void sendFlightSearchRequest(Map<String, dynamic> filters) async {
-    DateTime parsedDate = DateTime.parse(widget.pickupdate);
-    String finDate = DateFormat('dd-MM-yyyy').format(parsedDate);
 
-    DateTime parsedDate1 = DateTime.parse(widget.dropoffdate);
-    String dropoffdate = DateFormat('dd-MM-yyyy').format(parsedDate1);
-    String pickuptime = formatTimeString(widget.pickuptime);
-    String dropoftime = formatTimeString(widget.dropoftime);
 
     var requestBody = {
       'Origin': "2069",
       'Destination': "5504",
-      'TravelDate': finDate,
     };
     print("📤 Sending Request Body:");
     requestBody.forEach((key, value) {
@@ -540,6 +706,7 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
     return formattedDate.replaceFirst(RegExp(r'\d+'), dayWithSuffix);
   }
 
+
 // Helper function to add ordinal suffix
   String _addOrdinalSuffix(int day) {
     if (day >= 11 && day <= 13) {
@@ -579,6 +746,92 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
   }
 
   int expandedIndex = -1; // -1 = none expanded
+  Seat getUpperSeat(String seatNo) {
+    return upperDeckSeats.firstWhere(
+          (e) => e.seatNo == seatNo,
+      orElse: () => throw Exception("Seat $seatNo not found"),
+    );
+  }
+
+  Widget upperDeckLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sleeperRow(
+          left1: sleeperBerth(getUpperSeat('U1')),
+          left2: sleeperBerth(getUpperSeat('U2')),
+          right: sleeperBerth(getUpperSeat('U3')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getUpperSeat('U4')),
+          left2: sleeperBerth(getUpperSeat('U5')),
+          right: sleeperBerth(getUpperSeat('U6')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getUpperSeat('U7')),
+          left2: sleeperBerth(getUpperSeat('U8')),
+          right: sleeperBerth(getUpperSeat('U9')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getUpperSeat('U10')),
+          left2: sleeperBerth(getUpperSeat('U11')),
+          right: sleeperBerth(getUpperSeat('U12')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getUpperSeat('U13')),
+          left2: sleeperBerth(getUpperSeat('U14')),
+          right: sleeperBerth(getUpperSeat('U15')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getUpperSeat('U16')),
+        ),
+      ],
+    );
+  }
+
+  Seat getLowerSeat(String seatNo) {
+    return lowerDeckSeats.firstWhere(
+          (e) => e.seatNo == seatNo,
+      orElse: () => throw Exception("Seat $seatNo not found"),
+    );
+  }
+
+
+  Widget lowerDeckLayout() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        sleeperRow(
+          left1: sleeperBerth(getLowerSeat('L1')),
+          left2: sleeperBerth(getLowerSeat('L2')),
+          right: sleeperBerth(getLowerSeat('L3')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getLowerSeat('L4')),
+          left2: sleeperBerth(getLowerSeat('L5')),
+          right: sleeperBerth(getLowerSeat('L6')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getLowerSeat('L7')),
+          left2: sleeperBerth(getLowerSeat('L8')),
+          right: sleeperBerth(getLowerSeat('L9')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getLowerSeat('L10')),
+          left2: sleeperBerth(getLowerSeat('L11')),
+          right: sleeperBerth(getLowerSeat('L12')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getLowerSeat('L13')),
+          left2: sleeperBerth(getLowerSeat('L14')),
+          right: sleeperBerth(getLowerSeat('L15')),
+        ),
+        sleeperRow(
+          left1: sleeperBerth(getLowerSeat('L16')),
+        ),
+      ],
+    );
+  }
 
 
   String safeText(dynamic value, [String fallback = '-']) {
@@ -586,17 +839,23 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
     if (value.toString().isEmpty) return fallback;
     return value.toString();
   }
+  int selectedDeck = 0; // 0 = Lower, 1 = Upper
+  final PageController _pageController = PageController();
 
   @override
   Widget build(BuildContext context) {
+    final totalPrice =
+    selectedSeats.fold(0.0, (sum, e) => sum + e.price);
+
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF00ADEE),
         automaticallyImplyLeading: false,
-        titleSpacing: 1,
+        titleSpacing: 0,
         title: Row(
           children: [
             IconButton(
-              icon: Icon(
+              icon: const Icon(
                 Icons.arrow_back,
                 color: Colors.white,
                 size: 27,
@@ -605,325 +864,135 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
                 Navigator.pop(context);
               },
             ),
-
-            SizedBox(width: 1), // Set the desired width
-            Text(
-              "Available Bus",
+            const SizedBox(width: 4),
+            const Text(
+              "Select Seats",
               style: TextStyle(
-                  color: Colors.white, fontFamily: "Montserrat",
-                  fontSize: 18),
+                color: Colors.white,
+                fontFamily: "Montserrat",
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
         actions: [
-          Image.asset(
+          Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: Image.asset(
               'assets/images/lojologg.png',
-            width: 100,
-            height: 50,
+              width: 90,
+              height: 40,
+              fit: BoxFit.contain,
+            ),
           ),
-
         ],
-        backgroundColor:Color(0xFF00ADEE),
-      ),
-      body: isLoading
-          ? ListView.builder(
-        itemCount: 10,
-        itemBuilder: (context, index) {
-          return Shimmer.fromColors(
-            baseColor: Colors.grey[300]!,
-            highlightColor: Colors.grey[100]!,
-            child: ListTile(
-              leading: Container(
-                width: 64,
-                height: 64,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
+
+        // 👇 TAB BAR
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(60),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(30),
               ),
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(height: 16, color: Colors.white),
-                  const SizedBox(height: 6),
-                  Container(height: 12, color: Colors.white),
-                  const SizedBox(height: 6),
-                  Container(height: 12, color: Colors.white),
+              child: TabBar(
+                controller: _tabController,
+                indicator: BoxDecoration(
+                  color: Colors.orange,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white,
+                tabs: const [
+                  Tab(text: "Lower Deck"),
+                  Tab(text: "Upper Deck"),
                 ],
               ),
             ),
-          );
-        },
-      )
-          :ListView.builder(
-        controller: _scrollController,
-        itemCount: resultList.length,
-        itemBuilder: (context, index) {
-          final item = resultList[index];
-
-          final boardingPoints =
-          parseBoardingPoints(item['BoardingPointsDetails']);
-
-          final droppingPoints =
-          parseBoardingPoints(item['DroppingPointsDetails']);
-
-          return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            child: Material(
-              elevation: 6,
-              borderRadius: BorderRadius.circular(12),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-
-                    /// 🚌 TRAVEL NAME
-                    Text(
-                      safeText(item['TravelName']),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    /// BUS TYPE
-                    Text(
-                      safeText(item['BusType']),
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    /// ⏰ DEPARTURE
-                    Text(
-                      "Departure: ${safeText(item['Origin'])},${safeFormatDateTime(item['DepartureTimeFormat'])}",
-                      style: TextStyle( color: Colors.grey[700], fontSize: 13),
-                    ),
-
-
-                    const SizedBox(height: 6),
-
-                    /// ARRIVAL + PRICE
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Arrival: ${safeText(item['Destination'])},${safeFormatDateTime(item['ArrivalTimeFormat'])}",
-                                style:   TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 13,
-                                ),
-                              ),
-
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          "${safeText(item['CurrencyCode'], 'INR')} ${safeText(item['BasePrice'], '0')}",
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const Divider(),
-
-                    /// 🔽 SEATS | BOOK | BOARDING
-                    Row(
-                      children: [
-
-                        Text(
-                          "Seats: ${safeText(item['AvailableSeats'], '0')}",
-                          style: const TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>   SeatSelectionPage(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "Book Now",
-                            style: TextStyle(
-                              color: Colors.orange,
-                              fontSize: 13,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-
-
-                        const Spacer(),
-
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              expandedIndex =
-                              expandedIndex == index ? -1 : index;
-                            });
-                          },
-                          child: Row(
-                            children: [
-                              const Text(
-                                "Boarding & Dropping",
-                                style: TextStyle(fontSize: 12),
-                              ),
-                              AnimatedRotation(
-                                turns: expandedIndex == index ? 0.5 : 0.0,
-                                duration: const Duration(milliseconds: 200),
-                                child: const Icon(
-                                  Icons.keyboard_arrow_down,
-                                  size: 18,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    /// 🔽 EXPAND CONTENT
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 250),
-                      curve: Curves.easeInOut,
-                      child: expandedIndex == index
-                          ? Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-
-                            /// 🚏 BOARDING POINTS
-                            const Text(
-                              "Boarding Points",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-
-                            boardingPoints.isNotEmpty
-                                ? Column(
-                              children: boardingPoints.map((point) {
-                                return Padding(
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 2),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          safeText(point['location']),
-                                          style:
-                                          const TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                      Text(
-                                        safeText(point['time']),
-                                        style:
-                                        const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            )
-                                : const Text(
-                              "No boarding points available",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-
-                            const Divider(),
-
-                            /// 🏁 DROPPING POINTS
-                            const Text(
-                              "Dropping Points",
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-
-                            droppingPoints.isNotEmpty
-                                ? Column(
-                              children: droppingPoints.map((point) {
-                                return Padding(
-                                  padding:
-                                  const EdgeInsets.symmetric(vertical: 2),
-                                  child: Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          safeText(point['location']),
-                                          style:
-                                          const TextStyle(fontSize: 12),
-                                        ),
-                                      ),
-                                      Text(
-                                        safeText(point['time']),
-                                        style:
-                                        const TextStyle(fontSize: 12),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                            )
-                                : const Text(
-                              "No dropping points available",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                          : const SizedBox.shrink(),
-                    ),
-
-                  ],
-                ),
-              ),
-            ),
-          );
-
-
-
-
-
-        },
+          ),
+        ),
       ),
 
+
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+
+          /// 🟢 LOWER DECK (REAL BUS)
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Lower Deck (Sleeper Berths)",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                lowerDeckLayout(),
+              ],
+            ),
+          ),
+
+          /// 🔵 UPPER DECK (REAL BUS)
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Upper Deck (Sleeper Berths)",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                    color: Colors.blue,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                upperDeckLayout(),
+              ],
+            ),
+          ),
+        ],
+      ),
+
+
+      /// 🔻 BOTTOM BAR
+      bottomNavigationBar: BottomAppBar(
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "₹${totalPrice.toInt()} | ${selectedSeats.length} Seats",
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: selectedSeats.isEmpty ? null : () {},
+                child: const Text("Continue"),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
-  void _showTimeBottomSheet(BuildContext context) {
+
+
+
+
+void _showTimeBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isDismissible: false, // Prevent closing by tapping outside or pressing back
@@ -1263,6 +1332,8 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
   }
 
 }
+
+
 
 class CustomCheckbox extends StatelessWidget {
   final String title;
