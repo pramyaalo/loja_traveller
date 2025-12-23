@@ -757,15 +757,23 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
 
                         GestureDetector(
                           onTap: () {
+                            print("🚌 Selected Bus JSON ARRAY:");
+
+                            // 👇 PRINT AS [{ }]
+                            printJsonAsArray(item);
+
+                            // 👇 SEND AS [{ }] TO NEXT PAGE
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) =>   SeatSelectionPage(),
+                                builder: (_) => SeatSelectionPage(
+                                  BusJson: jsonEncode([item]), // 👈 IMPORTANT
+                                ),
                               ),
                             );
                           },
                           child: const Text(
-                            "Book Now",
+                            "Select Seat",
                             style: TextStyle(
                               color: Colors.orange,
                               fontSize: 13,
@@ -773,6 +781,8 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
                             ),
                           ),
                         ),
+
+
 
 
                         const Spacer(),
@@ -1256,10 +1266,10 @@ class _OnewayFlightsListState extends State<Buslistscreen> {
   }
 
 
-  void printFullJson(List<dynamic> matchingRows) {
-    final encoder = JsonEncoder.withIndent('  ');
-    final prettyJson = encoder.convert(matchingRows);
-    developer.log(prettyJson, name: 'FilteredFlightDetails');
+  void printJsonAsArray(Map<String, dynamic> item) {
+    final List<Map<String, dynamic>> jsonArray = [item]; // 👈 wrap in []
+    const encoder = JsonEncoder.withIndent('  ');
+    debugPrint(encoder.convert(jsonArray), wrapWidth: 4096);
   }
 
 }

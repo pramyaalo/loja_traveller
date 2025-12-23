@@ -21,11 +21,15 @@ import '../flight/Children_DatabaseHelper.dart';
 import '../flight/FilterPage.dart';
 import '../flight/InfantDatabaseHelper.dart';
 import '../flight/oneway_booking.dart';
+import 'BusBookingPage.dart';
 import 'SeatModel.dart';
 
 
 class SeatSelectionPage extends StatefulWidget {
 
+  final String BusJson;
+
+  const SeatSelectionPage({super.key, required this.BusJson});
 
 
   @override
@@ -33,8 +37,6 @@ class SeatSelectionPage extends StatefulWidget {
 }
 
 class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTickerProviderStateMixin  {
-  late List<Seat> lowerDeckSeats;
-  late List<Seat> upperDeckSeats;
   bool isLoading = false;
   String? selectedSortOption = "Low to High";
   int selectedCount = 0;
@@ -84,49 +86,124 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
   String fin_date = '';
   late ScrollController _scrollController;
   bool _isBottomBarVisible = true;
+  List<Seat> lowerDeckSeats = [];
+  List<Seat> upperDeckSeats = [];
 
+  List seatApiList = [];
+  Map<String, dynamic> fareInfo = {};
+
+
+
+  static const double seatWidth = 60;
+  static const double smallGap = 16;
+  static const double aisleGap = 28;
+  static const double leftBlockWidth = seatWidth * 3 + smallGap;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    /// Dummy seats (API la irundhu varum)
-    lowerDeckSeats = List.generate(
-      16, // ✅ FIXED
-          (i) => Seat(
-        seatNo: "L${i + 1}",
-        isSleeper: true,
-        price: 899,
-        status: i == 2 || i == 5
-            ? SeatStatus.booked
-            : SeatStatus.available,
-      ),
-    );
-
-
-    upperDeckSeats = List.generate(
-      16,
-          (i) => Seat(
-        seatNo: "U${i + 1}",
-        isSleeper: true,
-        price: 699,
-        status: i == 3
-            ? SeatStatus.femaleOnly
-            : SeatStatus.available,
-      ),
-    );
-
+    getAdivahaBusDetails();
   }
+
+  Future<void> getAdivahaBusDetails() async {
+    final url = Uri.parse(
+      'https://lojatravel.com/app/b2badminapi.asmx/Bus2_SelecSeat',
+    );
+
+    try {
+      setState(() => isLoading = true);
+
+      dynamic decoded =
+      widget.BusJson is String ? jsonDecode(widget.BusJson) : widget.BusJson;
+
+      List sendJson = decoded is List ? decoded : [decoded];
+
+      const encoder = JsonEncoder.withIndent('  ');
+      debugPrint("🚀 Sending JSON:\n${encoder.convert(sendJson)}", wrapWidth: 5000);
+
+      final response = await http.post(
+        url,
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: {'JsonSelectBus': jsonEncode(sendJson)},
+      );
+
+      setState(() => isLoading = false);
+      if (response.statusCode != 200) return;
+
+      final document = xml.XmlDocument.parse(response.body);
+      final xmlStrings =
+      document.findAllElements('string').map((e) => e.text).toList();
+
+      List seatList = [];
+      if (xmlStrings.isNotEmpty && xmlStrings[0].trim().isNotEmpty) {
+        seatList = jsonDecode(xmlStrings[0]);
+      }
+
+      Map<String, dynamic> fareDetails = {};
+      if (xmlStrings.length > 1 && xmlStrings[1].trim().isNotEmpty) {
+        final fareDecoded = jsonDecode(xmlStrings[1]);
+        if (fareDecoded is List && fareDecoded.isNotEmpty) {
+          fareDetails = fareDecoded.first;
+        }
+      }
+
+      setState(() {
+        seatApiList = seatList;
+        fareInfo = fareDetails;
+      });
+
+      buildSeatsFromApi(seatApiList);
+
+      debugPrint("🪑 Seats:\n${encoder.convert(seatList)}", wrapWidth: 5000);
+      debugPrint("💰 Fare:\n${encoder.convert(fareDetails)}", wrapWidth: 5000);
+    } catch (e, stack) {
+      setState(() => isLoading = false);
+      debugPrint("❌ Error: $e\n$stack");
+    }
+  }
+  List<Map<String, dynamic>> getSelectedSeatJson() {
+    // selected seat index list
+    final selectedIndexes = selectedSeats.map((e) => e.seatNo).toSet();
+
+    // filter API seat list
+    final List<Map<String, dynamic>> selectedSeatJson = seatApiList
+        .where((seat) => selectedIndexes.contains(seat['SeatName'].toString()))
+        .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
+        .toList();
+
+    return selectedSeatJson;
+  }
+
+  void buildSeatsFromApi(List seatList) {
+    lowerDeckSeats = [];
+    upperDeckSeats = [];
+
+    for (var seatJson in seatList) {
+      Seat seat = Seat.fromJson(seatJson);
+      if (seat.isUpper) {
+        upperDeckSeats.add(seat);
+      } else {
+        lowerDeckSeats.add(seat);
+      }
+    }
+
+    lowerDeckSeats.sort((a, b) => a.seatNo.compareTo(b.seatNo));
+    upperDeckSeats.sort((a, b) => a.seatNo.compareTo(b.seatNo));
+
+    setState(() {});
+  }
+
+  List<Seat> get selectedSeats =>
+      [...lowerDeckSeats.where((e) => e.isSelected), ...upperDeckSeats.where((e) => e.isSelected)];
+
   @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
   }
-  /// Selected seats
-  List<Seat> get selectedSeats => [
-    ...lowerDeckSeats.where((e) => e.isSelected),
-    ...upperDeckSeats.where((e) => e.isSelected),
-  ];
+
+
   Widget seatItem(Seat seat) {
     Color borderColor;
     Color bgColor = Colors.white;
@@ -144,24 +221,18 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
         borderColor = Colors.pink;
         icon = Icons.female;
         break;
-      case SeatStatus.femaleOnly:
+      case SeatStatus.maleOnly:
         borderColor = Colors.blue;
         icon = Icons.male;
         break;
     }
 
-    if (seat.isSelected) {
-      bgColor = Colors.green.withOpacity(0.15);
-    }
+    if (seat.isSelected) bgColor = Colors.green.withOpacity(0.15);
 
     return GestureDetector(
       onTap: seat.status == SeatStatus.booked
           ? null
-          : () {
-        setState(() {
-          seat.isSelected = !seat.isSelected;
-        });
-      },
+          : () => setState(() => seat.isSelected = !seat.isSelected),
       child: Column(
         children: [
           Container(
@@ -172,104 +243,81 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
               border: Border.all(color: borderColor, width: 1.5),
               borderRadius: BorderRadius.circular(6),
             ),
-            child: icon != null
-                ? Icon(icon, size: 16, color: borderColor)
-                : null,
+            child: icon != null ? Icon(icon, size: 16, color: borderColor) : null,
           ),
           const SizedBox(height: 2),
-          Text(
-            "₹${seat.price.toInt()}",
-            style: const TextStyle(fontSize: 10),
-          )
+          Text("₹${seat.price.toInt()}", style: const TextStyle(fontSize: 10)),
         ],
       ),
     );
   }
+
   Widget sleeperBerth(Seat seat) {
     final bool isBooked = seat.status == SeatStatus.booked;
+    Color borderColor;
+    Color bgColor = Colors.white;
+    IconData? icon;
+
+    switch (seat.status) {
+      case SeatStatus.available:
+        borderColor = Colors.green;
+        break;
+      case SeatStatus.booked:
+        borderColor = Colors.grey;
+        bgColor = Colors.grey.shade300;
+        break;
+      case SeatStatus.femaleOnly:
+        borderColor = Colors.pink;
+        icon = Icons.female;
+        break;
+      case SeatStatus.maleOnly:
+        borderColor = Colors.blue;
+        icon = Icons.male;
+        break;
+    }
+
+    if (seat.isSelected) bgColor = Colors.green.withOpacity(0.25);
 
     return GestureDetector(
-      onTap: isBooked
-          ? null
-          : () {
-        setState(() {
-          seat.isSelected = !seat.isSelected;
-        });
-      },
+      onTap: isBooked ? null : () => setState(() => seat.isSelected = !seat.isSelected),
       child: Column(
         children: [
           Container(
-            margin: const EdgeInsets.all(2  ),
+            margin: const EdgeInsets.all(2),
             height: 60,
             width: 50,
             decoration: BoxDecoration(
-              color: seat.isSelected
-                  ? Colors.green.withOpacity(0.25)
-                  : isBooked
-                  ? Colors.grey.shade300
-                  : Colors.white,
-              border: Border.all(
-                color: seat.isSelected
-                    ? Colors.green
-                    : isBooked
-                    ? Colors.grey
-                    : Colors.green,
-                width: 1.5,
-              ),
+              color: bgColor,
+              border: Border.all(color: borderColor, width: 1.5),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Center(
-              child: Text(
-                seat.seatNo,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
+              child: Text(seat.seatNo, style: const TextStyle(fontWeight: FontWeight.bold)),
             ),
           ),
-          Text(
-            "₹${seat.price.toInt()}",
-            style: const TextStyle(fontSize: 12),
-          ),
+          Text("₹${seat.price.toInt()}", style: const TextStyle(fontSize: 12)),
         ],
       ),
     );
   }
-  static const double seatWidth = 60;
-  static const double smallGap = 16;
-  static const double aisleGap = 28;
 
-  static const double leftBlockWidth =
-      seatWidth * 3 + smallGap; // ✅ FIXED
-
-  Widget sleeperRow({
-    Widget? left1,
-    Widget? left2,
-    Widget? right,
-    bool isLastRow = false, // 👈 ADD THIS
-  }) {
+  Widget sleeperRow({Widget? left1, Widget? left2, Widget? right, bool isLastRow = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // LEFT BLOCK
           SizedBox(
-            width: isLastRow
-                ? seatWidth // 👈 ONLY ONE SEAT WIDTH
-                : leftBlockWidth, // normal rows
+            width: isLastRow ? seatWidth : leftBlockWidth,
             child: Row(
               children: [
                 if (left1 != null) left1,
-                if (!isLastRow && left2 != null)
-                  SizedBox(width: smallGap),
+                if (!isLastRow && left2 != null) const SizedBox(width: smallGap),
                 if (!isLastRow && left2 != null) left2,
               ],
             ),
           ),
-
-          // AISLE (only for normal rows)
-          if (!isLastRow) SizedBox(width: aisleGap),
-
-          // RIGHT SIDE (only for normal rows)
+          if (!isLastRow) const SizedBox(width: aisleGap),
           if (!isLastRow)
             SizedBox(
               width: seatWidth,
@@ -280,37 +328,47 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
     );
   }
 
-
-
-
-
-
-
-
-
   Widget seatGrid(List<Seat> seats) {
-    final isSleeperBus = seats.isNotEmpty && seats.first.isSleeper;
+    if (seats.isEmpty) return const SizedBox();
+    final isSleeperBus = seats.first.isSleeper;
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: isSleeperBus ? 3 : 4,
-
-        // 🔥 IMPORTANT FIX
-        mainAxisExtent: isSleeperBus ? 80 : 40,
-
-        // 🔥 NO GAP
-        mainAxisSpacing: 25,
-        crossAxisSpacing: 0,
-      ),
-      itemCount: seats.length,
-      itemBuilder: (context, index) {
-        return seatItem(seats[index]);
-      },
-    );
+    if (isSleeperBus) {
+      List<Widget> rows = [];
+      for (int i = 0; i < seats.length; i += 3) {
+        rows.add(sleeperRow(
+          left1: i < seats.length ? sleeperBerth(seats[i]) : null,
+          left2: (i + 1) < seats.length ? sleeperBerth(seats[i + 1]) : null,
+          right: (i + 2) < seats.length ? sleeperBerth(seats[i + 2]) : null,
+          isLastRow: i + 3 >= seats.length,
+        ));
+      }
+      return Column(children: rows);
+    } else {
+      return GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisExtent: 40,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 8,
+        ),
+        itemCount: seats.length,
+        itemBuilder: (context, index) => seatItem(seats[index]),
+      );
+    }
   }
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -754,40 +812,32 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
   }
 
   Widget upperDeckLayout() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    if (upperDeckSeats.isEmpty) {
+      return const Center(child: Text("No upper deck seats"));
+    }
+
+    List<Widget> rows = [];
+
+    for (int i = 0; i < upperDeckSeats.length; i += 3) {
+      rows.add(
         sleeperRow(
-          left1: sleeperBerth(getUpperSeat('U1')),
-          left2: sleeperBerth(getUpperSeat('U2')),
-          right: sleeperBerth(getUpperSeat('U3')),
+          left1: i < upperDeckSeats.length
+              ? sleeperBerth(upperDeckSeats[i])
+              : null,
+          left2: (i + 1) < upperDeckSeats.length
+              ? sleeperBerth(upperDeckSeats[i + 1])
+              : null,
+          right: (i + 2) < upperDeckSeats.length
+              ? sleeperBerth(upperDeckSeats[i + 2])
+              : null,
+          isLastRow: i + 3 >= upperDeckSeats.length,
         ),
-        sleeperRow(
-          left1: sleeperBerth(getUpperSeat('U4')),
-          left2: sleeperBerth(getUpperSeat('U5')),
-          right: sleeperBerth(getUpperSeat('U6')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getUpperSeat('U7')),
-          left2: sleeperBerth(getUpperSeat('U8')),
-          right: sleeperBerth(getUpperSeat('U9')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getUpperSeat('U10')),
-          left2: sleeperBerth(getUpperSeat('U11')),
-          right: sleeperBerth(getUpperSeat('U12')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getUpperSeat('U13')),
-          left2: sleeperBerth(getUpperSeat('U14')),
-          right: sleeperBerth(getUpperSeat('U15')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getUpperSeat('U16')),
-        ),
-      ],
-    );
+      );
+    }
+
+    return Column(children: rows);
   }
+
 
   Seat getLowerSeat(String seatNo) {
     return lowerDeckSeats.firstWhere(
@@ -798,40 +848,32 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
 
 
   Widget lowerDeckLayout() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    if (lowerDeckSeats.isEmpty) {
+      return const Center(child: Text("No seats available"));
+    }
+
+    List<Widget> rows = [];
+
+    for (int i = 0; i < lowerDeckSeats.length; i += 3) {
+      rows.add(
         sleeperRow(
-          left1: sleeperBerth(getLowerSeat('L1')),
-          left2: sleeperBerth(getLowerSeat('L2')),
-          right: sleeperBerth(getLowerSeat('L3')),
+          left1: i < lowerDeckSeats.length
+              ? sleeperBerth(lowerDeckSeats[i])
+              : null,
+          left2: (i + 1) < lowerDeckSeats.length
+              ? sleeperBerth(lowerDeckSeats[i + 1])
+              : null,
+          right: (i + 2) < lowerDeckSeats.length
+              ? sleeperBerth(lowerDeckSeats[i + 2])
+              : null,
+          isLastRow: i + 3 >= lowerDeckSeats.length,
         ),
-        sleeperRow(
-          left1: sleeperBerth(getLowerSeat('L4')),
-          left2: sleeperBerth(getLowerSeat('L5')),
-          right: sleeperBerth(getLowerSeat('L6')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getLowerSeat('L7')),
-          left2: sleeperBerth(getLowerSeat('L8')),
-          right: sleeperBerth(getLowerSeat('L9')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getLowerSeat('L10')),
-          left2: sleeperBerth(getLowerSeat('L11')),
-          right: sleeperBerth(getLowerSeat('L12')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getLowerSeat('L13')),
-          left2: sleeperBerth(getLowerSeat('L14')),
-          right: sleeperBerth(getLowerSeat('L15')),
-        ),
-        sleeperRow(
-          left1: sleeperBerth(getLowerSeat('L16')),
-        ),
-      ],
-    );
+      );
+    }
+
+    return Column(children: rows);
   }
+
 
 
   String safeText(dynamic value, [String fallback = '-']) {
@@ -849,8 +891,9 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFF00ADEE),
+        backgroundColor: const Color(0xFF00ADEE), // Blue AppBar
         automaticallyImplyLeading: false,
+        elevation: 0,
         titleSpacing: 0,
         title: Row(
           children: [
@@ -888,14 +931,15 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
           ),
         ],
 
-        // 👇 TAB BAR
+        // 👇 WHITE TAB BAR SECTION BELOW APPBAR
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(60),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          preferredSize: const Size.fromHeight(70),
+          child: Container(
+            color: Colors.white, // FULL WHITE BACKGROUND
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.25),
+                color: const Color(0xFFF2F2F2), // light grey tab bg
                 borderRadius: BorderRadius.circular(30),
               ),
               child: TabBar(
@@ -905,7 +949,7 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
                   borderRadius: BorderRadius.circular(30),
                 ),
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.white,
+                unselectedLabelColor: Colors.black87,
                 tabs: const [
                   Tab(text: "Lower Deck"),
                   Tab(text: "Upper Deck"),
@@ -915,6 +959,7 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
           ),
         ),
       ),
+
 
 
       body: TabBarView(
@@ -978,11 +1023,32 @@ class _OnewayFlightsListState extends State<SeatSelectionPage> with SingleTicker
                   ),
                 ),
               ),
-              ElevatedButton(
-                onPressed: selectedSeats.isEmpty ? null : () {},
-                child: const Text("Continue"),
+      ElevatedButton(
+        onPressed: selectedSeats.isEmpty
+            ? null
+            : () {
+          final selectedSeatJson = getSelectedSeatJson();
+          final jsonString = jsonEncode(selectedSeatJson);
+
+          debugPrint(
+            "✅ SELECTED SEATS JSON:\n$jsonString",
+            wrapWidth: 5000,
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => Busbookingpage(
+                JsonSelectBus:widget.BusJson,
+                selectedSeatJson: jsonString,
               ),
-            ],
+            ),
+          );
+        },
+        child: const Text("Continue"),
+      ),
+
+      ],
           ),
         ),
       ),
